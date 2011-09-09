@@ -23,7 +23,7 @@ barclamp:
 
 crowbar:
   layout: 1
-
+  order: 10
 
 locale_additions:
   en:
