@@ -22,17 +22,10 @@ when "centos","redhat"
 end
 package "portmap"
 
-
-
 service "portmap" do
   running true
   enabled true
   action [ :enable, :start ]
-end
-
-
-link "/updates" do
-  to "/tftpboot/#{node[:platform]}_dvd/updates"
 end
 
 directory "/install-logs" do
