@@ -17,7 +17,7 @@ include_recipe "utils"
 
 pkg = ""
 case node[:platform]
-when "ubunu","debian"
+when "ubuntu","debian"
   pkg = "dhcp3"
   package "dhcp3-server"
 when "redhat","centos"
