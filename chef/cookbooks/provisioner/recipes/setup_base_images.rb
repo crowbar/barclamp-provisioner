@@ -85,10 +85,10 @@ end
 
 bash "copy validation pem" do
   code <<-EOH
-  cp /etc/chef/validation.pem /tftpboot/#{dvd}
-  chmod 0444 /tftpboot/#{dvd}/validation.pem
+  cp /etc/chef/validation.pem /tftpboot
+  chmod 0444 /tftpboot/validation.pem
 EOH
-  not_if "test -f /tftpboot/#{dvd}/validation.pem"  
+  not_if "test -f /tftpboot/validation.pem"  
 end
 case node[:platform]
 when "ubuntu","debian"
