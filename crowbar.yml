@@ -33,3 +33,23 @@ locale_additions:
           attributes: Attributes
         edit_deployment: 
           deployment: Deployment
+
+debs:
+  pkgs:
+    - dhcp3
+    - nfs-common
+    - nfs-kernel-server
+    - portmap
+    - ipmitool
+    - syslinux
+    - tftpd-hpa
+
+rpms:
+  pkgs:
+    - dhcp
+    - nfs-utils
+    - portmap
+    - OpenIPMI-tools
+    - syslinux
+    - tftp-server
+    - xinetd
