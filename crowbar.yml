@@ -36,7 +36,7 @@ locale_additions:
 
 debs:
   pkgs:
-    - dhcp3
+    - dhcp3-server
     - nfs-common
     - nfs-kernel-server
     - portmap
