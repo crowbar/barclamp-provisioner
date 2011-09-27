@@ -20,6 +20,8 @@ barclamp:
   display: Provisioner
   description: The roles and recipes to set up the provisioning server and a base environment for all nodes
   version: 0
+  member:
+    - crowbar
 
 crowbar:
   layout: 1
