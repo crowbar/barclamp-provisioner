@@ -64,6 +64,10 @@ end
 
 # This needs to be evaled.
 intfs = [ Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").interface ]
+address = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+
+d_opts = node[:dhcp][:options]
+d_opts << "next-server #{address}"
 
 case node[:platform]
 when "ubuntu","debian"
@@ -72,7 +76,7 @@ when "ubuntu","debian"
     group "root"
     mode 0644
     source "dhcpd.conf.erb"
-    variables(:options => node[:dhcp][:options])
+    variables(:options => d_opts)
     notifies :restart, "service[dhcp3-server]"
   end
 
@@ -90,7 +94,7 @@ when "redhat","centos"
     group "root"
     mode 0644
     source "dhcpd.conf.erb"
-    variables(:options => node[:dhcp][:options])
+    variables(:options => d_opts)
     notifies :restart, "service[dhcp3-server]"
   end
 
