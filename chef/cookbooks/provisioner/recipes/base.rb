@@ -25,12 +25,31 @@ directory "/root/.ssh" do
   action :create
 end
 
-cookbook_file "/root/.ssh/authorized_keys" do
+node[:crowbar][:access_keys] = {}
+
+ruby_block "re-read the key file" do
+  block do
+    str = %x{cat /root/.ssh/id_rsa.pub}.chomp
+    node[:crowbar][:root_pub_key] = str
+    node.save
+    node[:crowbar][:access_keys][node.name] = str
+  end
+  action :none
+end
+
+execute "build root key" do
+  command "ssh-keygen -t rsa -f /root/.ssh/id_rsa -N \"\""
+  not_if do ::File.exists?("/root/.ssh/id_rsa.pub") end
+  notifies :create, "ruby_block[re-read the key file]", :immediately
+end
+
+template "/root/.ssh/authorized_keys" do
   owner "root"
   group "root"
   mode "0700"
   action :create
-  source "authorized_keys"
+  source "authorized_keys.erb"
+  variables(:keys => node[:crowbar][:access_keys])
 end
 
 config_file = "/etc/default/chef-client"
