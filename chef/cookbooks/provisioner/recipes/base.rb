@@ -34,7 +34,7 @@ ruby_block "re-read the key file" do
     node.save
     node[:crowbar][:access_keys][node.name] = str
   end
-  action :none
+  action :nothing
 end
 
 execute "build root key" do
