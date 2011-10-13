@@ -40,8 +40,9 @@ end
 
 # Find provisioner servers and include them.
 search(:node, "roles:provisioner-server AND provisioner_config_environment:#{node[:provisioner][:config][:environment]}") do |n|
-  if !n[:crowbar][:ssh][:root_pub_key].nil? and n[:crowbar][:ssh][:root_pub_key] != node[:crowbar][:ssh][:access_keys][n.name]
-    node[:crowbar][:ssh][:access_keys][n.name] = n[:crowbar][:ssh][:root_pub_key] 
+  pkey = n[:crowbar][:ssh][:root_pub_key] rescue nil
+  if !pkey.nil? and pkey != node[:crowbar][:ssh][:access_keys][n.name]
+    node[:crowbar][:ssh][:access_keys][n.name] = pkey
     node_modified = true
   end
 end
