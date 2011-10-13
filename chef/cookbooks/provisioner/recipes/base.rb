@@ -25,22 +25,14 @@ directory "/root/.ssh" do
   action :create
 end
 
-node[:crowbar][:access_keys] = {}
+node[:crowbar][:access_keys] = {} if node[:crowbar][:access_keys].nil?
 
-ruby_block "re-read the key file" do
-  block do
-    str = %x{cat /root/.ssh/id_rsa.pub}.chomp
-    node[:crowbar][:root_pub_key] = str
-    node.save
-    node[:crowbar][:access_keys][node.name] = str
-  end
-  action :nothing
-end
-
-execute "build root key" do
-  command "ssh-keygen -t rsa -f /root/.ssh/id_rsa -N \"\""
-  not_if do ::File.exists?("/root/.ssh/id_rsa.pub") end
-  notifies :create, "ruby_block[re-read the key file]", :immediately
+if ::File.exists?("/root/.ssh/id_rsa.pub") == false
+  %x{ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""}
+  str = %x{cat /root/.ssh/id_rsa.pub}.chomp
+  node[:crowbar][:root_pub_key] = str
+  node.save
+  node[:crowbar][:access_keys][node.name] = str
 end
 
 template "/root/.ssh/authorized_keys" do
