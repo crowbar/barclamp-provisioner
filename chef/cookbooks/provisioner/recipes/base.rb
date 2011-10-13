@@ -25,22 +25,23 @@ directory "/root/.ssh" do
   action :create
 end
 
-node[:crowbar][:access_keys] = {} if node[:crowbar][:access_keys].nil?
+node[:crowbar][:ssh] = {} if node[:crowbar][:ssh].nil?
+node[:crowbar][:ssh][:access_keys] = {} if node[:crowbar][:ssh][:access_keys].nil?
 
 # Build my key
 node_modified = false
 if ::File.exists?("/root/.ssh/id_rsa.pub") == false
   %x{ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""}
   str = %x{cat /root/.ssh/id_rsa.pub}.chomp
-  node[:crowbar][:root_pub_key] = str
-  node[:crowbar][:access_keys][node.name] = str
+  node[:crowbar][:ssh][:root_pub_key] = str
+  node[:crowbar][:ssh][:access_keys][node.name] = str
   node_modified = true
 end
 
 # Find provisioner servers and include them.
 search(:node, "roles:provisioner-server AND provisioner_config_environment:#{node[:provisioner][:config][:environment]}") do |n|
-  if !n[:crowbar][:root_pub_key].nil? or n[:crowbar][:root_pub_key] != node[:crowbar][:access_keys][n.name]
-    node[:crowbar][:access_keys][n.name] = n[:crowbar][:root_pub_key] 
+  if !n[:crowbar][:ssh][:root_pub_key].nil? and n[:crowbar][:ssh][:root_pub_key] != node[:crowbar][:ssh][:access_keys][n.name]
+    node[:crowbar][:ssh][:access_keys][n.name] = n[:crowbar][:ssh][:root_pub_key] 
     node_modified = true
   end
 end
@@ -52,7 +53,7 @@ template "/root/.ssh/authorized_keys" do
   mode "0700"
   action :create
   source "authorized_keys.erb"
-  variables(:keys => node[:crowbar][:access_keys])
+  variables(:keys => node[:crowbar][:ssh][:access_keys])
 end
 
 config_file = "/etc/default/chef-client"
