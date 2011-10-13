@@ -27,13 +27,24 @@ end
 
 node[:crowbar][:access_keys] = {} if node[:crowbar][:access_keys].nil?
 
+# Build my key
+node_modified = false
 if ::File.exists?("/root/.ssh/id_rsa.pub") == false
   %x{ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""}
   str = %x{cat /root/.ssh/id_rsa.pub}.chomp
   node[:crowbar][:root_pub_key] = str
-  node.save
   node[:crowbar][:access_keys][node.name] = str
+  node_modified = true
 end
+
+# Find provisioner servers and include them.
+search(:node, "roles:provisioner-server AND provisioner_environment:#{node[:provisioner][:environment]}") do |n|
+  if n[:crowbar][:root_pub_key].nil? or n[:crowbar][:root_pub_key] != node[:crowbar][:access_keys][n.name]
+    node[:crowbar][:access_keys][n.name] = n[:crowbar][:root_pub_key] 
+    node_modified = true
+  end
+end
+node.save if node_modified
 
 template "/root/.ssh/authorized_keys" do
   owner "root"
