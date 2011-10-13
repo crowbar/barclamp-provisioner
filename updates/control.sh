@@ -85,6 +85,14 @@ get_state() {
   rm /tmp/node_data.$$
 }
 
+nuke_everything() {
+    while read maj min blocks name; do
+	[[ -b /dev/$name && -w /dev/$name && $name != name]] || continue
+	dd "if=/dev/zero" "of=$name" "bs=512" "count=2048"
+	dd "if=/dev/zero" "of=$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
+    done < <(tac /proc/partitions)
+} 
+
 maybe_reboot () { [[ $DEBUG != 1 ]] && reboot; }
 
 run_chef () {
