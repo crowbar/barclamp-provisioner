@@ -88,8 +88,10 @@ get_state() {
 nuke_everything() {
     while read maj min blocks name; do
 	[[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
-	dd "if=/dev/zero" "of=$name" "bs=512" "count=2048"
-	dd "if=/dev/zero" "of=$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
+	[[ $name = loop* ]] && continue
+	[[ $name = dm* ]] && continue
+	dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048"
+	dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
     done < <(tac /proc/partitions)
 } 
 
@@ -120,6 +122,7 @@ case $STATE in
         echo "Hardware installing with: $HOSTNAME"
         rm -f /etc/chef/client.pem
         post_state $HOSTNAME hardware-installing
+        nuke_everything
         run_chef $HOSTNAME
         post_state $HOSTNAME hardware-installed
         sleep 30 # Allow settle time
@@ -130,7 +133,7 @@ case $STATE in
         done
 
         post_state $HOSTNAME hardware-installing
-
+        nuke_everything
         echo "Hardware installing with: $HOSTNAME"
         run_chef $HOSTNAME
         post_state $HOSTNAME hardware-installed
