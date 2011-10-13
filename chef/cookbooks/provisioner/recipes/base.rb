@@ -39,7 +39,7 @@ end
 
 # Find provisioner servers and include them.
 search(:node, "roles:provisioner-server AND provisioner_config_environment:#{node[:provisioner][:config][:environment]}") do |n|
-  if n[:crowbar][:root_pub_key].nil? or n[:crowbar][:root_pub_key] != node[:crowbar][:access_keys][n.name]
+  if !n[:crowbar][:root_pub_key].nil? or n[:crowbar][:root_pub_key] != node[:crowbar][:access_keys][n.name]
     node[:crowbar][:access_keys][n.name] = n[:crowbar][:root_pub_key] 
     node_modified = true
   end
