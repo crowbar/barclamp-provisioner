@@ -58,6 +58,11 @@ template "/root/.ssh/authorized_keys" do
   variables(:keys => node["crowbar"]["ssh"]["access_keys"])
 end
 
+bash "Disable Strict Host Key checking" do
+  code "echo '    StrictHostKeyChecking no' >>/etc/ssh/ssh_config"
+  not_if "grep -q 'StrictHostKeyChecking no' /etc/ssh/ssh_config"
+end
+
 config_file = "/etc/default/chef-client"
 config_file = "/etc/sysconfig/chef-client" if node[:platform] =~ /^(redhat|centos)$/
 
