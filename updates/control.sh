@@ -124,7 +124,11 @@ case $STATE in
         post_state $HOSTNAME hardware-installing
         nuke_everything
         run_chef $HOSTNAME
-        post_state $HOSTNAME hardware-installed
+	if [ -a /var/log/chef/hw-problem.log ]; then
+	  post_state $HOSTNAME problem
+	else 	 
+          post_state $HOSTNAME hardware-installed
+	fi
         sleep 30 # Allow settle time
         maybe_reboot;;
     1)  while [ "$NODE_STATE" != "true" ] ; do
@@ -141,7 +145,11 @@ case $STATE in
         maybe_reboot;;
     3)  post_state $HOSTNAME hardware-updating
         run_chef $HOSTNAME
-        post_state $HOSTNAME hardware-updated
+	if [ -a /var/log/chef/hw-problem.log ]; then
+	  post_state $HOSTNAME problem
+	else 	 
+          post_state $HOSTNAME hardware-updated
+	fi
         sleep 30 # Allow settle time
         maybe_reboot;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
