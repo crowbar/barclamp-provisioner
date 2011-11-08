@@ -1,0 +1,9 @@
+Bluepill.application("<%= @appname %>") do |app|
+  app.process("<%= @appname %>") do |process|
+    process.start_command = '/usr/bin/ruby -rwebrick -e WEBrick::HTTPServer.new(:Port=><%= @port %>,:DocumentRoot=>\".\").start'
+    process.uid = "nobody"
+    process.working_dir = "<%= @docroot %>"
+    process.stdout = process.stderr = "<%= @logfile %>"
+    process.daemonize = true
+  end
+end

@@ -76,11 +76,22 @@ end
   end
 end
 
+file "/var/log/provisioner-webserver.log" do
+  owner "nobody"
+  action :create
+end
 
-web_app "install_app" do
-  server_name node[:fqdn]
+template "/etc/bluepill/provisioner-webserver" do
   docroot "/tftpboot"
-  template "install_app.conf.erb"
+  port 8091
+  appname "provisioner-webserver"
+  source "provisioner-webserver.pill.erb"
+  logfile "/var/log/provisioner-webserver.log"
+end
+
+service "provisioner-webserver" do
+  provider bluepill_service
+  action [:enable, :load, :start]
 end
 
 bash "copy validation pem" do
