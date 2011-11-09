@@ -15,65 +15,42 @@
 
 package "syslinux"
 
-discovery_append_line = "append initrd=initrd0.img root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+append_line = "append initrd=initrd0.img root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
 if node[:provisioner][:use_serial_console]
-  discovery_append_line += " console=tty0 console=ttyS1,115200n8"
+  append_line += " console=tty0 console=ttyS1,115200n8"
 end
 if ::File.exists?("/etc/crowbar.install.key")
-  discovery_append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
+  append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
 
 dvd = "#{node[:platform]}_dvd"
-#
-# Setup links from centos image to our other two names
-#
-["update", "hwinstall"].each do |dir|
-  link "/tftpboot/#{dvd}/#{dir}" do
-    action :create
-    to "discovery"
-    not_if "test -L /tftpboot/#{dvd}/#{dir}"
+
+pxecfg_dir="/tftpboot/#{dvd}/discovery/pxelinux.cfg"
+
+# Generate the appropriate pxe config file for each state
+[ "discovery","update","hwinstall"].each do |state|
+  template "#{pxecfg_dir}/#{state}" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.erb"
+    variables(:append_line => "#{append_line} crowbar.state=#{state}",
+              :install_name => state,  
+              :kernel => "vmlinuz0")
   end
 end
 
-#
-# Update the kernel lines and default configs for our
-# three boot environments (centos images are updated
-# with discovery).
-#
-[ "execute", "discovery"].each do |image|
-  install_path = "/tftpboot/#{dvd}/#{image}"
-  
-  # Make sure the directories need to net_install are there
-  directory "#{install_path}"
-  directory "#{install_path}/pxelinux.cfg"
-  
-  # Everyone needs a pxelinux.0
-  bash "Install pxelinux.0" do
-    code "cp /usr/lib/syslinux/pxelinux.0 #{install_path}"
-    not_if do ::File.exists?("#{install_path}/pxelinux.0") end
-  end
-  
-  case 
-    when image == "discovery"
-    template "#{install_path}/pxelinux.cfg/default" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "default.erb"
-      variables(:append_line => discovery_append_line,
-                :install_name => image,  
-                :kernel => "vmlinuz0")
-    end
-    next
-    
-    when image == "execute"
-    cookbook_file "#{install_path}/pxelinux.cfg/default" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "localboot.default"
-    end 
-  end
+# and the execute state as well
+cookbook_file "#{pxecfg_dir}/execute" do
+  mode 0644
+  owner "root"
+  group "root"
+  source "localboot.default"
+end
+
+# Make discovery our default state
+link "#{pxecfg_dir}/default" do
+  to "discovery"
 end
 
 include_recipe "bluepill"

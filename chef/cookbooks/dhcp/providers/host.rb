@@ -24,7 +24,6 @@ action :add do
       :hostname => new_resource.hostname,
       :macaddress => new_resource.macaddress,
       :ipaddress => new_resource.ipaddress,
-      :group => new_resource.group,
       :options => new_resource.options
     )
     owner "root"

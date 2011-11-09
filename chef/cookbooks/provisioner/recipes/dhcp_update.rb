@@ -8,17 +8,6 @@ dhcp_start = admin_net[:ranges]["dhcp"]["start"]
 dhcp_end = admin_net[:ranges]["dhcp"]["end"]
 lease_time = node[:provisioner][:dhcp]["lease-time"]
 
-dhcp_groups = { "hwinstall" => 1, "update" => 3, "execute" => 4}
-dhcp_groups.each do |group, dhcp_state|
-  dhcp_group group do
-    action :add
-    options [ "option domain-name \"#{domain_name}\"",
-              "option dhcp-client-state #{dhcp_state}",
-              "filename \"/#{dvd}/#{group}/pxelinux.0\"" ]
-  end
-end
-
-
 dhcp_subnet admin_net["subnet"] do
   action :add
   broadcast admin_net["broadcast"]

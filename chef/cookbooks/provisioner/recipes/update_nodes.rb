@@ -13,6 +13,10 @@
 # limitations under the License.
 #
 
+dvd = "#{node[:platform]}_dvd"
+
+pxecfg_dir="/tftpboot/#{dvd}/discovery/pxelinux.cfg"
+
 states = node["provisioner"]["dhcp"]["state_machine"]
 nodes = search(:node, "crowbar_usedhcp:true")
 
@@ -52,24 +56,26 @@ if not nodes.nil? and not nodes.empty?
     mac_list.each do |mac|
       count = count+1
       if new_group == "reset" or new_group == "delete"
+        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
+          action :delete
+        end
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
           ipaddress admin_data_net.address
           macaddress mac
-          group new_group
           action :remove
         end
       else
+        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
+          to "#{new_group}"
+        end
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
           ipaddress admin_data_net.address
           macaddress mac
-          group new_group
           action :add
         end
       end
     end
   end
 end
-
-

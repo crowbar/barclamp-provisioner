@@ -18,7 +18,8 @@
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
 MYINDEX=${MYIP##*.}
-STATE=`grep dhcp-client-state /var/lib/dhclient/dhclient*.leases | uniq | cut -d" " -f5 | cut -d";" -f1`
+STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
+STATE=${STATE#*=}
 DEBUG=`grep dhcp-client-debug /var/lib/dhclient/dhclient*.leases | uniq | cut -d" " -f5 | cut -d";" -f1`
 export BMC_ADDRESS=""
 export BMC_NETMASK=""
@@ -102,7 +103,8 @@ run_chef () {
 }
 
 case $STATE in
-    0)  echo "Discovering with: $HOSTNAME_MAC"
+    discovery)  
+	echo "Discovering with: $HOSTNAME_MAC"
         post_state $HOSTNAME_MAC discovering
         run_chef $HOSTNAME_MAC
         post_state $HOSTNAME_MAC discovered
@@ -131,9 +133,10 @@ case $STATE in
 	fi
         sleep 30 # Allow settle time
         maybe_reboot;;
-    1)  while [ "$NODE_STATE" != "true" ] ; do
-          sleep 15
-          get_state
+    hwinstall)  
+	while [ "$NODE_STATE" != "true" ] ; do
+            sleep 15
+            get_state
         done
 
         post_state $HOSTNAME hardware-installing
@@ -143,12 +146,13 @@ case $STATE in
         post_state $HOSTNAME hardware-installed
         sleep 30 # Allow settle time
         maybe_reboot;;
-    3)  post_state $HOSTNAME hardware-updating
+    update)  
+	post_state $HOSTNAME hardware-updating
         run_chef $HOSTNAME
 	if [ -a /var/log/chef/hw-problem.log ]; then
-	  post_state $HOSTNAME problem
+	    post_state $HOSTNAME problem
 	else 	 
-          post_state $HOSTNAME hardware-updated
+            post_state $HOSTNAME hardware-updated
 	fi
         sleep 30 # Allow settle time
         maybe_reboot;;
