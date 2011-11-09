@@ -76,22 +76,23 @@ end
   end
 end
 
+include_recipe "bluepill"
+
 file "/var/log/provisioner-webserver.log" do
   owner "nobody"
   action :create
 end
 
-template "/etc/bluepill/provisioner-webserver" do
-  docroot "/tftpboot"
-  port 8091
-  appname "provisioner-webserver"
+template "/etc/bluepill/provisioner-webserver.pill" do
+  variables(:docroot => "/tftpboot",
+            :port =>8091,
+            :appname => "provisioner-webserver",
+            :logfile => "/var/log/provisioner-webserver.log")
   source "provisioner-webserver.pill.erb"
-  logfile "/var/log/provisioner-webserver.log"
 end
 
-service "provisioner-webserver" do
-  provider bluepill_service
-  action [:enable, :load, :start]
+bluepill_service "provisioner-webserver" do
+  action [:load, :enable, :start]
 end
 
 bash "copy validation pem" do
