@@ -13,9 +13,7 @@
 # limitations under the License.
 #
 
-dvd = "#{node[:platform]}_dvd"
-
-pxecfg_dir="/tftpboot/#{dvd}/discovery/pxelinux.cfg"
+pxecfg_dir="/tftpboot/discovery/pxelinux.cfg"
 
 states = node["provisioner"]["dhcp"]["state_machine"]
 nodes = search(:node, "crowbar_usedhcp:true")

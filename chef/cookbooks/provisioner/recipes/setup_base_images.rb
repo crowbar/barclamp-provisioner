@@ -23,9 +23,7 @@ if ::File.exists?("/etc/crowbar.install.key")
   append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
 
-dvd = "#{node[:platform]}_dvd"
-
-pxecfg_dir="/tftpboot/#{dvd}/discovery/pxelinux.cfg"
+pxecfg_dir="/tftpboot/discovery/pxelinux.cfg"
 
 # Generate the appropriate pxe config file for each state
 [ "discovery","update","hwinstall"].each do |state|
