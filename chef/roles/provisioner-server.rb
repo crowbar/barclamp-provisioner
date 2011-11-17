@@ -3,8 +3,7 @@ name "provisioner-server"
 description "Provisioner Server role - Apt and Networking"
 run_list(
          "recipe[utils]", 
-         "recipe[dhcp]", 
-         "recipe[tftpd]", 
+         "recipe[dhcp]",
          "recipe[nfs-server]",
          "recipe[provisioner::dhcp_update]",
          "recipe[provisioner::update_nodes]",
