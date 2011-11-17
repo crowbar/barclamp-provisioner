@@ -53,6 +53,7 @@ end
 
 include_recipe "bluepill"
 
+# Set up our the webserver for the provisioner.
 file "/var/log/provisioner-webserver.log" do
   owner "nobody"
   action :create
@@ -68,6 +69,25 @@ end
 
 bluepill_service "provisioner-webserver" do
   action [:load, :enable, :start]
+end
+
+# Set up the TFTP server as well.
+case node[:platform]
+when "ubuntu", "debian"
+  package "tftpd-hpa"
+when "redhat","centos"
+  package "tftp-server"
+end
+
+bluepill_service "tftpd" do
+  variables(:processes => [ {
+                              "daemonize" => true,
+                              "start_command" => "in.tftpd -4 -L -a 0.0.0.0:69 -s /tftpboot",
+                              "stderr" => "/dev/null",
+                              "stdout" => "/dev/null",
+                              "name" => "tftpd"
+                            } ] )
+  action [:create, :load]
 end
 
 bash "copy validation pem" do
