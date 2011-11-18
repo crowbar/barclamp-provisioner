@@ -75,6 +75,11 @@ end
 case node[:platform]
 when "ubuntu", "debian"
   package "tftpd-hpa"
+  service "tftpd-hpa" do
+    action [:stop, :disable]
+    ignore_failure :true
+  end
+  
 when "redhat","centos"
   package "tftp-server"
 end
