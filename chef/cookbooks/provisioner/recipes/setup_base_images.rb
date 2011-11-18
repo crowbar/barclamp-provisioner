@@ -79,7 +79,9 @@ when "ubuntu", "debian"
     action [:stop, :disable]
     ignore_failure :true
   end
-  
+  file "/etc/init/tftpd-hpa.conf" do
+    action :delete
+  end
 when "redhat","centos"
   package "tftp-server"
 end
