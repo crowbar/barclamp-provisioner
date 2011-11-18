@@ -75,12 +75,9 @@ end
 case node[:platform]
 when "ubuntu", "debian"
   package "tftpd-hpa"
-  service "tftpd-hpa" do
-    action [:stop, :disable]
-    ignore_failure :true
-  end
-  file "/etc/init/tftpd-hpa.conf" do
-    action :delete
+  bash "stop ubuntu tftpd" do
+    code "service tftpd-hpa stop; killall in.tftpd; rm /etc/init/tftpd-hpa.conf"
+    only_if "test -f /etc/init/tftpd-hpa.conf"
   end
 when "redhat","centos"
   package "tftp-server"
