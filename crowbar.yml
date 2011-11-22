@@ -26,6 +26,8 @@ barclamp:
 crowbar:
   layout: 1
   order: 10
+  run_order: 1060
+  chef_order: 1060
 
 locale_additions:
   en:
