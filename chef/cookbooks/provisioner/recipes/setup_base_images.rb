@@ -132,3 +132,119 @@ when "ubuntu","debian"
     end  
   }
 end
+
+# Set up the OS images as well
+# Common to all OSes
+admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
+web_port = node[:provisioner][:web_port]
+use_local_security = node[:provisioner][:use_local_security]
+
+# By default, install the same OS that the admin node is running
+default_os="#{node[:platform]}-#{node[:platform_version]}"
+
+[ "redhat-5.6", "redhat-5.7", "centos-5.7","ubuntu-10.10" ].each do |os|
+  append_line = ""
+  if node[:provisioner][:use_serial_console]
+    append_line << "console=tty0 console=ttyS1,115200n8 "
+  end
+  if ::File.exists?("/etc/crowbar.install.key")
+    append_line << "crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip} "
+  end
+
+  admin_web="http://#{admin_ip}:#{web_port}/#{os}/install"
+  crowbar_repo_web="http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra"
+  os_dir="/tftpboot/#{os}"
+  install_state="#{os}_install"
+  next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+  case
+  when /^(redhat|centos)/ =~ os
+    os_repo_web="#{admin_web}/Server"
+    append_line << "method=#{admin_web} ks=http://#{admin_ip}:#{web_port}/#{os}/compute.ks ksdevice=bootif initrd=../#{os}/install/images/pxeboot/initrd.img"
+    template "#{os_dir}/compute.ks" do
+      mode 0644
+      source "compute.ks.erb"
+      owner "root"
+      group "root"
+      variables(
+                :admin_node_ip => admin_ip,
+                :web_port => web_port,
+                :os_repo => os_repo_web,
+                :crowbar_repo => crowbar_repo_web,
+                :admin_web => admin_web,
+                :crowbar_join => "http://#{admin_ip}:#{web_port}/#{os}/crowbar_join.sh")  
+    end
+
+    template "#{pxecfg_dir}/#{install_state}" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "default.erb"
+      variables(:append_line => "append " + append_line,
+                :install_name => os,  
+                :kernel => "../#{os}/install/images/pxeboot/vmlinuz")
+    end
+
+    template "#{os_dir}/crowbar_join.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "crowbar_join.redhat.sh.erb"
+      variables(:admin_ip => admin_ip)
+    end
+  when /^ubuntu/ =~ os
+    append_line << "url=http://#{admin_ip}:#{web_port}/#{os}/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" initrd=../#{os}/install/install/netboot/ubuntu-installer/amd64/initrd.gz ramdisk_size=16384 root=/dev/ram rw quiet --"
+
+    template "#{pxecfg_dir}/#{install_state}" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "default.erb"
+      variables(:append_line => "append " + append_line,
+                :install_name => os,  
+                :kernel => "../#{os}/install/install/netboot/ubuntu-installer/amd64/linux")
+    end
+    
+    template "#{os_dir}/net_seed" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "net_seed.erb"
+      variables(:install_name => os,  
+                :cc_use_local_security => use_local_security,
+                :cc_install_web_port => web_port,
+                :cc_built_admin_node_ip => admin_ip,
+                :install_path => "#{os}/install")
+    end
+    
+    cookbook_file "#{os_dir}/net-post-install.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "net-post-install.sh"
+    end
+    
+    cookbook_file "#{os_dir}/net-pre-install.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "net-pre-install.sh"
+    end
+
+    template "#{os_dir}/crowbar_join.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "crowbar_join.ubuntu.sh.erb"
+      variables(:admin_ip => admin_ip)
+    end
+    
+  end
+
+  if os == default_os
+    link "#{pxecfg_dir}/os_install" do
+      link_type :symbolic
+      to "#{install_state}"
+    end
+  end
+end
