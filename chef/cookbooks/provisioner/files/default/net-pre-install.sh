@@ -26,14 +26,14 @@
 #
 # We are a net install. 
 #
-
 HTTP_SERVER=$1
 
 IP=`echo $HTTP_SERVER | sed "s/:.*//g"`
 HOSTNAME=$(grep host-name /var/lib/dhcp3/dhclient.leases| \
     cut -d'"' -f2 | head -1)
 
-export CROWBAR_KEY=`sed "s/ .*//g" /proc/cmdline | sed "s/.*=//g"`
+CROWBAR_KEY=$(grep -o 'crowbar.install.key=[^ ]*' /proc/cmdline)
+export CROWBAR_KEY=${CROWBAR_KEY#*=}
 
 post_state() {
   echo "{" > /tmp/post_state.$$
