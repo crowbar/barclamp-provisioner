@@ -15,7 +15,17 @@
 
 package "syslinux"
 
+# Set up the OS images as well
+# Common to all OSes
+admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
+web_port = node[:provisioner][:web_port]
+use_local_security = node[:provisioner][:use_local_security]
+
 append_line = "append initrd=initrd0.img root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+
+tftproot = node[:provisioner][:root]
+
 if node[:provisioner][:use_serial_console]
   append_line += " console=tty0 console=ttyS1,115200n8"
 end
@@ -23,7 +33,7 @@ if ::File.exists?("/etc/crowbar.install.key")
   append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
 
-pxecfg_dir="/tftpboot/discovery/pxelinux.cfg"
+pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 
 # Generate the appropriate pxe config file for each state
 [ "discovery","update","hwinstall"].each do |state|
@@ -60,8 +70,8 @@ file "/var/log/provisioner-webserver.log" do
 end
 
 template "/etc/bluepill/provisioner-webserver.pill" do
-  variables(:docroot => "/tftpboot",
-            :port =>8091,
+  variables(:docroot => "#{tftproot}",
+            :port => web_port,
             :appname => "provisioner-webserver",
             :logfile => "/var/log/provisioner-webserver.log")
   source "provisioner-webserver.pill.erb"
@@ -86,7 +96,7 @@ end
 bluepill_service "tftpd" do
   variables(:processes => [ {
                               "daemonize" => true,
-                              "start_command" => "in.tftpd -4 -L -a 0.0.0.0:69 -s /tftpboot",
+                              "start_command" => "in.tftpd -4 -L -a 0.0.0.0:69 -s #{tftproot}",
                               "stderr" => "/dev/null",
                               "stdout" => "/dev/null",
                               "name" => "tftpd"
@@ -96,14 +106,14 @@ end
 
 bash "copy validation pem" do
   code <<-EOH
-  cp /etc/chef/validation.pem /tftpboot
-  chmod 0444 /tftpboot/validation.pem
+  cp /etc/chef/validation.pem #{tftproot}
+  chmod 0444 #{tftproot}/validation.pem
 EOH
-  not_if "test -f /tftpboot/validation.pem"  
+  not_if "test -f #{tftproot}/validation.pem"  
 end
 case node[:platform]
 when "ubuntu","debian"
-  directory "/tftpboot/curl"
+  directory "#{tftproot}/curl"
   
   [ "/usr/bin/curl",
     "/usr/lib/libcurl.so.4",
@@ -127,40 +137,68 @@ when "ubuntu","debian"
   ].each { |file|
     basefile = file.gsub("/usr/bin/", "").gsub("/usr/lib/", "").gsub("/lib/", "")
     bash "copy #{file} to curl dir" do
-      code "cp #{file} /tftpboot/curl"
-    not_if "test -f /tftpboot/curl/#{basefile}"
+      code "cp #{file} #{tftproot}/curl"
+      not_if "test -f #{tftproot}/curl/#{basefile}"
     end  
   }
 end
 
-# Set up the OS images as well
-# Common to all OSes
-admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
-domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
-web_port = node[:provisioner][:web_port]
-use_local_security = node[:provisioner][:use_local_security]
-
 # By default, install the same OS that the admin node is running
-default_os="#{node[:platform]}-#{node[:platform_version]}"
+# If the comitted proposal has a defualt, try it.
+# Otherwise use the OS the provisioner node is using.
 
-[ "redhat-5.6", "redhat-5.7", "centos-5.7","ubuntu-10.10" ].each do |os|
-  append_line = ""
-  if node[:provisioner][:use_serial_console]
-    append_line << "console=tty0 console=ttyS1,115200n8 "
-  end
-  if ::File.exists?("/etc/crowbar.install.key")
-    append_line << "crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip} "
-  end
+unless default_os = node[:provisioner][:default_os]
+  node[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
+  node.save
+end
+                                
+known_oses = node[:provisioner][:supported_oses] || \
+             [ "redhat-5.6", "redhat-5.7", "centos-5.7","ubuntu-10.10" ]
+known_oses.each do |os|
+ 
+  append = ""
+  initrd = ""
+  kernel = ""
+  web_path = "http://#{admin_ip}:#{web_port}/#{os}"
+  admin_web="#{web_path}/install"
+  crowbar_repo_web="#{web_path}/crowbar-extra"
+  os_dir="#{tftproot}/#{os}"
+  role="#{os}_install"
 
-  admin_web="http://#{admin_ip}:#{web_port}/#{os}/install"
-  crowbar_repo_web="http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra"
-  os_dir="/tftpboot/#{os}"
-  install_state="#{os}_install"
+  # Don't bother for OSes that are not actaully present on the provisioner node.
   next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+
+  if node["provisioner"]["deployable_oses"] and \
+     node["provisioner"]["deployable_oses"][os]
+    # If we have a deployable_oses entry for this OS, use it.
+    append = node["provisioner"]["deployable_oses"][os]["append"]
+    initrd = node["provisioner"]["deployable_oses"][os]["initrd"]
+    kernel = node["provisioner"]["deployable_oses"][os]["kernel"]
+    role = node["provisioner"]["deployable_oses"][os]["role"]
+  else
+    # Set some defaults for deployable_oses for this OS.
+    if node[:provisioner][:use_serial_console]
+      append << " console=tty0 console=ttyS1,115200n8 "
+    end
+    if ::File.exists?("/etc/crowbar.install.key")
+      append << "crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip} "
+    end
+    case
+    when /^(redhat|centos)/ =~ os
+      initrd="images/pxeboot/initrd.img"
+      kernel="images/pxeboot/vmlinuz"
+      append << " method=#{admin_web} ks=#{web_path}/compute.ks ksdevice=bootif"
+    when /^ubuntu/ =~ os
+      append << " url=#{web_path}/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
+      initrd = "install/netboot/ubuntu-installer/amd64/initrd.gz"
+      kernel = "install/netboot/ubuntu-installer/amd64/linux"
+    end
+  end
+
+  # These should really be made libraries or something.
   case
   when /^(redhat|centos)/ =~ os
-    os_repo_web="#{admin_web}/Server"
-    append_line << "method=#{admin_web} ks=http://#{admin_ip}:#{web_port}/#{os}/compute.ks ksdevice=bootif initrd=../#{os}/install/images/pxeboot/initrd.img"
+    # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
       mode 0644
       source "compute.ks.erb"
@@ -169,22 +207,12 @@ default_os="#{node[:platform]}-#{node[:platform_version]}"
       variables(
                 :admin_node_ip => admin_ip,
                 :web_port => web_port,
-                :os_repo => os_repo_web,
+                :os_repo => "#{admin_web}/Server",
                 :crowbar_repo => crowbar_repo_web,
                 :admin_web => admin_web,
-                :crowbar_join => "http://#{admin_ip}:#{web_port}/#{os}/crowbar_join.sh")  
+                :crowbar_join => "#{web_path}/crowbar_join.sh")  
     end
-
-    template "#{pxecfg_dir}/#{install_state}" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "default.erb"
-      variables(:append_line => "append " + append_line,
-                :install_name => os,  
-                :kernel => "../#{os}/install/images/pxeboot/vmlinuz")
-    end
-
+      
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
@@ -192,19 +220,9 @@ default_os="#{node[:platform]}-#{node[:platform_version]}"
       source "crowbar_join.redhat.sh.erb"
       variables(:admin_ip => admin_ip)
     end
-  when /^ubuntu/ =~ os
-    append_line << "url=http://#{admin_ip}:#{web_port}/#{os}/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" initrd=../#{os}/install/install/netboot/ubuntu-installer/amd64/initrd.gz ramdisk_size=16384 root=/dev/ram rw quiet --"
 
-    template "#{pxecfg_dir}/#{install_state}" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "default.erb"
-      variables(:append_line => "append " + append_line,
-                :install_name => os,  
-                :kernel => "../#{os}/install/install/netboot/ubuntu-installer/amd64/linux")
-    end
-    
+  when /^ubuntu/ =~ os
+    # Default files needed for Ubuntu.
     template "#{os_dir}/net_seed" do
       mode 0644
       owner "root"
@@ -238,13 +256,35 @@ default_os="#{node[:platform]}-#{node[:platform_version]}"
       source "crowbar_join.ubuntu.sh.erb"
       variables(:admin_ip => admin_ip)
     end
-    
   end
+  
+  # Save this OS config if we need to.
+  node[:provisioner][:deployable_oses] ||= Mash.new
+  node[:provisioner][:deployable_oses][os] ||= {
+    :kernel => kernel,
+    :append => append,
+    :initrd => initrd,
+    :role => "#{os}_install"
+  }
 
+  # Create the pxe linux config for this OS.
+  template "#{pxecfg_dir}/#{role}" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.erb"
+    variables(:append_line => "append initrd=../#{os}/install/#{initrd} " + append,
+              :install_name => os,  
+              :kernel => "../#{os}/install/#{kernel}")
+  end
+  
+  # If this is our default, create the appropriate symlink.
   if os == default_os
     link "#{pxecfg_dir}/os_install" do
       link_type :symbolic
-      to "#{install_state}"
+      to "#{role}"
     end
   end
 end
+# Save this node config.
+node.save

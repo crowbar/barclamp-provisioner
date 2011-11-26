@@ -5,6 +5,13 @@
     "provisioner": {
       "default_user": "crowbar",
       "default_password_hash": "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
+      "supported_oses": [
+         "ubuntu-10.10",
+         "redhat-5.6",
+	 "redhat-5.7",
+	 "centos-5.7"
+      ],
+      "root": "/tftpboot",
       "web_port": 8091,
       "use_local_security": true,
       "use_serial_console": false,

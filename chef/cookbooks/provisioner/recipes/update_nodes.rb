@@ -13,9 +13,9 @@
 # limitations under the License.
 #
 
-pxecfg_dir="/tftpboot/discovery/pxelinux.cfg"
-
 states = node["provisioner"]["dhcp"]["state_machine"]
+tftproot=node["provisioner"]["root"]
+pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 nodes = search(:node, "crowbar_usedhcp:true")
 
 if not nodes.nil? and not nodes.empty?
