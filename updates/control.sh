@@ -87,12 +87,22 @@ get_state() {
 }
 
 nuke_everything() {
+    # Make sure that the kernel knows about all the partitions
+    for bd in /sys/block/sd*; do
+	[[ -b /dev/${bd##*/} ]] || continue
+	partprobe "/dev/${bd##*/}"
+    done
+    # and then wipe them all out.
     while read maj min blocks name; do
 	[[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
 	[[ $name = loop* ]] && continue
 	[[ $name = dm* ]] && continue
-	dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048"
-	dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
+	if (( blocks >= 2048)); then
+            dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048"
+            dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
+        else
+            dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=$blocks"
+        fi
     done < <(tac /proc/partitions)
 } 
 
@@ -131,6 +141,7 @@ case $STATE in
 	else 	 
           post_state $HOSTNAME hardware-installed
 	fi
+	nuke_everything
         sleep 30 # Allow settle time
         maybe_reboot;;
     hwinstall)  
@@ -144,6 +155,7 @@ case $STATE in
         echo "Hardware installing with: $HOSTNAME"
         run_chef $HOSTNAME
         post_state $HOSTNAME hardware-installed
+	nuke_everything
         sleep 30 # Allow settle time
         maybe_reboot;;
     update)  
