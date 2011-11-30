@@ -39,6 +39,9 @@ locale_additions:
           deployment: Deployment
 
 debs:
+  ubuntu-10.10:
+    repos: 
+      - deb http://ppa.launchpad.net/nginx/stable/ubuntu maverick main
   pkgs:
     - dhcp3-server
     - nfs-common
@@ -47,8 +50,11 @@ debs:
     - ipmitool
     - syslinux
     - tftpd-hpa
+    - nginx-light
 
 rpms:
+  repos:
+    - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
   pkgs:
     - dhcp
     - nfs-utils
@@ -57,3 +63,4 @@ rpms:
     - syslinux
     - tftp-server
     - xinetd
+    - nginx
