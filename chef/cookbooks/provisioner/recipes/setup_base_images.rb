@@ -55,6 +55,14 @@ include_recipe "bluepill"
 
 package "nginx"
 
+service "nginx" do
+  action :disable
+end
+
+link "/etc/nginx/sites-enabled/default" do
+  action :delete
+end
+
 # Set up our the webserver for the provisioner.
 file "/var/log/provisioner-webserver.log" do
   owner "nobody"
