@@ -5,12 +5,28 @@
     "provisioner": {
       "default_user": "crowbar",
       "default_password_hash": "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
-      "supported_oses": [
-         "ubuntu-10.10",
-         "redhat-5.6",
-	 "redhat-5.7",
-	 "centos-5.7"
-      ],
+      "supported_oses": {
+        "ubuntu-10.10": {
+	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
+	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
+	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
+	},
+        "redhat-5.6": {
+     	  "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	},
+	"redhat-5.7": {
+     	  "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	},
+	"centos-5.7": {
+     	  "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	}
+      },
       "root": "/tftpboot",
       "web_port": 8091,
       "use_local_security": true,

@@ -170,47 +170,37 @@ unless default_os = node[:provisioner][:default_os]
   node.save
 end
                                 
-known_oses = node[:provisioner][:supported_oses] || \
-             [ "redhat-5.6", "redhat-5.7", "centos-5.7","ubuntu-10.10" ]
-known_oses.each do |os|
- 
-  append = ""
-  initrd = ""
-  kernel = ""
+known_oses = node[:provisioner][:supported_oses]
+known_oses.each do |os,params|
+  
   web_path = "http://#{admin_ip}:#{web_port}/#{os}"
   admin_web="#{web_path}/install"
   crowbar_repo_web="#{web_path}/crowbar-extra"
   os_dir="#{tftproot}/#{os}"
   role="#{os}_install"
+  replaces={
+    '%os_site%'         => web_path,
+    '%os_install_site%' => admin_web
+  }
+  append = params["append"]
+  initrd = params["initrd"]
+  kernel = params["kernel"]
 
+  # Sigh.  There has to be a more elegant way.
+  replaces.each { |k,v|
+    append.gsub!(k,v)
+  }
   # Don't bother for OSes that are not actaully present on the provisioner node.
   next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
-
-  if node["provisioner"]["deployable_oses"] and \
-     node["provisioner"]["deployable_oses"][os]
-    # If we have a deployable_oses entry for this OS, use it.
-    append = node["provisioner"]["deployable_oses"][os]["append"]
-    initrd = node["provisioner"]["deployable_oses"][os]["initrd"]
-    kernel = node["provisioner"]["deployable_oses"][os]["kernel"]
-    role = node["provisioner"]["deployable_oses"][os]["role"]
-  else
-    # Set some defaults for deployable_oses for this OS.
-    if node[:provisioner][:use_serial_console]
-      append << " console=tty0 console=ttyS1,115200n8 "
-    end
-    if ::File.exists?("/etc/crowbar.install.key")
-      append << "crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip} "
-    end
-    case
-    when /^(redhat|centos)/ =~ os
-      initrd="images/pxeboot/initrd.img"
-      kernel="images/pxeboot/vmlinuz"
-      append << " method=#{admin_web} ks=#{web_path}/compute.ks ksdevice=bootif"
-    when /^ubuntu/ =~ os
-      append << " url=#{web_path}/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
-      initrd = "install/netboot/ubuntu-installer/amd64/initrd.gz"
-      kernel = "install/netboot/ubuntu-installer/amd64/linux"
-    end
+  
+  # If we were asked to use a serial console, arrange for it.
+  if node[:provisioner][:use_serial_console]
+    append << " console=tty0 console=ttyS1,115200n8"
+  end
+  
+  # Make sure we get a crowbar install key as well.
+  if ::File.exists?("/etc/crowbar.install.key")
+    append << " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
   end
 
   # These should really be made libraries or something.
@@ -276,22 +266,13 @@ known_oses.each do |os|
     end
   end
   
-  # Save this OS config if we need to.
-  node[:provisioner][:deployable_oses] ||= Mash.new
-  node[:provisioner][:deployable_oses][os] ||= {
-    :kernel => kernel,
-    :append => append,
-    :initrd => initrd,
-    :role => "#{os}_install"
-  }
-
   # Create the pxe linux config for this OS.
   template "#{pxecfg_dir}/#{role}" do
     mode 0644
     owner "root"
     group "root"
     source "default.erb"
-    variables(:append_line => "append initrd=../#{os}/install/#{initrd} " + append,
+    variables(:append_line => "append initrd=../#{os}/install/#{initrd} #{append}",
               :install_name => os,  
               :kernel => "../#{os}/install/#{kernel}")
   end

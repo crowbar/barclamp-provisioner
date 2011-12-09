@@ -17,21 +17,15 @@
             "default_password_hash": { "type": "str" },
             "web_port": { "type": "int", "required": true },
 	    "root": { "type": "str", "required": true },
-	    "supported_oses": {
-	      "type": "seq",
-	      "required": true,
-              "sequence": [ { "type": "str" } ]
-            },
 	    "default_os": { "type": "str", "required": false },
-	    "deployable_oses": {
+	    "supported_oses": {
 	      "type": "map",
-	      "required": false,
+	      "required": true,
 	      "mapping": {
 	        =: {
 	          "type": "map",
 	          "required": true,
 	          "mapping": {
-	            "role": { "type": "str", "required": true },
 		    "append": { "type": "str", "required": true },
 		    "kernel": { "type": "str", "required": true },
 		    "initrd": { "type": "str", "required": true }
