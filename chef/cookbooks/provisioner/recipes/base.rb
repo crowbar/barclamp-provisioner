@@ -25,6 +25,12 @@ directory "/root/.ssh" do
   action :create
 end
 
+# Make sure we have Bluepill
+case node["state"]
+when "ready","readying"
+  include_recipe "bluepill"
+end
+
 node["crowbar"]["ssh"] = {} if node["crowbar"]["ssh"].nil?
 node["crowbar"]["ssh"]["access_keys"] = {} if node["crowbar"]["ssh"]["access_keys"].nil?
 

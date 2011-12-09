@@ -63,22 +63,40 @@ end
 
 include_recipe "bluepill"
 
+package "nginx"
+
+service "nginx" do
+  action :disable
+end
+
+link "/etc/nginx/sites-enabled/default" do
+  action :delete
+end
+
 # Set up our the webserver for the provisioner.
 file "/var/log/provisioner-webserver.log" do
   owner "nobody"
   action :create
 end
 
-template "/etc/bluepill/provisioner-webserver.pill" do
-  variables(:docroot => "#{tftproot}",
-            :port => web_port,
-            :appname => "provisioner-webserver",
-            :logfile => "/var/log/provisioner-webserver.log")
-  source "provisioner-webserver.pill.erb"
+template "/etc/nginx/provisioner.conf" do
+  source "base-nginx.conf.erb"
+  variables(:docroot => "/tftpboot",
+            :port => 8091,
+            :logfile => "/var/log/provisioner-webserver.log",
+            :pidfile => "/var/run/provisioner-webserver.pid")
 end
 
 bluepill_service "provisioner-webserver" do
-  action [:load, :enable, :start]
+  variables(:processes => [ {
+                              "daemonize" => false,
+                              "pid_file" => "/var/run/provisioner-webserver.pid",
+                              "start_command" => "nginx -c /etc/nginx/provisioner.conf",
+                              "stderr" => "/var/log/provisioner-webserver.log",
+                              "stdout" => "/var/log/provisioner-webserver.log",
+                              "name" => "provisioner-webserver"
+                            } ] )
+  action [:create, :load]
 end
 
 # Set up the TFTP server as well.
