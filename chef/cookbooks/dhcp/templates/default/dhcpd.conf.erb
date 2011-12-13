@@ -18,7 +18,7 @@ next-server <%=@provisioner_ip%>;
 if exists user-class and option user-class = "iPXE" {
    filename "http://<%=@provisioner_ip%>:<%=@provisioner_port%>/boot.ipxe";
 } else {
-  filename "undionly.kpxe";
+  filename "ipxe.kpxe";
 }
 
 

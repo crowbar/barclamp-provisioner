@@ -112,7 +112,7 @@ when "redhat","centos"
   end
 end
 
-cookbook_file "/tftpboot/undionly.kpxe" do
+cookbook_file "/tftpboot/ipxe.kpxe" do
   mode "444"
 end
 cookbook_file "/tftpboot/boot.ipxe" do
