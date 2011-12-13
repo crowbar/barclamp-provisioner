@@ -1,0 +1,2 @@
+#!ipxe
+chain http://192.168.124.10:8091/discovery/pxelinux.cfg/01-${net0/mac:hexhyp} || chain http://192.168.124.10:8091/discovery/pxelinux.cfg/default

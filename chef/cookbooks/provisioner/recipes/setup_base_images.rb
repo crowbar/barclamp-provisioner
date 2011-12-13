@@ -22,7 +22,7 @@ domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:do
 web_port = node[:provisioner][:web_port]
 use_local_security = node[:provisioner][:use_local_security]
 
-append_line = "append initrd=initrd0.img root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+append_line = "append root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
 
 tftproot = node[:provisioner][:root]
 
@@ -43,7 +43,9 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
     group "root"
     source "default.erb"
     variables(:append_line => "#{append_line} crowbar.state=#{state}",
-              :install_name => state,  
+              :install_name => state,
+              :webserver => "http://#{admin_ip}:#{web_port}/discovery",
+              :initrd => "initrd0.img",
               :kernel => "vmlinuz0")
   end
 end
@@ -267,6 +269,19 @@ known_oses.each do |os,params|
   end
   
   # Create the pxe linux config for this OS.
+  template "#{pxecfg_dir}/#{role}" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.erb"
+    variables(:append_line => "#{append}",
+              :install_name => os,
+              :webserver => "http://#{admin_ip}:#{web_port}/#{os}/install",
+              :initrd => initrd,
+              :kernel => kernel)
+  end
+
+
   template "#{pxecfg_dir}/#{role}" do
     mode 0644
     owner "root"

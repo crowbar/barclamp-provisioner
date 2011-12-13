@@ -67,7 +67,7 @@ intfs = [ Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").i
 address = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 
 d_opts = node[:dhcp][:options]
-d_opts << "next-server #{address}"
+
 
 case node[:platform]
 when "ubuntu","debian"
@@ -76,7 +76,9 @@ when "ubuntu","debian"
     group "root"
     mode 0644
     source "dhcpd.conf.erb"
-    variables(:options => d_opts)
+    variables(:options => d_opts,
+              :provisioner_ip => address,
+              :provisioner_port => 8091)
     notifies :restart, "service[dhcp3-server]"
   end
 
@@ -94,7 +96,9 @@ when "redhat","centos"
     group "root"
     mode 0644
     source "dhcpd.conf.erb"
-    variables(:options => d_opts)
+    variables(:options => d_opts,
+              :provisioner_ip => address,
+              :provisioner_port => 8091)
     notifies :restart, "service[dhcp3-server]"
   end
 
@@ -108,3 +112,9 @@ when "redhat","centos"
   end
 end
 
+cookbook_file "/tftpboot/undionly.kpxe" do
+  mode "444"
+end
+cookbook_file "/tftpboot/boot.ipxe" do
+  mode "444"
+end
