@@ -280,17 +280,6 @@ known_oses.each do |os,params|
               :initrd => initrd,
               :kernel => kernel)
   end
-
-
-  template "#{pxecfg_dir}/#{role}" do
-    mode 0644
-    owner "root"
-    group "root"
-    source "default.erb"
-    variables(:append_line => "append initrd=../#{os}/install/#{initrd} #{append}",
-              :install_name => os,  
-              :kernel => "../#{os}/install/#{kernel}")
-  end
   
   # If this is our default, create the appropriate symlink.
   if os == default_os
