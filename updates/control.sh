@@ -154,7 +154,11 @@ case $STATE in
         nuke_everything
         echo "Hardware installing with: $HOSTNAME"
         run_chef $HOSTNAME
-        post_state $HOSTNAME hardware-installed
+	if [ -a /var/log/chef/hw-problem.log ]; then
+	    post_state $HOSTNAME problem
+	else 	 
+	    post_state $HOSTNAME hardware-installed
+	fi
 	nuke_everything
         sleep 30 # Allow settle time
         maybe_reboot;;
