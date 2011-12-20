@@ -58,13 +58,13 @@ end
 
 service "dhcp3-server" do
   case node[:platform]
-  when "Redhat", "CentOS"
+  when "redhat", "centos"
     service_name "dhcpd" 
-  when "Ubuntu"
+  when "ubuntu"
     case node[:lsb][:codename]
-    when "Maverick"
+    when "maverick"
       service_name "dhcp3-server"
-    when "Natty", "Oneiric"
+    when "natty", "oneiric"
       service_name "isc-dhcp-server"
     end
   end
