@@ -57,7 +57,17 @@ EOH
 end
 
 service "dhcp3-server" do
-  service_name "dhcpd" if node[:platform] =~ /^(redhat|centos)$/
+  case node[:platform]
+  when "Redhat", "CentOS"
+    service_name "dhcpd" 
+  when "Ubuntu"
+    case node[:lsb][:codename]
+    when "Maverick"
+      service_name "dhcp3-server"
+    when "Natty", "Oneiric"
+      service_name "isc-dhcp-server"
+    end
+  end
   supports :restart => true, :status => true, :reload => true
   action :enable
 end
