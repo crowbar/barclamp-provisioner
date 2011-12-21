@@ -7,11 +7,20 @@ omapi-port 9991;
 };
 omapi-key omapi_key;
 
+
+
 <% if not @options.empty? -%>
   <% @options.each do |option| -%>
 <%= option %>;
   <% end -%>
 <% end -%>
+next-server <%=@provisioner_ip%>;
+if exists user-class and option user-class = "iPXE" {
+   filename "http://<%=@provisioner_ip%>:<%=@provisioner_port%>/boot.ipxe";
+} else {
+  filename "ipxe.kpxe";
+}
+
 
 # Use this to send dhcp log messages to a different log file (you also
 # have to hack syslog.conf to complete the redirection).

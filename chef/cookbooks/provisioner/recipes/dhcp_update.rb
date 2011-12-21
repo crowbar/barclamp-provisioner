@@ -15,6 +15,5 @@ dhcp_subnet admin_net["subnet"] do
             "option domain-name-servers #{admin_ip}",
             "range #{dhcp_start} #{dhcp_end}",
             "default-lease-time #{lease_time}",
-            "max-lease-time #{lease_time}",
-            "filename \"/discovery/pxelinux.0\"" ]
+            "max-lease-time #{lease_time}" ]
 end

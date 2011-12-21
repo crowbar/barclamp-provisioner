@@ -1,7 +1,4 @@
-DEFAULT <%= @install_name %>
-PROMPT 0
-TIMEOUT 10
-LABEL <%= @install_name %>
-  KERNEL <%= @kernel %>
-  <%= @append_line %>
-  IPAPPEND 2
+#!ipxe
+kernel <%=@webserver%>/<%=@kernel%> <%=@append_line%> BOOTIF=01-${net0/mac:hexhyp}
+initrd <%=@webserver%>/<%=@initrd%>
+boot
