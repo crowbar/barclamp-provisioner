@@ -42,6 +42,12 @@ debs:
   ubuntu-10.10:
     repos: 
       - deb http://ppa.launchpad.net/nginx/stable/ubuntu maverick main
+  ubuntu-11.04:
+    repos: 
+      - deb http://ppa.launchpad.net/nginx/stable/ubuntu natty main
+  ubuntu-11.10:
+    repos: 
+      - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
   pkgs:
     - dhcp3-server
     - nfs-common
