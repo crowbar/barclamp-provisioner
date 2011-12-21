@@ -131,33 +131,42 @@ EOH
 end
 case node[:platform]
 when "ubuntu","debian"
-  directory "#{tftproot}/curl"
-  
-  [ "/usr/bin/curl",
-    "/usr/lib/libcurl.so.4",
-    "/usr/lib/libidn.so.11",
-    "/usr/lib/liblber-2.4.so.2",
-    "/usr/lib/libldap_r-2.4.so.2",
-    "/usr/lib/libgssapi_krb5.so.2",
-    "/usr/lib/libssl.so.0.9.8",
-    "/usr/lib/libcrypto.so.0.9.8",
-    "/usr/lib/libsasl2.so.2",
-    "/usr/lib/libgnutls.so.26",
-    "/usr/lib/libkrb5.so.3",
-    "/usr/lib/libk5crypto.so.3",
-    "/usr/lib/libkrb5support.so.0",
-    "/lib/libkeyutils.so.1",
-    "/usr/lib/libtasn1.so.3",
-    "/lib/librt.so.1",
-    "/lib/libcom_err.so.2",
-    "/lib/libgcrypt.so.11",
-    "/lib/libgpg-error.so.0"
-  ].each { |file|
-    basefile = file.gsub("/usr/bin/", "").gsub("/usr/lib/", "").gsub("/lib/", "")
+  directory "/tftpboot/curl"
+
+  # I am sorry for this
+  case node[:lsb][:codename]
+  when "natty"
+    file_list = [ "/usr/bin/curl", "/usr/lib/libcurl.so.4",
+      "/usr/lib/libidn.so.11", "/usr/lib/liblber-2.4.so.2",
+      "/usr/lib/libldap_r-2.4.so.2", "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2",
+      "/usr/lib/libssl.so.0.9.8", "/usr/lib/libcrypto.so.0.9.8",
+      "/usr/lib/libsasl2.so.2", "/usr/lib/x86_64-linux-gnu/libgnutls.so.26",
+      "/usr/lib/x86_64-linux-gnu/libkrb5.so.3", "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3",
+      "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0", "/lib/x86_64-linux-gnu/libkeyutils.so.1",
+      "/usr/lib/x86_64-linux-gnu/libtasn1.so.3", "/lib/x86_64-linux-gnu/librt.so.1",
+      "lib/x86_64-linux-gnu/libcom_err.so.2", "/lib/x86_64-linux-gnu/libgcrypt.so.11",
+      "/lib/x86_64-linux-gnu/libgpg-error.so.0"
+    ]
+  else
+    file_list = [ "/usr/bin/curl", "/usr/lib/libcurl.so.4",
+      "/usr/lib/libidn.so.11", "/usr/lib/liblber-2.4.so.2",
+      "/usr/lib/libldap_r-2.4.so.2", "/usr/lib/libgssapi_krb5.so.2",
+      "/usr/lib/libssl.so.0.9.8", "/usr/lib/libcrypto.so.0.9.8",
+      "/usr/lib/libsasl2.so.2", "/usr/lib/libgnutls.so.26",
+      "/usr/lib/libkrb5.so.3", "/usr/lib/libk5crypto.so.3",
+      "/usr/lib/libkrb5support.so.0", "/lib/libkeyutils.so.1",
+      "/usr/lib/libtasn1.so.3", "/lib/librt.so.1",
+      "/lib/libcom_err.so.2", "/lib/libgcrypt.so.11",
+      "/lib/libgpg-error.so.0"
+    ]
+  end
+
+  file_list.each { |file|
+    basefile = file.gsub("/usr/bin/", "").gsub("/usr/lib/", "").gsub("/lib/", "").gsub("/lib/x86_64-linux-gnu/", "")
     bash "copy #{file} to curl dir" do
-      code "cp #{file} #{tftproot}/curl"
-      not_if "test -f #{tftproot}/curl/#{basefile}"
-    end  
+      code "cp #{file} /tftpboot/curl"
+      not_if "test -f /tftpboot/curl/#{basefile}"
+    end
   }
 end
 
