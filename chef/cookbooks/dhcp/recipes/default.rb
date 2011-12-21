@@ -57,7 +57,17 @@ EOH
 end
 
 service "dhcp3-server" do
-  service_name "dhcpd" if node[:platform] =~ /^(redhat|centos)$/
+  case node[:platform]
+  when "redhat", "centos"
+    service_name "dhcpd" 
+  when "ubuntu"
+    case node[:lsb][:codename]
+    when "maverick"
+      service_name "dhcp3-server"
+    when "natty", "oneiric"
+      service_name "isc-dhcp-server"
+    end
+  end
   supports :restart => true, :status => true, :reload => true
   action :enable
 end
@@ -71,22 +81,43 @@ d_opts << "next-server #{address}"
 
 case node[:platform]
 when "ubuntu","debian"
-  template "/etc/dhcp3/dhcpd.conf" do
-    owner "root"
-    group "root"
-    mode 0644
-    source "dhcpd.conf.erb"
-    variables(:options => d_opts)
-    notifies :restart, "service[dhcp3-server]"
-  end
+  case node[:lsb][:codename]
+  when "natty"
+    template "/etc/dhcp/dhcpd.conf" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcpd.conf.erb"
+      variables(:options => d_opts)
+      notifies :restart, "service[dhcp3-server]"
+    end
 
-  template "/etc/default/dhcp3-server" do
-    owner "root"
-    group "root"
-    mode 0644
-    source "dhcp3-server.erb"
-    variables(:interfaces => intfs)
-    notifies :restart, "service[dhcp3-server]"
+    template "/etc/default/isc-dhcp-server" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcp3-server.erb"
+      variables(:interfaces => intfs)
+      notifies :restart, "service[dhcp3-server]"
+    end
+  else
+    template "/etc/dhcp3/dhcpd.conf" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcpd.conf.erb"
+      variables(:options => d_opts)
+      notifies :restart, "service[dhcp3-server]"
+    end
+
+    template "/etc/default/dhcp3-server" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcp3-server.erb"
+      variables(:interfaces => intfs)
+      notifies :restart, "service[dhcp3-server]"
+    end
   end
 when "redhat","centos"
   template "/etc/dhcpd.conf" do
