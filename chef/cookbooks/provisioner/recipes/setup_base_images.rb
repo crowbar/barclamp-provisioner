@@ -21,7 +21,7 @@ admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 web_port = node[:provisioner][:web_port]
 use_local_security = node[:provisioner][:use_local_security]
-
+provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = "append root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
 
 tftproot = node[:provisioner][:root]
@@ -44,7 +44,7 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
     source "default.erb"
     variables(:append_line => "#{append_line} crowbar.state=#{state}",
               :install_name => state,
-              :webserver => "http://#{admin_ip}:#{web_port}/discovery",
+              :webserver => "#{provisioner_web}/discovery",
               :initrd => "initrd0.img",
               :kernel => "vmlinuz0")
   end
@@ -184,10 +184,11 @@ end
 known_oses = node[:provisioner][:supported_oses]
 known_oses.each do |os,params|
   
-  web_path = "http://#{admin_ip}:#{web_port}/#{os}"
+  web_path = "#{provisioner_web}/#{os}"
   admin_web="#{web_path}/install"
   crowbar_repo_web="#{web_path}/crowbar-extra"
   os_dir="#{tftproot}/#{os}"
+  os_codename=node[:lsb][:codename]
   role="#{os}_install"
   replaces={
     '%os_site%'         => web_path,
@@ -254,11 +255,16 @@ known_oses.each do |os,params|
                 :install_path => "#{os}/install")
     end
     
-    cookbook_file "#{os_dir}/net-post-install.sh" do
+    template "#{os_dir}/net-post-install.sh" do
       mode 0644
       owner "root"
       group "root"
-      source "net-post-install.sh"
+      variables(:admin_web => admin_web,
+                :os_codename => os_codename,
+                :crowbar_repo_web => crowbar_repo_web,
+                :admin_ip => admin_ip,
+                :provisioner_web => provisioner_web,
+                :web_path => web_path)
     end
     
     cookbook_file "#{os_dir}/net-pre-install.sh" do
@@ -273,7 +279,12 @@ known_oses.each do |os,params|
       owner "root"
       group "root"
       source "crowbar_join.ubuntu.sh.erb"
-      variables(:admin_ip => admin_ip)
+      variables(:admin_web => admin_web,
+                :os_codename => os_codename,
+                :crowbar_repo_web => crowbar_repo_web,
+                :admin_ip => admin_ip,
+                :provisioner_web => provisioner_web,
+                :web_path => web_path)
     end
   end
   
@@ -285,7 +296,7 @@ known_oses.each do |os,params|
     source "default.erb"
     variables(:append_line => "#{append}",
               :install_name => os,
-              :webserver => "http://#{admin_ip}:#{web_port}/#{os}/install",
+              :webserver => "#{admin_web}",
               :initrd => initrd,
               :kernel => kernel)
   end
