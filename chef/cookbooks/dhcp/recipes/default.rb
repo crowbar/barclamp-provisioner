@@ -81,22 +81,43 @@ d_opts << "next-server #{address}"
 
 case node[:platform]
 when "ubuntu","debian"
-  template "/etc/dhcp3/dhcpd.conf" do
-    owner "root"
-    group "root"
-    mode 0644
-    source "dhcpd.conf.erb"
-    variables(:options => d_opts)
-    notifies :restart, "service[dhcp3-server]"
-  end
+  case node[:lsb][:codename]
+  when "natty"
+    template "/etc/dhcp/dhcpd.conf" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcpd.conf.erb"
+      variables(:options => d_opts)
+      notifies :restart, "service[dhcp3-server]"
+    end
 
-  template "/etc/default/dhcp3-server" do
-    owner "root"
-    group "root"
-    mode 0644
-    source "dhcp3-server.erb"
-    variables(:interfaces => intfs)
-    notifies :restart, "service[dhcp3-server]"
+    template "/etc/default/isc-dhcp-server" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcp3-server.erb"
+      variables(:interfaces => intfs)
+      notifies :restart, "service[dhcp3-server]"
+    end
+  else
+    template "/etc/dhcp3/dhcpd.conf" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcpd.conf.erb"
+      variables(:options => d_opts)
+      notifies :restart, "service[dhcp3-server]"
+    end
+
+    template "/etc/default/dhcp3-server" do
+      owner "root"
+      group "root"
+      mode 0644
+      source "dhcp3-server.erb"
+      variables(:interfaces => intfs)
+      notifies :restart, "service[dhcp3-server]"
+    end
   end
 when "redhat","centos"
   template "/etc/dhcpd.conf" do
