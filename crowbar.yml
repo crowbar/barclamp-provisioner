@@ -42,17 +42,22 @@ debs:
   ubuntu-10.10:
     repos: 
       - deb http://ppa.launchpad.net/nginx/stable/ubuntu maverick main
+    pkgs:
+      - portmap
   ubuntu-11.04:
     repos: 
       - deb http://ppa.launchpad.net/nginx/stable/ubuntu natty main
+    pkgs:
+      - portmap
   ubuntu-11.10:
     repos: 
       - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
+    pkgs:
+      - rpcbind
   pkgs:
     - dhcp3-server
     - nfs-common
     - nfs-kernel-server
-    - portmap
     - ipmitool
     - syslinux
     - tftpd-hpa
