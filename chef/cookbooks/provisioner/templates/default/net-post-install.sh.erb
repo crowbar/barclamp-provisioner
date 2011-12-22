@@ -77,6 +77,7 @@ HOSTNAME=$(hostname -f)
 
 post_state $HOSTNAME "installing"
 
+apt-get -y --force-yes remove apparmor
 sleep 30
 
 post_state $HOSTNAME "installed"
