@@ -196,7 +196,7 @@ log_to ifup /sbin/service network restart
 echo "Running Chef Client (pass 2)"
 if ! log_to chef chef-client -l debug; then
     log_to ifup /sbin/service network restart
-    post_state $HOSTNAME "problem"
+    post_state $HOSTNAME "recovering"
     echo "Error Path"
     echo "Syncing Time (pass 3)"
     sync_time
@@ -205,7 +205,6 @@ if ! log_to chef chef-client -l debug; then
     echo "Running Chef Client (pass 3) - cache cleanup"
     if ! log_to chef chef-client -l debug; then 
         log_to ifup /sbin/service network restart
-        post_state $HOSTNAME "problem"
         echo "Error Path"
         echo "Syncing Time (pass 4)"
         sync_time
@@ -214,7 +213,6 @@ if ! log_to chef chef-client -l debug; then
         echo "Checking Keys"
         rm -f /etc/chef/client.pem
         post_state $HOSTNAME "hardware-updated"
-        post_state $HOSTNAME "problem"
         echo "Running Chef Client (pass 4) - password cleanup"
         if ! log_to chef chef-client -l debug; then 
             log_to ifup /sbin/service network restart

@@ -171,7 +171,7 @@ log_to ifup ifup -a
 echo "Running Chef Client (pass 2)"
 if ! log_to chef chef-client ; then
     log_to ifup ifup -a 
-    post_state $HOSTNAME "problem"
+    post_state $HOSTNAME "recovering"
     echo "Error Path"
     echo "Syncing Time (pass 3)"
     sync_time
@@ -182,7 +182,6 @@ if ! log_to chef chef-client ; then
     echo "Running Chef Client (pass 3) - apt/cache cleanup"
     if ! log_to chef chef-client ; then 
         log_to ifup ifup -a 
-        post_state $HOSTNAME "problem"
         echo "Error Path"
         echo "Syncing Time (pass 4)"
         sync_time
@@ -193,7 +192,6 @@ if ! log_to chef chef-client ; then
         echo "Checking Keys"
         rm -f /etc/chef/client.pem
         post_state $HOSTNAME "hardware-updated"
-        post_state $HOSTNAME "problem"
         echo "Running Chef Client (pass 4) - password cleanup"
         if ! log_to chef chef-client ; then 
             log_to ifup ifup -a
