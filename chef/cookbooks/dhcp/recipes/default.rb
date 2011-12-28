@@ -143,9 +143,15 @@ when "redhat","centos"
   end
 end
 
-cookbook_file "/tftpboot/ipxe.kpxe" do
+template "/tftpboot/boot.ipxe" do
+  owner "root"
+  group "root"
   mode "444"
+  source "boot.ipxe.erb"
+  variables(:provisioner_ip => address,
+            :provisioner_port => 8091)
 end
-cookbook_file "/tftpboot/boot.ipxe" do
+
+cookbook_file "/tftpboot/ipxe.kpxe" do
   mode "444"
 end
