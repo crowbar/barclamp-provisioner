@@ -1,0 +1,2 @@
+#!ipxe
+chain http://<%=@provisioner_ip%>:<%=@provisioner_port%>/discovery/pxelinux.cfg/01-${net0/mac:hexhyp} || chain http://<%=@provisioner_ip%>:<%=@provisioner_port%>/discovery/pxelinux.cfg/default
