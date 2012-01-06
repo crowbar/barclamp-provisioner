@@ -142,16 +142,3 @@ when "redhat","centos"
     notifies :restart, "service[dhcp3-server]"
   end
 end
-
-template "/tftpboot/boot.ipxe" do
-  owner "root"
-  group "root"
-  mode "444"
-  source "boot.ipxe.erb"
-  variables(:provisioner_ip => address,
-            :provisioner_port => 8091)
-end
-
-cookbook_file "/tftpboot/ipxe.kpxe" do
-  mode "444"
-end

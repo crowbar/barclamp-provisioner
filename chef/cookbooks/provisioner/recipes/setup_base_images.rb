@@ -35,6 +35,11 @@ end
 
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 
+bash "Install pxelinux.0" do
+  code "cp /usr/lib/syslinux/pxelinux.0 #{tftproot}/discovery"
+  not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
+end
+
 # Generate the appropriate pxe config file for each state
 [ "discovery","update","hwinstall"].each do |state|
   template "#{pxecfg_dir}/#{state}" do
@@ -44,7 +49,6 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
     source "default.erb"
     variables(:append_line => "#{append_line} crowbar.state=#{state}",
               :install_name => state,
-              :webserver => "#{provisioner_web}/discovery",
               :initrd => "initrd0.img",
               :kernel => "vmlinuz0")
   end
@@ -297,8 +301,8 @@ known_oses.each do |os,params|
     variables(:append_line => "#{append}",
               :install_name => os,
               :webserver => "#{admin_web}",
-              :initrd => initrd,
-              :kernel => kernel)
+              :initrd => "../#{os}/install/#{initrd}",
+              :kernel => "../#{os}/install/#{kernel}")
   end
   
   # If this is our default, create the appropriate symlink.
