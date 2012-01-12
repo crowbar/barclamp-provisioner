@@ -20,9 +20,17 @@ when "ubuntu","debian"
 when "centos","redhat"
   package "nfs-utils"
 end
-package "portmap"
 
-service "portmap" do
+rpcService = case
+  when node[:platform] == "redhat" && node[:platform_version].to_f >= 6
+    "rpcbind"
+  else
+    "portmap"
+  end
+
+package rpcService
+
+service rpcService do
   running true
   enabled true
   action [ :enable, :start ]
