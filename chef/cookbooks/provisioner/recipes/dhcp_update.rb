@@ -1,4 +1,5 @@
 
+
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 admin_net = node[:network][:networks]["admin"]
@@ -15,5 +16,5 @@ dhcp_subnet admin_net["subnet"] do
             "option domain-name-servers #{admin_ip}",
             "range #{dhcp_start} #{dhcp_end}",
             "default-lease-time #{lease_time}",
-            "max-lease-time #{lease_time}" ]
+            "max-lease-time #{lease_time}"]
 end

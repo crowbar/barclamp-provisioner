@@ -65,6 +65,10 @@ post_state() {
   curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
 }
 
+# Make sure we never install 32 bit packages.
+echo 'exclude = *.i?86' >> /etc/yum.conf
+yum -q -y erase '*.i?86'
+
 # Spin while we wait for the interface to come up.
 
 echo "Waiting on our network interface to come up..."
