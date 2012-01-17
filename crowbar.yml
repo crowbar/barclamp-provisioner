@@ -64,13 +64,27 @@ debs:
     - nginx-light
 
 rpms:
-  repos:
-    - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
+  redhat-5.6:
+    repos:
+      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
+    pkgs:
+      - portmap
+      - OpenIPMI-tools
+  redhat-5.7:
+    repos:
+      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
+    pkgs:
+      - portmap
+      - OpenIPMI-tools
+  redhat-6.2:
+    repos:
+      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
+    pkgs:
+      - rpcbind
+      - ipmitool
   pkgs:
     - dhcp
     - nfs-utils
-    - portmap
-    - OpenIPMI-tools
     - syslinux
     - tftp-server
     - xinetd
