@@ -98,7 +98,7 @@ rpms:
     - make
     - kernel-devel
     - gcc
-    - glibc-deve
+    - glibc-devel
 
 extra_files:
   - http://curl.haxx.se/download/curl-7.23.1.tar.gz
