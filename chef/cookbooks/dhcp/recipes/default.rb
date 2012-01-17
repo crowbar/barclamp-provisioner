@@ -122,7 +122,15 @@ when "ubuntu","debian"
     end
   end
 when "redhat","centos"
-  template "/etc/dhcpd.conf" do
+
+  dhcp_config_file = case
+    when node[:platform] == "redhat" && node[:platform_version].to_f >= 6
+      "/etc/dhcp/dhcpd.conf"
+    else
+      "/etc/dhcpd.conf"
+    end
+
+  template dhcp_config_file do
     owner "root"
     group "root"
     mode 0644

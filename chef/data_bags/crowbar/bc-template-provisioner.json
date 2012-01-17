@@ -31,6 +31,11 @@
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
 	},
+	"redhat-6.2": {
+     	  "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	},
 	"centos-5.7": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
