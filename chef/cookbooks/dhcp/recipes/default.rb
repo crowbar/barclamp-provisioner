@@ -82,7 +82,7 @@ d_opts = node[:dhcp][:options]
 case node[:platform]
 when "ubuntu","debian"
   case node[:lsb][:codename]
-  when "natty"
+  when "natty","oneiric"
     template "/etc/dhcp/dhcpd.conf" do
       owner "root"
       group "root"

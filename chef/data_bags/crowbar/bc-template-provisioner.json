@@ -9,17 +9,17 @@
         "ubuntu-10.10": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
+	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
 	},
 	"ubuntu-11.04": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "url=%os_site%/net_seed auto=true priority=critical vga=788 debian-installer/locale=en_US.utf8 keyboard-configuration/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
+	   "append": "url=%os_site%/net_seed auto=true priority=critical vga=788 debian-installer/locale=en_US.utf8 keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
 	},
 	"ubuntu-11.10": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us localechooser/translation/warn-light=true localechooser/translation/warn-severe=true netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
+	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=\"redundant\" root=/dev/ram rw quiet --"
 	},
         "redhat-5.6": {
      	  "initrd": "images/pxeboot/initrd.img",
