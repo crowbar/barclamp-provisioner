@@ -85,6 +85,8 @@ rpms:
     pkgs:
       - rpcbind
       - ipmitool
+    build_pkgs:
+      - tar
   pkgs:
     - dhcp
     - nfs-utils
