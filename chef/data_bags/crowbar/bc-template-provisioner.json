@@ -40,6 +40,11 @@
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	},
+        "centos-6.2": {
+     	  "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
 	}
       },
       "root": "/tftpboot",

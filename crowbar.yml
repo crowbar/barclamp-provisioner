@@ -79,7 +79,21 @@ rpms:
     pkgs:
       - portmap
       - OpenIPMI-tools
+  centos-5.7:
+    repos:
+      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
+    pkgs:
+      - portmap
+      - OpenIPMI-tools
   redhat-6.2:
+    repos:
+      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
+    pkgs:
+      - rpcbind
+      - ipmitool
+    build_pkgs:
+      - tar
+  centos-6.2:
     repos:
       - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
     pkgs:
