@@ -15,7 +15,7 @@ http {
      types_hash_max_size 8192;
 
      server {
-     	    listen <%=@port%> default_server;
+     	    listen <%=@port%>;
 	    root <%=@docroot%>;
 	    autoindex on;
      }
