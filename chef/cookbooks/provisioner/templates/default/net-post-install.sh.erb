@@ -27,8 +27,18 @@
 # We are a net install. 
 #
 
-echo "deb <%= @admin_web %> <%= @os_codename %> main restricted" > /target/etc/apt/sources.list
-echo "deb <%= @crowbar_repo_web %> /" >> /target/etc/apt/sources.list
+<% @repos.each do |repo,url| -%>
+<% case repo -%>
+<% when "base" -%>
+echo "deb <%=url%> <%= @os_codename %> main restricted" > \
+    /target/etc/apt/sources.list.d/00-base.list
+<% else -%>
+echo "deb <%=url%> /" >> \
+    /target/etc/apt/sources.list.d/10-barclamp-<%=repo%>.list
+<% end -%>
+<% end -%>
+
+rm -f /target/etc/apt/sources.list
 
 rsyslog_dir="/target/etc/rsyslog.d"
 if [ -d "$rsyslog_dir" ]; then

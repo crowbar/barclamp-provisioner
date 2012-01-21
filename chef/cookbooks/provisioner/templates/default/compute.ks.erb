@@ -64,20 +64,14 @@ exec > /root/post-install.log 2>&1
 set -x 
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 (cd /etc/yum.repos.d && rm *)
-
-cat >/etc/yum.repos.d/os-base.repo <<EOF
-[os-base]
-name=OS Base Repo
-baseurl=<%= @os_repo %>
+<% @repos.each do |repo,url| -%>
+cat >/etc/yum.repos.d/crowbar-<%=repo%>.repo <<EOF
+[crowbar-<%=repo%>]
+name=Crowbar <%=repo%> Repo
+baseurl=<%=url%>
 gpgcheck=0
 EOF
-
-cat >/etc/yum.repos.d/crowbar-xtras.repo <<EOF
-[crowbar-xtras]
-name=Crowbar Extra Packages
-baseurl=<%= @crowbar_repo %>
-gpgcheck=0
-EOF
+<% end %>
 
 HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
 IP="<%= @admin_node_ip %>"

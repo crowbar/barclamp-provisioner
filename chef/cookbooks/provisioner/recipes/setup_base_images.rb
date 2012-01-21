@@ -23,6 +23,7 @@ web_port = node[:provisioner][:web_port]
 use_local_security = node[:provisioner][:use_local_security]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = "append root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+os_token="#{node[:platform]}-#{node[:platform_version]}"
 
 tftproot = node[:provisioner][:root]
 
@@ -151,9 +152,9 @@ unless default_os = node[:provisioner][:default_os]
   node[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
   node.save
 end
-                                
-known_oses = node[:provisioner][:supported_oses]
-known_oses.each do |os,params|
+
+node[:provisioner][:repositories] ||= Mash.new
+node[:provisioner][:supported_oses].each do |os,params|
   
   web_path = "#{provisioner_web}/#{os}"
   admin_web="#{web_path}/install"
@@ -175,7 +176,16 @@ known_oses.each do |os,params|
   }
   # Don't bother for OSes that are not actaully present on the provisioner node.
   next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
-  
+
+  # Index known barclamp repositories for this OS
+  node[:provisioner][:repositories][os_token] ||= Mash.new
+  if File.exists? "#{os_dir}/crowbar-extra" and File.directory? "#{os_dir}/crowbar-extra"
+    Dir.foreach("#{os_dir}/crowbar-extra") do |f|
+      next unless File.symlink? "#{os_dir}/crowbar-extra/#{f}"
+      node[:provisioner][:repositories][os_token][f] = "http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f}"
+    end
+  end
+
   # If we were asked to use a serial console, arrange for it.
   if node[:provisioner][:use_serial_console]
     append << " console=tty0 console=ttyS1,115200n8"
@@ -189,6 +199,8 @@ known_oses.each do |os,params|
   # These should really be made libraries or something.
   case
   when /^(redhat|centos)/ =~ os
+    # Add base OS install repo for redhat/centos
+    node[:provisioner][:repositories][os_token]["base"] = "http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
     # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
       mode 0644
@@ -198,8 +210,7 @@ known_oses.each do |os,params|
       variables(
                 :admin_node_ip => admin_ip,
                 :web_port => web_port,
-                :os_repo => "#{admin_web}/Server",
-                :crowbar_repo => crowbar_repo_web,
+                :repos => node[:provisioner][:repositories][os_token],
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")  
     end
@@ -211,8 +222,10 @@ known_oses.each do |os,params|
       source "crowbar_join.redhat.sh.erb"
       variables(:admin_ip => admin_ip)
     end
+    
 
   when /^ubuntu/ =~ os
+    node[:provisioner][:repositories][os_token]["base"] = "http://#{admin_ip}:#{web_port}/#{os_token}/install"
     # Default files needed for Ubuntu.
     template "#{os_dir}/net_seed" do
       mode 0644
@@ -232,7 +245,7 @@ known_oses.each do |os,params|
       group "root"
       variables(:admin_web => admin_web,
                 :os_codename => os_codename,
-                :crowbar_repo_web => crowbar_repo_web,
+                :repos => node[:provisioner][:repositories][os_token],
                 :admin_ip => admin_ip,
                 :provisioner_web => provisioner_web,
                 :web_path => web_path)
