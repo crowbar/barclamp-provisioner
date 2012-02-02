@@ -33,7 +33,7 @@
 echo "deb <%=url%> <%= @os_codename %> main restricted" > \
     /target/etc/apt/sources.list.d/00-base.list
 <% else -%>
-echo "deb <%=url%> /" >> \
+echo "<%=url%>" >> \
     /target/etc/apt/sources.list.d/10-barclamp-<%=repo%>.list
 <% end -%>
 <% end -%>

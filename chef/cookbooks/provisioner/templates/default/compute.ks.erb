@@ -68,7 +68,7 @@ export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 cat >/etc/yum.repos.d/crowbar-<%=repo%>.repo <<EOF
 [crowbar-<%=repo%>]
 name=Crowbar <%=repo%> Repo
-baseurl=<%=url%>
+<%=url%>
 gpgcheck=0
 EOF
 <% end %>

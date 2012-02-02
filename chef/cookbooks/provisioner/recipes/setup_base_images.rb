@@ -182,7 +182,14 @@ node[:provisioner][:supported_oses].each do |os,params|
   if File.exists? "#{os_dir}/crowbar-extra" and File.directory? "#{os_dir}/crowbar-extra"
     Dir.foreach("#{os_dir}/crowbar-extra") do |f|
       next unless File.symlink? "#{os_dir}/crowbar-extra/#{f}"
-      node[:provisioner][:repositories][os_token][f] = "http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f}"
+      node[:provisioner][:repositories][os_token][f] = case
+        when os_token =~ /ubuntu/
+          "deb http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f} /"
+        when os_token =~ /(redhat|centos)/
+          "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f}"
+        else
+          raise ::RangeError.new("Cannot handle repos for #{os_token}")
+        end
     end
   end
 
@@ -200,7 +207,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   case
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
-    node[:provisioner][:repositories][os_token]["base"] = "http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
+    node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
     # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
       mode 0644
