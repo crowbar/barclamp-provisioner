@@ -106,7 +106,7 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
 	sleep 1
     done
     log_to apt /usr/bin/debconf-set-selections /tmp/debsel.conf
-    while ! log_to apt /usr/bin/apt-get --force-yes -y install chef ; do
+    while ! log_to apt /usr/bin/apt-get --force-yes -y install chef libxml2-dev zlib1g-dev ; do
 	echo "Failed to apt-get install, wait and try again"
 	sleep 1
     done
@@ -123,6 +123,9 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
 - <%=@provisioner_web%>/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
+    gem install xml-simple
+    gem install libxml-ruby
+    gem install bluepill
     gem install bluepill
     mkdir -p /etc/bluepill
     curl -o /etc/bluepill/chef-client.pill <%=@provisioner_web%>/chef-client.pill
