@@ -15,25 +15,8 @@ firewall --disabled
 authconfig --enableshadow --enablemd5
 selinux --disabled
 timezone --utc Europe/London
-bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
-zerombr 
-<% if node[:platform_version].to_f >= 6 -%>
-ignoredisk --only-use=sda
-clearpart --all --drives=sda
-part /boot --fstype ext4 --size=100 --ondisk=sda
-part swap --recommended
-part pv.6 --size=1 --grow --ondisk=sda
-volgroup lv_admin --pesize=32768 pv.6
-logvol / --fstype ext4 --name=lv_root --vgname=lv_admin --size=1 --grow
-<% else -%>
-ignoredisk --drives=sdb,sdc,sdd,sde,sdf,sdg,sdh,sdi,sdj,sdk,sdl,sdm,sdn,sdo,sdp,sdq,sdr,sds,sdt,sdu,sdv,sdw,sdx,sdy,sdz,hdb,hdc,hdd,hde,hdf,hdg,hdh,hdi,hdj,hdk,hdl,hdm,hdn,hdo,hdp,hdq,hdr,hds,hdt,hdu,hdv,hdw,hdx,hdy,hdz
-clearpart --all --drives=sda
-part /boot --fstype ext3 --size=100 --ondisk=sda
-part swap --recommended
-part pv.6 --size=0 --grow --ondisk=sda
-volgroup lv_admin --pesize=32768 pv.6
-logvol / --fstype ext3 --name=lv_root --vgname=lv_admin --size=1 --grow
-<% end -%>
+
+%include /tmp/diskpart
 
 text
 reboot
@@ -57,6 +40,98 @@ emacs-nox
 openssh
 curl.x86_64
 ntp
+
+%pre
+#!/bin/bash
+
+# log the pre-install script.
+set -x -v
+exec 1>/tmp/pre-install.log 2>&1
+
+# once root's homedir is there, copy over the log.
+while : ; do
+    sleep 10
+    if [ -d /mnt/sysimage/root ]; then
+        cp /tmp/pre-install.log /mnt/sysimage/root/
+        break
+    fi
+done &
+
+# all unique disks based on size
+uniq_disks=$(fdisk -l 2>/dev/null | awk '/^Disk/{print $3" "$2}' | sort -nu)
+
+# how many different disk sizes do we have?
+uniq_count=$(echo "${uniq_disks}" | wc -l)
+
+<% if node[:platform_version].to_f >= 6 -%>
+# if there are multiple different sizes let's use the first smallest disk for the OS and boot loader
+if [ "${uniq_count}" -gt 1 ]; then
+
+	smallest_disk=$(echo "${uniq_disks}" | awk '{print $2}' | head -n1 | sed 's/^.*\/\(.*\):$/\1/g')
+
+	cat >/tmp/diskpart <<EOF
+bootloader --location=mbr --driveorder="${smallest_disk}" --append="rhgb quiet"
+zerombr
+ignoredisk --only-use="${smallest_disk}"
+clearpart --all --drives="${smallest_disk}"
+part /boot --fstype ext4 --size=100 --ondisk="${smallest_disk}"
+part swap --recommended
+part pv.6 --size=1 --grow --ondisk="${smallest_disk}"
+volgroup lv_admin --pesize=32768 pv.6
+logvol / --fstype ext4 --name=lv_root --vgname=lv_admin --size=1 --grow
+EOF
+
+# if all the drives are the same size let's default to /dev/sda.
+else 
+
+	cat >/tmp/diskpart <<EOF
+bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
+zerombr
+ignoredisk --only-use=sda
+clearpart --all --drives=sda
+part /boot --fstype ext4 --size=100 --ondisk=sda
+part swap --recommended
+part pv.6 --size=1 --grow --ondisk=sda
+volgroup lv_admin --pesize=32768 pv.6
+logvol / --fstype ext4 --name=lv_root --vgname=lv_admin --size=1 --grow
+EOF
+
+fi
+<% else -%>
+# if there are multiple different sizes let's use the first smallest disk for the OS and boot loader
+if [ "${uniq_count}" -gt 1 ]; then
+
+	smallest_disk=$(echo "${uniq_disks}" | awk '{print $2}' | head -n1 | sed 's/^.*\/\(.*\):$/\1/g')
+
+	cat >/tmp/diskpart <<EOF
+bootloader --location=mbr --driveorder="${smallest_disk}" --append="rhgb quiet"
+zerombr
+ignoredisk --only-use="${smallest_disk}"
+clearpart --all --drives="${smallest_disk}"
+part /boot --fstype ext3 --size=100 --ondisk="${smallest_disk}"
+part swap --recommended
+part pv.6 --size=0 --grow --ondisk="${smallest_disk}"
+volgroup lv_admin --pesize=32768 pv.6
+logvol / --fstype ext3 --name=lv_root --vgname=lv_admin --size=1 --grow
+EOF
+
+# if all the drives are the same size let's default to /dev/sda.
+else 
+
+	cat >/tmp/diskpart <<EOF
+bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
+zerombr
+ignoredisk --drives=sdb,sdc,sdd,sde,sdf,sdg,sdh,sdi,sdj,sdk,sdl,sdm,sdn,sdo,sdp,sdq,sdr,sds,sdt,sdu,sdv,sdw,sdx,sdy,sdz,hdb,hdc,hdd,hde,hdf,hdg,hdh,hdi,hdj,hdk,hdl,hdm,hdn,hdo,hdp,hdq,hdr,hds,hdt,hdu,hdv,hdw,hdx,hdy,hdz
+clearpart --all --drives=sda
+part /boot --fstype ext3 --size=100 --ondisk=sda
+part swap --recommended
+part pv.6 --size=0 --grow --ondisk=sda
+volgroup lv_admin --pesize=32768 pv.6
+logvol / --fstype ext3 --name=lv_root --vgname=lv_admin --size=1 --grow
+EOF
+
+fi
+<% end -%>
 
 %post
 
