@@ -54,6 +54,11 @@ debs:
       - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
     pkgs:
       - rpcbind
+  ubuntu-12.04:
+    repos: 
+      - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
+    pkgs:
+      - rpcbind
   pkgs:
     - dhcp3-server
     - nfs-common
