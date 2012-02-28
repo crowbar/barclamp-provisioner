@@ -16,7 +16,7 @@ authconfig --enableshadow --enablemd5
 selinux --disabled
 timezone --utc Europe/London
 bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
-zerombr 
+zerombr
 <% if node[:platform_version].to_f >= 6 -%>
 ignoredisk --only-use=sda
 clearpart --all --drives=sda
@@ -61,7 +61,7 @@ ntp
 %post
 
 exec > /root/post-install.log 2>&1
-set -x 
+set -x
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 (cd /etc/yum.repos.d && rm *)
 <% @repos.each do |repo,url| -%>
@@ -105,10 +105,10 @@ mkdir -p "$rsyslog_dir"
 echo '$IncludeConfig /etc/rsyslog.d/*.conf' >>/etc/rsyslog.conf
 if [ ! -f "$rsyslog_dir/10-crowbar-client.conf" ]; then
     echo "*.* @@${IP}" > "$rsyslog_dir/10-crowbar-client.conf"
-    if ! curl -s -o "$rsyslog_dir/00-crowbar-debug.conf" \
-	<%= @admin_web %>/rsyslog.d/00-crowbar-debug.conf
+    if ! curl -f -s -o "$rsyslog_dir/00-crowbar-debug.conf" \
+        <%= @admin_web %>/rsyslog.d/00-crowbar-debug.conf
     then
-	rm -f "$rsyslog_dir/00-crowbar-debug.conf"
+        rm -f "$rsyslog_dir/00-crowbar-debug.conf"
     fi
 fi
 
