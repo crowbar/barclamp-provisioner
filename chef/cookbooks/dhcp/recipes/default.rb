@@ -56,22 +56,6 @@ EOH
   not_if "test -f /etc/dhcp3/omapi.key"
 end
 
-service "dhcp3-server" do
-  case node[:platform]
-  when "redhat", "centos"
-    service_name "dhcpd" 
-  when "ubuntu"
-    case node[:lsb][:codename]
-    when "maverick"
-      service_name "dhcp3-server"
-    when "natty", "oneiric", "precise"
-      service_name "isc-dhcp-server"
-    end
-  end
-  supports :restart => true, :status => true, :reload => true
-  action :enable
-end
-
 # This needs to be evaled.
 intfs = [ Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").interface ]
 address = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
@@ -150,3 +134,20 @@ when "redhat","centos"
     notifies :restart, "service[dhcp3-server]"
   end
 end
+
+service "dhcp3-server" do
+  case node[:platform]
+  when "redhat", "centos"
+    service_name "dhcpd" 
+  when "ubuntu"
+    case node[:lsb][:codename]
+    when "maverick"
+      service_name "dhcp3-server"
+    when "natty", "oneiric", "precise"
+      service_name "isc-dhcp-server"
+    end
+  end
+  supports :restart => true, :status => true, :reload => true
+  action :enable
+end
+
