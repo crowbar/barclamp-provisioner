@@ -17,6 +17,20 @@ case node[:platform]
 when "ubuntu","debian"
   package "nfs-common"
   package "nfs-kernel-server"
+
+  case node[:lsb][:codename]
+  when "precise"
+    cookbook_file "/etc/init.d/nfs-kernel-server" do
+      source "nfs-kernel-server.init.d.precise"
+      mode "0755"
+    end
+
+    cookbook_file "/etc/default/nfs-kernel-server" do
+      source "nfs-kernel-server.default.precise"
+      mode "0644"
+    end
+  end
+
 when "centos","redhat"
   package "nfs-utils"
 end
