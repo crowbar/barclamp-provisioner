@@ -23,11 +23,13 @@ when "ubuntu","debian"
     cookbook_file "/etc/init.d/nfs-kernel-server" do
       source "nfs-kernel-server.init.d.precise"
       mode "0755"
+      notifies :restart, "service[nfs-kernel-server]", :delayed
     end
 
     cookbook_file "/etc/default/nfs-kernel-server" do
       source "nfs-kernel-server.default.precise"
       mode "0644"
+      notifies :restart, "service[nfs-kernel-server]", :delayed
     end
   end
 
