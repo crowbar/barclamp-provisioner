@@ -117,6 +117,10 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
     log_to chef update-rc.d chef-client disable
     log_to chef chmod ugo-x /etc/init.d/chef-client
 
+    # Pull in patches
+    curl -o /usr/lib/ruby/1.8/ohai/mixin/command.rb <%=@provisioner_web%>/patches/command.rb
+    curl -o /usr/lib/ruby/vendor_ruby/chef/mixin/command/unix.rb <%=@provisioner_web%>/patches/unix.rb
+
     # Make rubygems do what we want.
     cat >/etc/gemrc <<EOF
 :sources:
