@@ -117,6 +117,14 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
     log_to chef update-rc.d chef-client disable
     log_to chef chmod ugo-x /etc/init.d/chef-client
 
+    mkdir -p /opt/dell/
+    (   cd /opt/dell
+        wget -q "<%=@provisioner_web%>/patches.tar.gz"
+        tar xzvf patches.tar.gz
+        cd patches
+        ./patch.sh
+    )
+
     # Make rubygems do what we want.
     cat >/etc/gemrc <<EOF
 :sources:
