@@ -13,20 +13,17 @@
 # limitations under the License.
 #
 
+rpcService="portmap"
 case node[:platform]
 when "ubuntu","debian"
   package "nfs-common"
   package "nfs-kernel-server"
 when "centos","redhat"
   package "nfs-utils"
-end
-
-rpcService = case
-  when node[:platform] == "redhat" && node[:platform_version].to_f >= 6
-    "rpcbind"
-  else
-    "portmap"
+  if node[:platform_version].to_f >= 6
+    rpcService="rpcbind"
   end
+end
 
 package rpcService
 
@@ -64,4 +61,3 @@ template "/etc/exports" do
             :admin_netmask => node["network"]["networks"]["admin"]["netmask"])
   notifies :run, "execute[nfs-export]", :delayed
 end
-

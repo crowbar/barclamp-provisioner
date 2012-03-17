@@ -19,7 +19,7 @@ case $1 in
     status) bluepill chef-client status ; exit $? ;;
     start|'') : ;;
     *) echo "Unknown action to crowbar_join.sh."
-	exit 1;;
+        exit 1;;
 esac
 
 exec 2>>/var/log/crowbar-join.errlog
@@ -39,17 +39,17 @@ log_to() {
     local __timestamp="$(date '+%F %T %z')"
     shift
     printf "\n%s\n" "$__timestamp: Running $*" | \
-	tee -a "$__log.err" >> "$__log.log"
+        tee -a "$__log.err" >> "$__log.log"
     local _ret=0
     if "$@" 2>> "$__log.err" >>"$__log.log"; then
-	_ret=0
+        _ret=0
     else
-	_ret="$?"
-	echo "$__timestamp: $* failed."
-	echo "See $__log.log and $__log.err for more information."
+        _ret="$?"
+        echo "$__timestamp: $* failed."
+        echo "See $__log.log and $__log.err for more information."
     fi
     printf "\n$s\n--------\n"  "$(date '+%F %T %z'): Done $*" | \
-	tee -a "$__log.err" >> "$__log.log"
+        tee -a "$__log.err" >> "$__log.log"
     return $_ret
 }
 
@@ -78,8 +78,8 @@ sync_time() {
     service ntp stop
     killall ntpd
     while ! /usr/sbin/ntpdate -b <%=@admin_ip%>; do
-	echo "Waiting for NTP server"
-	sleep 1
+        echo "Waiting for NTP server"
+        sleep 1
     done
 }
 
@@ -87,7 +87,7 @@ sync_time() {
 rm -f /update_system2.sh
 rm -f /net-post-install.sh
 
-echo "Synchronizing time (pass 1)" 
+echo "Synchronizing time (pass 1)"
 sync_time
 
 # Mark us as readying, and get our cert.
@@ -102,13 +102,13 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
     echo "chef chef/chef_server_url string http://<%=@admin_ip%>:4000" >/tmp/debsel.conf
 
     while ! log_to apt /usr/bin/apt-get update ; do
-	echo "Failed to apt-get update, wait and try again"
-	sleep 1
+        echo "Failed to apt-get update, wait and try again"
+        sleep 1
     done
     log_to apt /usr/bin/debconf-set-selections /tmp/debsel.conf
     while ! log_to apt /usr/bin/apt-get --force-yes -y install chef libxml2-dev zlib1g-dev ; do
-	echo "Failed to apt-get install, wait and try again"
-	sleep 1
+        echo "Failed to apt-get install, wait and try again"
+        sleep 1
     done
 
     # Disable the chef-client service and make it not executable.
@@ -116,6 +116,14 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
     log_to chef killall chef-client
     log_to chef update-rc.d chef-client disable
     log_to chef chmod ugo-x /etc/init.d/chef-client
+
+    mkdir -p /opt/dell/
+    (   cd /opt/dell
+        wget -q "<%=@provisioner_web%>/patches.tar.gz"
+        tar xzvf patches.tar.gz
+        cd patches
+        ./patch.sh
+    )
 
     # Make rubygems do what we want.
     cat >/etc/gemrc <<EOF
@@ -149,12 +157,12 @@ case \$1 in
              exit 1
             fi;;
     *) echo "\$1: Not supported.";;
-esac   
+esac
 EOF
     chmod 755 /etc/init.d/bluepill
 fi
 
-    
+
 # Run Chef
 echo "Syncing time (pass 2)"
 sync_time
@@ -164,7 +172,7 @@ sync_time
 # the networking barclamp changing the IP address from dhcp to static.
 # We will try to pick up and run with it.
 echo "Running Chef Client  (pass 1)"
-log_to chef chef-client 
+log_to chef chef-client
 
 # Make sure our interfaces are as up as we can get them
 echo "Ensuring that our network interfaces are up."
@@ -173,7 +181,7 @@ log_to ifup ifup -a
 # Only transition to problem state if the second run fails.
 echo "Running Chef Client (pass 2)"
 if ! log_to chef chef-client ; then
-    log_to ifup ifup -a 
+    log_to ifup ifup -a
     post_state $HOSTNAME "recovering"
     echo "Error Path"
     echo "Syncing Time (pass 3)"
@@ -183,8 +191,8 @@ if ! log_to chef chef-client ; then
     echo "Checking Install Integrity"
     log_to apt /usr/bin/apt-get -q --force-yes -y install
     echo "Running Chef Client (pass 3) - apt/cache cleanup"
-    if ! log_to chef chef-client ; then 
-        log_to ifup ifup -a 
+    if ! log_to chef chef-client ; then
+        log_to ifup ifup -a
         echo "Error Path"
         echo "Syncing Time (pass 4)"
         sync_time
@@ -196,7 +204,7 @@ if ! log_to chef chef-client ; then
         rm -f /etc/chef/client.pem
         post_state $HOSTNAME "hardware-updated"
         echo "Running Chef Client (pass 4) - password cleanup"
-        if ! log_to chef chef-client ; then 
+        if ! log_to chef chef-client ; then
             log_to ifup ifup -a
             echo "chef-client run failed four times, giving up."
             echo "Failed"
