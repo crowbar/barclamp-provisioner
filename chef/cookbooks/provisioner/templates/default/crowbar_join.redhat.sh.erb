@@ -128,22 +128,19 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
         echo "Failed to do yum install, wait and try again"
         sleep 1
     done
-
-    # Install ohai patch if needed.
-    di=$(find /usr -path '*/ohai-0.6.6/lib/ohai/plugins/linux' -type d)
-    [[ $di && -d $di ]] && {
-        curl -o "$di/ohai.patch" \
-            "http://$HTTP_SERVER/redhat_dvd/extra/patches/ohai-linux-platform.patch"
-        [[ -f $di/ohai.patch ]] && (
-            cd "$di"
-            patch -p0 <ohai.patch
-        )
-    }
-
     log_to chef service chef-client stop
     log_to chef killall chef-client
     log_to chef chkconfig chef-client off
     chmod 644 /etc/init.d/chef-client
+
+    # Install Chef patches Crowbar needs.
+    mkdir -p /opt/dell/
+    (   cd /opt/dell
+        wget -q "<%=@provisioner_web%>/patches.tar.gz"
+        tar xzvf patches.tar.gz
+        cd patches
+        ./patch.sh
+    )
 
     # Make rubygems do what we want.
     cat >/etc/gemrc <<EOF
