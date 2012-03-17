@@ -103,6 +103,7 @@ rpms:
       - tar
   pkgs:
     - dhcp
+    - dhclient
     - nfs-utils
     - syslinux
     - tftp-server

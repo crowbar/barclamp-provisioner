@@ -221,15 +221,18 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")  
     end
-      
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
       group "root"
       source "crowbar_join.redhat.sh.erb"
-      variables(:admin_ip => admin_ip)
+      variables(:admin_web => admin_web,
+                :os_codename => os_codename,
+                :crowbar_repo_web => crowbar_repo_web,
+                :admin_ip => admin_ip,
+                :provisioner_web => provisioner_web,
+                :web_path => web_path)
     end
-    
 
   when /^ubuntu/ =~ os
     node[:provisioner][:repositories][os_token]["base"] = "http://#{admin_ip}:#{web_port}/#{os_token}/install"
@@ -264,7 +267,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       group "root"
       source "net-pre-install.sh"
     end
-
+    
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"

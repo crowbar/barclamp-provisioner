@@ -59,7 +59,7 @@ end
 service "dhcp3-server" do
   case node[:platform]
   when "redhat", "centos"
-    service_name "dhcpd" 
+    service_name "dhcpd"
   when "ubuntu"
     case node[:lsb][:codename]
     when "maverick"
@@ -124,7 +124,7 @@ when "ubuntu","debian"
 when "redhat","centos"
 
   dhcp_config_file = case
-    when node[:platform] == "redhat" && node[:platform_version].to_f >= 6
+    when node[:platform_version].to_f >= 6
       "/etc/dhcp/dhcpd.conf"
     else
       "/etc/dhcpd.conf"
