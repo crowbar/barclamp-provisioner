@@ -22,9 +22,6 @@ case $1 in
         exit 1;;
 esac
 
-HTTP_SERVER="<%= @admin_ip %>:8091"
-IP=${HTTP_SERVER%:*}
-
 exec 2>>/var/log/crowbar-join.errlog
 
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
@@ -62,7 +59,7 @@ post_state() {
       -H "Accept: application/json" -H "Content-Type: application/json" \
       --max-time 240)
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-  curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
+  curl "${curlargs[@]}" "http://<%=@admin_ip%>:3000/crowbar/crowbar/1.0/transition/default"
 }
 
 # Make sure we never install 32 bit packages.
@@ -84,7 +81,7 @@ sync_time() {
     # stop ntpd before we run ntpdate, and start it again afterwards.
     service ntp stop
     killall ntpd
-    while ! /usr/sbin/ntpdate -b $IP; do
+    while ! /usr/sbin/ntpdate -b <%=@admin_ip%>; do
         echo "Waiting for NTP server"
         sleep 1
     done
@@ -110,12 +107,11 @@ sync_time
 post_state $HOSTNAME "readying"
 final_state="ready"
 mkdir -p /etc/chef
-curl -o /etc/chef/validation.pem \
-    "http://$HTTP_SERVER/validation.pem"
+curl -o /etc/chef/validation.pem "<%=@provisioner_web%>/validation.pem"
 
 if [[ ! -x /etc/init.d/bluepill ]]; then
     # Make sure that the client knows how to talk to the server
-    echo "chef_server_url \"http://$IP:4000\"" >/etc/chef/client.rb
+    echo "chef_server_url \"http://<%=@admin_ip%>:4000\"" >/etc/chef/client.rb
 
     # Install Chef
     echo "Installing Chef..."
@@ -145,14 +141,14 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
     # Make rubygems do what we want.
     cat >/etc/gemrc <<EOF
 :sources:
-- http://$HTTP_SERVER/gemsite/
+- <%=@provisioner_web%>/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
     gem install xml-simple
     gem install libxml-ruby
     gem install bluepill
     mkdir -p /etc/bluepill
-    curl -o /etc/bluepill/chef-client.pill http://$HTTP_SERVER/chef-client.pill
+    curl -o /etc/bluepill/chef-client.pill <%=@provisioner_web%>/chef-client.pill
     # Create an init script for bluepill
     cat > /etc/init.d/bluepill <<EOF
 #!/bin/bash
