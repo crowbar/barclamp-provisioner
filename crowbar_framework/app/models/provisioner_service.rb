@@ -88,6 +88,13 @@ class ProvisionerService < ServiceObject
       end
     end
 
+    if state == "delete"
+      # BA LOCK NOT NEEDED HERE.  NODE IS DELETING
+      node = NodeObject.find_node_by_name(name)
+      node.crowbar["state"] = "delete-final"
+      node.save
+    end
+
     #
     # test state machine and call chef-client if state changes
     #
