@@ -64,7 +64,8 @@
           "update": "update",
           "ready": "execute",
           "reset": "reset",
-          "delete": "delete",
+          "delete": "noop",
+          "delete-final": "delete",
           "reinstall": "os_install"
         }
       }
