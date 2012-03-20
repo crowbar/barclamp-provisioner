@@ -32,11 +32,6 @@ if not nodes.nil? and not nodes.empty?
     system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
     system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
 
-    admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
-
-    # Skip if we don't have admin
-    next if admin_data_net.nil?
-
     mac_list = []
     mnode["network"]["interfaces"].each do |net, net_data|
       net_data.each do |field, field_data|
@@ -49,6 +44,8 @@ if not nodes.nil? and not nodes.empty?
       end
     end
 
+    admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
+
     # Build entries for each mac address.
     count = 0
     mac_list.each do |mac|
@@ -59,11 +56,14 @@ if not nodes.nil? and not nodes.empty?
         end
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
-          ipaddress admin_data_net.address
+          ipaddress "0.0.0.0"
           macaddress mac
           action :remove
         end
       else
+        # Skip if we don't have admin
+        next if admin_data_net.nil?
+
         link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
           to "#{new_group}"
         end
