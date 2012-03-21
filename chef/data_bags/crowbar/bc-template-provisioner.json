@@ -50,7 +50,13 @@
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
-	}
+	},
+        "suse-11.2": {
+         "initrd": "boot/x86_64/loader/initrd",
+         "kernel": "boot/x86_64/loader/linux",
+         "append": "install=%os_install_site% autoyast=%os_site%/autoyast.xml"
+        }
+
       },
       "root": "/tftpboot",
       "web_port": 8091,

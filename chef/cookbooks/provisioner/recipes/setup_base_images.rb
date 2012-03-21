@@ -1,4 +1,5 @@
 # Copyright 2011, Dell
+# Copyright 2012, SUSE Linux Products GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License
@@ -185,7 +186,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       node[:provisioner][:repositories][os_token][f] = case
         when os_token =~ /ubuntu/
           "deb http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f} /"
-        when os_token =~ /(redhat|centos)/
+        when os_token =~ /(redhat|centos|suse)/
           "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f}"
         else
           raise ::RangeError.new("Cannot handle repos for #{os_token}")
@@ -205,6 +206,30 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   # These should really be made libraries or something.
   case
+  when /^(suse)/ =~ os
+    # Add base OS install repo for suse
+    node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install"
+    template "#{os_dir}/autoyast.xml" do
+      mode 0644
+      source "autoyast.xml.erb"
+      owner "root"
+      group "root"
+      variables(
+                :admin_node_ip => admin_ip,
+                :web_port => web_port,
+                :repos => node[:provisioner][:repositories][os_token],
+                :admin_web => admin_web,
+                :crowbar_join => "#{web_path}/crowbar_join.sh")
+    end
+ 
+    template "#{os_dir}/crowbar_join.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "crowbar_join.suse.sh.erb"
+      variables(:admin_ip => admin_ip)
+    end
+
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
