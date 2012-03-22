@@ -106,7 +106,8 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
         sleep 1
     done
     log_to apt /usr/bin/debconf-set-selections /tmp/debsel.conf
-    while ! log_to apt /usr/bin/apt-get --force-yes -y install chef libxml2-dev zlib1g-dev ; do
+    while ! log_to apt /usr/bin/apt-get --force-yes -y install \
+        chef libxml2-dev zlib1g-dev tcpdump; do
         echo "Failed to apt-get install, wait and try again"
         sleep 1
     done
