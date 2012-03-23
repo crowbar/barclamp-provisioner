@@ -39,8 +39,12 @@ cd -
 
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then
-  /updates/full_data.sh
+  cp /updates/full_data.sh /tmp
+  /tmp/full_data.sh
 fi
+
+# Get stuff out of nfs.
+cp /updates/parse_node_data /tmp
 
 # get validation cert
 curl -L -o /etc/chef/validation.pem \
@@ -48,7 +52,7 @@ curl -L -o /etc/chef/validation.pem \
     "http://$ADMIN_IP:8091/validation.pem"
 
 parse_node_data() {
-  for s in $(/updates/parse_node_data -a name -a crowbar.network.bmc.netmask -a crowbar.network.bmc.address -a crowbar.network.bmc.router -a crowbar.allocated $1) ; do
+  for s in $(/tmp/parse_node_data -a name -a crowbar.network.bmc.netmask -a crowbar.network.bmc.address -a crowbar.network.bmc.router -a crowbar.allocated $1) ; do
     VAL=${s#*=}
     case ${s%%=*} in
       name) export HOSTNAME=$VAL;;
