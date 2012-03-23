@@ -116,6 +116,14 @@ run_chef () {
   chef-client -S http://$ADMIN_IP:4000/ -N $1
 }
 
+# periodically copy the install log over.
+while : ; do
+    sleep 2
+    if [ -d /install-logs ]; then
+        cp /tmp/$HOSTNAME-update.log /install-logs/$HOSTNAME-update.log
+    fi
+done &
+
 case $STATE in
     discovery)  
 	echo "Discovering with: $HOSTNAME_MAC"
@@ -176,4 +184,4 @@ case $STATE in
 	fi
         sleep 30 # Allow settle time
         maybe_reboot;;
-esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
+esac 2>&1 | tee -a /tmp/$HOSTNAME-update.log
