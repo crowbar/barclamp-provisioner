@@ -25,6 +25,7 @@ esac
 exec 2>>/var/log/crowbar-join.errlog
 
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
+export DEBIAN_FRONTEND=noninteractive
 set -x
 
 if [[ -f /etc/crowbar.install.key ]]; then
