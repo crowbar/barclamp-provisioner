@@ -39,8 +39,12 @@ cd -
 
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then
-  /updates/full_data.sh
+  cp /updates/full_data.sh /tmp
+  /tmp/full_data.sh
 fi
+
+# Get stuff out of nfs.
+cp /updates/parse_node_data /tmp
 
 # get validation cert
 curl -L -o /etc/chef/validation.pem \
@@ -48,7 +52,7 @@ curl -L -o /etc/chef/validation.pem \
     "http://$ADMIN_IP:8091/validation.pem"
 
 parse_node_data() {
-  for s in $(/updates/parse_node_data -a name -a crowbar.network.bmc.netmask -a crowbar.network.bmc.address -a crowbar.network.bmc.router -a crowbar.allocated $1) ; do
+  for s in $(/tmp/parse_node_data -a name -a crowbar.network.bmc.netmask -a crowbar.network.bmc.address -a crowbar.network.bmc.router -a crowbar.allocated $1) ; do
     VAL=${s#*=}
     case ${s%%=*} in
       name) export HOSTNAME=$VAL;;
@@ -89,15 +93,15 @@ get_state() {
 nuke_everything() {
     # Make sure that the kernel knows about all the partitions
     for bd in /sys/block/sd*; do
-	[[ -b /dev/${bd##*/} ]] || continue
-	partprobe "/dev/${bd##*/}"
+        [[ -b /dev/${bd##*/} ]] || continue
+        partprobe "/dev/${bd##*/}"
     done
     # and then wipe them all out.
     while read maj min blocks name; do
-	[[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
-	[[ $name = loop* ]] && continue
-	[[ $name = dm* ]] && continue
-	if (( blocks >= 2048)); then
+        [[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
+        [[ $name = loop* ]] && continue
+        [[ $name = dm* ]] && continue
+        if (( blocks >= 2048)); then
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048"
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
         else
@@ -114,7 +118,7 @@ run_chef () {
 
 case $STATE in
     discovery)  
-	echo "Discovering with: $HOSTNAME_MAC"
+        echo "Discovering with: $HOSTNAME_MAC"
         post_state $HOSTNAME_MAC discovering
         run_chef $HOSTNAME_MAC
         post_state $HOSTNAME_MAC discovered
@@ -136,16 +140,16 @@ case $STATE in
         post_state $HOSTNAME hardware-installing
         nuke_everything
         run_chef $HOSTNAME
-	if [ -a /var/log/chef/hw-problem.log ]; then
-	  post_state $HOSTNAME problem
-	else 	 
+        if [ -a /var/log/chef/hw-problem.log ]; then
+          post_state $HOSTNAME problem
+        else          
           post_state $HOSTNAME hardware-installed
-	fi
-	nuke_everything
+        fi
+        nuke_everything
         sleep 30 # Allow settle time
         maybe_reboot;;
     hwinstall)  
-	while [ "$NODE_STATE" != "true" ] ; do
+        while [ "$NODE_STATE" != "true" ] ; do
             sleep 15
             get_state
         done
@@ -154,22 +158,22 @@ case $STATE in
         nuke_everything
         echo "Hardware installing with: $HOSTNAME"
         run_chef $HOSTNAME
-	if [ -a /var/log/chef/hw-problem.log ]; then
-	    post_state $HOSTNAME problem
-	else 	 
-	    post_state $HOSTNAME hardware-installed
-	fi
-	nuke_everything
+        if [ -a /var/log/chef/hw-problem.log ]; then
+            post_state $HOSTNAME problem
+        else          
+            post_state $HOSTNAME hardware-installed
+        fi
+        nuke_everything
         sleep 30 # Allow settle time
         maybe_reboot;;
     update)  
-	post_state $HOSTNAME hardware-updating
+        post_state $HOSTNAME hardware-updating
         run_chef $HOSTNAME
-	if [ -a /var/log/chef/hw-problem.log ]; then
-	    post_state $HOSTNAME problem
-	else 	 
+        if [ -a /var/log/chef/hw-problem.log ]; then
+            post_state $HOSTNAME problem
+        else          
             post_state $HOSTNAME hardware-updated
-	fi
+        fi
         sleep 30 # Allow settle time
         maybe_reboot;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
