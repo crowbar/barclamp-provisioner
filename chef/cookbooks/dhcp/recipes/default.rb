@@ -108,7 +108,7 @@ when "ubuntu","debian"
 when "redhat","centos"
 
   dhcp_config_file = case
-    when node[:platform] == "redhat" && node[:platform_version].to_f >= 6
+    when node[:platform_version].to_f >= 6
       "/etc/dhcp/dhcpd.conf"
     else
       "/etc/dhcpd.conf"
