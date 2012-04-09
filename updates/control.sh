@@ -32,6 +32,13 @@ do
   sleep 1
 done
 
+#
+# rely on the DHCP server to do the right thing
+# Stick with this address until we get finished.
+#
+killall dhclient
+killall dhclient3
+
 # HACK fix for chef-client
 cd /root
 gem install --local rest-client
@@ -122,13 +129,6 @@ case $STATE in
         post_state $HOSTNAME_MAC discovering
         run_chef $HOSTNAME_MAC
         post_state $HOSTNAME_MAC discovered
-
-        #
-        # rely on the DHCP server to do the right thing
-        # Stick with this address until we get finished.
-        #
-        killall dhclient
-        killall dhclient3
 
         while [ "$NODE_STATE" != "true" ] ; do
           sleep 15
