@@ -22,6 +22,11 @@ case $1 in
         exit 1;;
 esac
 
+if [[ $TERM != screen ]]; then
+    echo "Running $0 under screen.  Attach with screen -r -S crowbar-join" >&2
+    exec screen -d -m -S crowbar-join "$0"
+fi
+
 exec 2>>/var/log/crowbar-join.errlog
 
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '

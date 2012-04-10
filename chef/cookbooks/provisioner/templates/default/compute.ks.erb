@@ -113,6 +113,8 @@ if [ ! -f "$rsyslog_dir/10-crowbar-client.conf" ]; then
     fi
 fi
 
+yum -y install screen
+
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 if ! curl -s -o /root/.ssh/authorized_keys.wget \
