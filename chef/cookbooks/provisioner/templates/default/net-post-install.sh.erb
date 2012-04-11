@@ -87,7 +87,10 @@ HOSTNAME=$(hostname -f)
 
 post_state $HOSTNAME "installing"
 
+export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true
+export LC_ALL=C LANGUAGE=C LANG=C
 apt-get -y --force-yes remove apparmor
+apt-get -y --force-yes install screen
 sleep 30
 
 post_state $HOSTNAME "installed"
