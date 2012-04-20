@@ -115,9 +115,7 @@ nuke_everything() {
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=$blocks"
         fi
     done < <(tac /proc/partitions)
-} 
-
-maybe_reboot () { [[ $DEBUG != 1 ]] && reboot; }
+}
 
 run_chef () {
   chef-client -S http://$ADMIN_IP:4000/ -N $1
@@ -145,9 +143,7 @@ case $STATE in
         else          
           post_state $HOSTNAME hardware-installed
         fi
-        nuke_everything
-        sleep 30 # Allow settle time
-        maybe_reboot;;
+        nuke_everything;;
     hwinstall)  
         while [ "$NODE_STATE" != "true" ] ; do
             sleep 15
@@ -163,9 +159,7 @@ case $STATE in
         else          
             post_state $HOSTNAME hardware-installed
         fi
-        nuke_everything
-        sleep 30 # Allow settle time
-        maybe_reboot;;
+        nuke_everything;;
     update)  
         post_state $HOSTNAME hardware-updating
         run_chef $HOSTNAME
@@ -173,7 +167,11 @@ case $STATE in
             post_state $HOSTNAME problem
         else          
             post_state $HOSTNAME hardware-updated
-        fi
-        sleep 30 # Allow settle time
-        maybe_reboot;;
+        fi;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
+if [[ $DEBUG != 1 && $DEBUG != true ]]; then
+    sync
+    sleep 30
+    umount /updates /install-logs
+    reboot
+fi
