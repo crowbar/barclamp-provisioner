@@ -25,10 +25,13 @@ directory "/root/.ssh" do
   action :create
 end
 
-# Make sure we have Bluepill
-case node["state"]
-when "ready","readying"
-  include_recipe "bluepill"
+# We don't want to use bluepill on SUSE
+if node["platform"] != "suse"
+  # Make sure we have Bluepill
+  case node["state"]
+  when "ready","readying"
+    include_recipe "bluepill"
+  end
 end
 
 node["crowbar"]["ssh"] = {} if node["crowbar"]["ssh"].nil?
