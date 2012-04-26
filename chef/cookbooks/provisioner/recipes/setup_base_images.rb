@@ -23,7 +23,7 @@ domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:do
 web_port = node[:provisioner][:web_port]
 use_local_security = node[:provisioner][:use_local_security]
 provisioner_web="http://#{admin_ip}:#{web_port}"
-append_line = "append root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+append_line = ''
 os_token="#{node[:platform]}-#{node[:platform_version]}"
 
 tftproot = node[:provisioner][:root]
@@ -31,16 +31,28 @@ tftproot = node[:provisioner][:root]
 if node[:provisioner][:use_serial_console]
   append_line += " console=tty0 console=ttyS1,115200n8"
 end
-if ::File.exists?("/etc/crowbar.install.key")
-  append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
-end
 
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
+pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 
 bash "Install pxelinux.0" do
   code "cp /usr/lib/syslinux/pxelinux.0 #{tftproot}/discovery"
   not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
 end
+
+if File.exists? pxecfg_default
+  append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
+  if append_line
+    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'')
+  else
+    append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+  end
+end
+
+if ::File.exists?("/etc/crowbar.install.key")
+  append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
+end
+
 
 # Generate the appropriate pxe config file for each state
 [ "discovery","update","hwinstall"].each do |state|
@@ -246,15 +258,18 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")  
     end
-      
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
       group "root"
       source "crowbar_join.redhat.sh.erb"
-      variables(:admin_ip => admin_ip)
+      variables(:admin_web => admin_web,
+                :os_codename => os_codename,
+                :crowbar_repo_web => crowbar_repo_web,
+                :admin_ip => admin_ip,
+                :provisioner_web => provisioner_web,
+                :web_path => web_path)
     end
-    
 
   when /^ubuntu/ =~ os
     node[:provisioner][:repositories][os_token]["base"] = "http://#{admin_ip}:#{web_port}/#{os_token}/install"
@@ -289,7 +304,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       group "root"
       source "net-pre-install.sh"
     end
-
+    
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"

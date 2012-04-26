@@ -57,6 +57,7 @@ emacs-nox
 openssh
 curl.x86_64
 ntp
+tcpdump
 
 %post
 
@@ -111,6 +112,8 @@ if [ ! -f "$rsyslog_dir/10-crowbar-client.conf" ]; then
         rm -f "$rsyslog_dir/00-crowbar-debug.conf"
     fi
 fi
+
+yum -y install screen
 
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
