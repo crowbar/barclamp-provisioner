@@ -80,7 +80,7 @@ do
 done
 
 # Get our hostname
-HOSTNAME=$(hostname -f)
+HOSTNAME=$(hostname)
 
 sync_time() {
     # stop ntpd before we run ntpdate, and start it again afterwards.
@@ -147,6 +147,8 @@ gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
     gem install xml-simple
     gem install libxml-ruby
+    gem install wsman
+    gem install cstruct
     gem install bluepill
     mkdir -p /etc/bluepill
     curl -o /etc/bluepill/chef-client.pill <%=@provisioner_web%>/chef-client.pill
