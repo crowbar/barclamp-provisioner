@@ -80,7 +80,7 @@ do
 done
 
 # Get our hostname
-HOSTNAME=$(hostname -f)
+HOSTNAME=$(hostname)
 
 sync_time() {
     # stop ntpd before we run ntpdate, and start it again afterwards.
