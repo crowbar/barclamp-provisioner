@@ -219,7 +219,11 @@ node[:provisioner][:supported_oses].each do |os,params|
   case
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
-    node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
+    if ::File.exists? "/tftpboot/#{os_token}/install/repodata"
+      node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install"
+    else
+      node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
+    end
     # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
       mode 0644
