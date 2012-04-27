@@ -76,7 +76,7 @@ EOF
 
 HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
 IP="<%= @admin_node_ip %>"
-HOSTNAME=$(hostname -f)
+HOSTNAME=$(hostname)
 
 key_re='crowbar\.install\.key=([^ ]+)'
 if [[ $(cat /proc/cmdline) =~ $key_re ]]; then
