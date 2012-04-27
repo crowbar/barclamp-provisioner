@@ -45,7 +45,7 @@ gem install --local rest-client
 cd -
 
 # Other gem dependency installs.
-echo > /etc/gemrc <<EOF
+cat > /etc/gemrc <<EOF
 :sources:
 - http://$ADMIN_IP:8091/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
