@@ -25,7 +25,7 @@ export BMC_NETMASK=""
 export BMC_ROUTER=""
 
 # Make sure date is up-to-date
-while ! /usr/sbin/ntpdate $ADMIN_IP
+until /usr/sbin/ntpdate $ADMIN_IP || [[ $STATE = 'debug' ]]
 do
   echo "Waiting for NTP server"
   sleep 1
