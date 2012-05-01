@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
@@ -20,13 +20,12 @@
 MYINDEX=${MYIP##*.}
 STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 STATE=${STATE#*=}
-DEBUG=`grep dhcp-client-debug /var/lib/dhclient/dhclient*.leases | uniq | cut -d" " -f5 | cut -d";" -f1`
 export BMC_ADDRESS=""
 export BMC_NETMASK=""
 export BMC_ROUTER=""
 
 # Make sure date is up-to-date
-while ! /usr/sbin/ntpdate $ADMIN_IP 
+while ! /usr/sbin/ntpdate $ADMIN_IP
 do
   echo "Waiting for NTP server"
   sleep 1
@@ -133,7 +132,7 @@ run_chef () {
 }
 
 case $STATE in
-    discovery)  
+    discovery)
         echo "Discovering with: $HOSTNAME_MAC"
         post_state $HOSTNAME_MAC discovering
         run_chef $HOSTNAME_MAC
@@ -151,11 +150,11 @@ case $STATE in
         run_chef $HOSTNAME
         if [ -a /var/log/chef/hw-problem.log ]; then
           post_state $HOSTNAME problem
-        else          
+        else
           post_state $HOSTNAME hardware-installed
         fi
         nuke_everything;;
-    hwinstall)  
+    hwinstall)
         while [ "$NODE_STATE" != "true" ] ; do
             sleep 15
             get_state
@@ -167,22 +166,22 @@ case $STATE in
         run_chef $HOSTNAME
         if [ -a /var/log/chef/hw-problem.log ]; then
             post_state $HOSTNAME problem
-        else          
+        else
             post_state $HOSTNAME hardware-installed
         fi
         nuke_everything;;
-    update)  
+    update)
         post_state $HOSTNAME hardware-updating
         run_chef $HOSTNAME
         if [ -a /var/log/chef/hw-problem.log ]; then
             post_state $HOSTNAME problem
-        else          
+        else
             post_state $HOSTNAME hardware-updated
         fi;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
-if [[ $DEBUG != 1 && $DEBUG != true ]]; then
-    sync
-    sleep 30
-    umount /updates /install-logs
-    reboot
-fi
+[[ $STATE = 'debug' ]] && exit
+sync
+sleep 30
+umount /updates /install-logs
+reboot
+

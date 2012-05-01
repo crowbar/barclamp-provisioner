@@ -80,6 +80,29 @@ link "#{pxecfg_dir}/default" do
   to "discovery"
 end
 
+# We have a debugging image available.  Make it available.
+if File.exists? "#{tftproot}/omsahammer/pxelinux.cfg/default"
+  bash "Setup omsahammer image" do
+    code <<EOC
+sed -e 's@(vmlinuz0|initrd0\.image)@../omsahammer/\1@' < \
+    "#{tftproot}/omsahammer/pxelinux.cfg/default" > \
+    "#{tftproot}/discovery/pxelinux.cfg/debug"
+EOC
+    not_if { File.exists? "#{tftproot}/discovery/pxelinux.cfg/debug" }
+  end
+else
+  template "#{pxecfg_dir}/debug" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.erb"
+    variables(:append_line => "#{append_line} crowbar.state=debug",
+              :install_name => "debug",
+              :initrd => "initrd0.img",
+              :kernel => "vmlinuz0")
+  end
+end
+
 include_recipe "bluepill"
 
 package "nginx"
