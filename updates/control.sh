@@ -21,6 +21,7 @@ MYINDEX=${MYIP##*.}
 STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 STATE=${STATE#*=}
 DEBUG=`grep dhcp-client-debug /var/lib/dhclient/dhclient*.leases | uniq | cut -d" " -f5 | cut -d";" -f1`
+MAXTRIES=5
 export BMC_ADDRESS=""
 export BMC_NETMASK=""
 export BMC_ROUTER=""
@@ -70,22 +71,31 @@ curl -L -o /etc/chef/validation.pem \
     "http://$ADMIN_IP:8091/validation.pem"
 
 parse_node_data() {
-  for s in $(/tmp/parse_node_data -a name -a crowbar.network.bmc.netmask -a crowbar.network.bmc.address -a crowbar.network.bmc.router -a crowbar.allocated $1) ; do
-    VAL=${s#*=}
-    case ${s%%=*} in
-      name) export HOSTNAME=$VAL;;
-      crowbar.allocated) export NODE_STATE=$VAL;;
-      crowbar.network.bmc.router) export BMC_ROUTER=$VAL;;
-      crowbar.network.bmc.address) export BMC_ADDRESS=$VAL;;
-      crowbar.network.bmc.netmask) export BMC_NETMASK=$VAL;;
-    esac
-  done
+  node_data=$(/tmp/parse_node_data -a name -a crowbar.network.bmc.netmask -a crowbar.network.bmc.address -a crowbar.network.bmc.router -a crowbar.allocated $1)
+  export ERROR_CODE=$?
 
-  echo BMC_ROUTER=${BMC_ROUTER}
-  echo BMC_ADDRESS=${BMC_ADDRESS}
-  echo BMC_NETMASK=${BMC_NETMASK}
-  echo HOSTNAME=${HOSTNAME}
-  echo NODE_STATE=${NODE_STATE}
+  if [ ${ERROR_CODE} -eq 0 ]
+  then
+    for s in ${node_data} ; do
+      VAL=${s#*=}
+      case ${s%%=*} in
+        name) export HOSTNAME=$VAL;;
+        crowbar.allocated) export NODE_STATE=$VAL;;
+        crowbar.network.bmc.router) export BMC_ROUTER=$VAL;;
+        crowbar.network.bmc.address) export BMC_ADDRESS=$VAL;;
+        crowbar.network.bmc.netmask) export BMC_NETMASK=$VAL;;
+      esac
+    done
+
+    echo BMC_ROUTER=${BMC_ROUTER}
+    echo BMC_ADDRESS=${BMC_ADDRESS}
+    echo BMC_NETMASK=${BMC_NETMASK}
+    echo HOSTNAME=${HOSTNAME}
+    echo NODE_STATE=${NODE_STATE}
+  else
+    echo "Error code: ${ERROR_CODE}"
+    echo ${node_data}
+  fi
 }
 
 
@@ -132,6 +142,35 @@ run_chef () {
   chef-client -S http://$ADMIN_IP:4000/ -N $1
 }
 
+reboot_system () {
+  sync
+  sleep 30
+  umount -l /updates /install-logs
+  reboot
+}
+
+wait_for_state_change () {
+  tries=0
+  while [ "$NODE_STATE" != "true" ] ; do
+    sleep 15
+    tries=$((${tries}+1))
+    get_state
+    if [ ${ERROR_CODE} -ne 0 ]
+    then
+      if [ ${tries} -ge ${MAXTRIES} ]
+      then
+        echo "get_state failed ${tries} times.  Rebooting..."
+        reboot_system
+      else
+        echo "get_state failed ${tries} times.  Retrying..."
+      fi
+    else
+      tries=0
+    fi
+  done
+}
+
+
 case $STATE in
     discovery)  
         echo "Discovering with: $HOSTNAME_MAC"
@@ -139,10 +178,7 @@ case $STATE in
         run_chef $HOSTNAME_MAC
         post_state $HOSTNAME_MAC discovered
 
-        while [ "$NODE_STATE" != "true" ] ; do
-          sleep 15
-          get_state
-        done
+        wait_for_state_change
 
         echo "Hardware installing with: $HOSTNAME"
         rm -f /etc/chef/client.pem
@@ -156,10 +192,7 @@ case $STATE in
         fi
         nuke_everything;;
     hwinstall)  
-        while [ "$NODE_STATE" != "true" ] ; do
-            sleep 15
-            get_state
-        done
+        wait_for_state_change
 
         post_state $HOSTNAME hardware-installing
         nuke_everything
@@ -181,8 +214,5 @@ case $STATE in
         fi;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
 if [[ $DEBUG != 1 && $DEBUG != true ]]; then
-    sync
-    sleep 30
-    umount /updates /install-logs
-    reboot
+    reboot_system
 fi
