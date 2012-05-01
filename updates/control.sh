@@ -145,7 +145,7 @@ run_chef () {
 reboot_system () {
   sync
   sleep 30
-  umount /updates /install-logs
+  umount -l /updates /install-logs
   reboot
 }
 
