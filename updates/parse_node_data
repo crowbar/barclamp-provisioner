@@ -68,19 +68,25 @@ end
 def main()
   opt_parse
   
-  if (ARGV.length == 1)
-    file = File.open(ARGV[0])
-  else
-    file = STDIN
-  end
-  hash = JSON.parse(file.read)
+  begin
+    if (ARGV.length == 1)
+      file = File.open(ARGV[0])
+    else
+      file = STDIN
+    end
+    hash = JSON.parse(file.read)
 
-  @attributes.each do |attr|
-    data = hash
-    fields = attr.split(".") 
-    fields.each { |x| data = data[x] unless data.nil? }
+    @attributes.each do |attr|
+      data = hash
+      fields = attr.split(".") 
+      fields.each { |x| data = data[x] unless data.nil? }
 
-    puts "#{attr}=#{data}"
+      puts "#{attr}=#{data}"
+    end
+  rescue => ex
+    puts "parse_node_data failed: #{ex.message}"
+    ex.backtrace.each { |bt_line| puts "#{bt_line}" }
+    exit -1
   end
 
 end
