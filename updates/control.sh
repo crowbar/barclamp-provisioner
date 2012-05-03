@@ -95,6 +95,8 @@ parse_node_data() {
     echo "Error code: ${ERROR_CODE}"
     echo ${node_data}
   fi
+   echo "Local IP addresses:"
+  ifconfig | awk ' /127.0.0.1/ { next; } /inet addr:/ { print } '
 }
 
 
@@ -163,10 +165,19 @@ wait_for_state_change () {
       else
         echo "get_state failed ${tries} times.  Retrying..."
       fi
-    else
+    else 
       tries=0
     fi
   done
+}
+
+report_state () {
+    if [ -a /var/log/chef/hw-problem.log ]; then
+	cp /var/log/chef/hw-problem.log /install-logs/$HOSTNAME-hw-problem.log 
+        post_state $HOSTNAME problem
+    else
+        post_state $HOSTNAME $1
+    fi
 }
 
 
@@ -184,32 +195,27 @@ case $STATE in
         post_state $HOSTNAME hardware-installing
         nuke_everything
         run_chef $HOSTNAME
+	report_state hardware-installed
         if [ -a /var/log/chef/hw-problem.log ]; then
           post_state $HOSTNAME problem
         else
           post_state $HOSTNAME hardware-installed
         fi
-        nuke_everything;;
+       nuke_everything;;
     hwinstall)  
         wait_for_state_change
         post_state $HOSTNAME hardware-installing
         nuke_everything
         echo "Hardware installing with: $HOSTNAME"
         run_chef $HOSTNAME
-        if [ -a /var/log/chef/hw-problem.log ]; then
-            post_state $HOSTNAME problem
-        else
-            post_state $HOSTNAME hardware-installed
-        fi
-        nuke_everything;;
+	report_state hardware-installed
+        nuke_everything
+	;;
     update)
         post_state $HOSTNAME hardware-updating
         run_chef $HOSTNAME
-        if [ -a /var/log/chef/hw-problem.log ]; then
-            post_state $HOSTNAME problem
-        else
-            post_state $HOSTNAME hardware-updated
-        fi;;
+	report_state hardware-updated
+	;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
 [[ $STATE = 'debug' ]] && exit
 reboot_system
