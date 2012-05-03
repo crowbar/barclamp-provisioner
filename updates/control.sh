@@ -196,12 +196,8 @@ case $STATE in
         nuke_everything
         run_chef $HOSTNAME
 	report_state hardware-installed
-        if [ -a /var/log/chef/hw-problem.log ]; then
-          post_state $HOSTNAME problem
-        else
-          post_state $HOSTNAME hardware-installed
-        fi
-       nuke_everything;;
+	nuke_everything
+	;;
     hwinstall)  
         wait_for_state_change
         post_state $HOSTNAME hardware-installing
