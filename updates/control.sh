@@ -44,6 +44,17 @@ cd /root
 gem install --local rest-client
 cd -
 
+# Other gem dependency installs.
+cat > /etc/gemrc <<EOF
+:sources:
+- http://$ADMIN_IP:8091/gemsite/
+gem: --no-ri --no-rdoc --bindir /usr/local/bin
+EOF
+gem install xml-simple
+gem install libxml-ruby
+gem install wsman
+gem install cstruct
+
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then
   cp /updates/full_data.sh /tmp
