@@ -80,6 +80,29 @@ link "#{pxecfg_dir}/default" do
   to "discovery"
 end
 
+# We have a debugging image available.  Make it available.
+if File.exists? "#{tftproot}/omsahammer/pxelinux.cfg/default"
+  bash "Setup omsahammer image" do
+    code <<EOC
+sed -e 's@(vmlinuz0|initrd0\.image)@../omsahammer/\1@' < \
+    "#{tftproot}/omsahammer/pxelinux.cfg/default" > \
+    "#{tftproot}/discovery/pxelinux.cfg/debug"
+EOC
+    not_if { File.exists? "#{tftproot}/discovery/pxelinux.cfg/debug" }
+  end
+else
+  template "#{pxecfg_dir}/debug" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.erb"
+    variables(:append_line => "#{append_line} crowbar.state=debug",
+              :install_name => "debug",
+              :initrd => "initrd0.img",
+              :kernel => "vmlinuz0")
+  end
+end
+
 include_recipe "bluepill"
 
 package "nginx"
@@ -219,7 +242,11 @@ node[:provisioner][:supported_oses].each do |os,params|
   case
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
-    node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
+    if ::File.exists? "/tftpboot/#{os_token}/install/repodata"
+      node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install"
+    else
+      node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
+    end
     # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
       mode 0644
