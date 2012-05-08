@@ -137,6 +137,9 @@ nuke_everything() {
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=$blocks"
         fi
     done < <(tac /proc/partitions)
+
+    ## for good measure, nuke partition tables on disks (nothing should remain bootable)
+    for i in `ls /dev/sd?`; do  parted -m -s  $i mklabel bsd ; sleep 1 ; done
 }
 
 run_chef () {
