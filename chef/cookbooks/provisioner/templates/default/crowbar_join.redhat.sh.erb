@@ -121,7 +121,7 @@ if [[ ! -x /etc/init.d/bluepill ]]; then
     # Install Chef
     echo "Installing Chef..."
 
-    while ! log_to yum yum -q -y install rubygem-chef patch libxml2-devel zlib-devel ; do
+    while ! log_to yum yum -q -y install rubygem-chef patch libxml2-devel zlib-devel gcc make ruby-devel; do
         echo "Failed to do yum install, wait and try again"
         sleep 1
     done
