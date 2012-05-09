@@ -10,7 +10,7 @@ dhcp_subnet admin_net["subnet"] do
   action :add
   broadcast admin_net["broadcast"]
   netmask admin_net["netmask"]
-  routers (admin_net["router"].nil? ? [] : [ admin_net["router"] ])
+  routers (admin_net["router"].nil? ? [ admin_ip ] : [ admin_net["router"] ])
   options [ "option domain-name \"#{domain_name}\"",
             "option domain-name-servers #{admin_ip}",
             "range #{dhcp_start} #{dhcp_end}",
