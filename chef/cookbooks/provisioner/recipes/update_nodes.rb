@@ -19,7 +19,8 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 nodes = search(:node, "crowbar_usedhcp:true")
 
 if not nodes.nil? and not nodes.empty?
-  nodes.each do |mnode|
+  nodes.each do |thenode|
+    mnode = Node.load(thenode.name) 
     next if mnode[:state].nil?
 
     new_group = nil
