@@ -14,7 +14,7 @@ rootpw <%= node[:provisioner][:default_password] %>
 firewall --disabled
 authconfig --enableshadow --enablemd5
 selinux --disabled
-timezone --utc Europe/London
+timezone --utc UTC
 bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
 zerombr
 <% if node[:platform_version].to_f >= 6 -%>
