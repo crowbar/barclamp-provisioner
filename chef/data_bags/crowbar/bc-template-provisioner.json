@@ -71,7 +71,8 @@
           "reset": "reset",
           "delete": "noop",
           "delete-final": "delete",
-          "reinstall": "os_install"
+          "reinstall": "os_install",
+          "debug": "debug"
         }
       }
     }
