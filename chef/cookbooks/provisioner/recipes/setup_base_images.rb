@@ -36,7 +36,8 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 
 bash "Install pxelinux.0" do
-  code "cp /usr/lib/syslinux/pxelinux.0 #{tftproot}/discovery"
+  libdir = node[:platform] == "suse" ? "share" : "lib"
+  code "cp /usr/#{libdir}/syslinux/pxelinux.0 #{tftproot}/discovery"
   not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
 end
 
@@ -104,43 +105,61 @@ else
   end
 end
 
-include_recipe "bluepill"
+if node[:platform] == "suse"
 
-package "nginx"
+  include_recipe "apache2"
 
-service "nginx" do
-  action :disable
-end
+  template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
+    source "base-apache.conf.erb"
+    mode 0644
+    variables(:docroot => "/srv/tftpboot",
+              :port => 8091,
+              :logfile => "/var/log/apache2/provisioner-access_log",
+              :errorlog => "/var/log/apache2/provisioner-error_log")
+    notifies :reload, resources(:service => "apache2")
+  end
 
-link "/etc/nginx/sites-enabled/default" do
-  action :delete
-end
+else
 
-# Set up our the webserver for the provisioner.
-file "/var/log/provisioner-webserver.log" do
-  owner "nobody"
-  action :create
-end
+  include_recipe "bluepill"
 
-template "/etc/nginx/provisioner.conf" do
-  source "base-nginx.conf.erb"
-  variables(:docroot => "/tftpboot",
-            :port => 8091,
-            :logfile => "/var/log/provisioner-webserver.log",
-            :pidfile => "/var/run/provisioner-webserver.pid")
-end
+  package "nginx"
 
-bluepill_service "provisioner-webserver" do
-  variables(:processes => [ {
-                              "daemonize" => false,
-                              "pid_file" => "/var/run/provisioner-webserver.pid",
-                              "start_command" => "nginx -c /etc/nginx/provisioner.conf",
-                              "stderr" => "/var/log/provisioner-webserver.log",
-                              "stdout" => "/var/log/provisioner-webserver.log",
-                              "name" => "provisioner-webserver"
-                            } ] )
-  action [:create, :load]
-end
+  service "nginx" do
+    action :disable
+  end
+
+  link "/etc/nginx/sites-enabled/default" do
+    action :delete
+  end
+
+  # Set up our the webserver for the provisioner.
+  file "/var/log/provisioner-webserver.log" do
+    owner "nobody"
+    action :create
+  end
+
+  template "/etc/nginx/provisioner.conf" do
+    source "base-nginx.conf.erb"
+    variables(:docroot => "/tftpboot",
+              :port => 8091,
+              :logfile => "/var/log/provisioner-webserver.log",
+              :pidfile => "/var/run/provisioner-webserver.pid")
+  end
+
+  bluepill_service "provisioner-webserver" do
+    variables(:processes => [ {
+                                "daemonize" => false,
+                                "pid_file" => "/var/run/provisioner-webserver.pid",
+                                "start_command" => "nginx -c /etc/nginx/provisioner.conf",
+                                "stderr" => "/var/log/provisioner-webserver.log",
+                                "stdout" => "/var/log/provisioner-webserver.log",
+                                "name" => "provisioner-webserver"
+                              } ] )
+    action [:create, :load]
+  end
+
+end # !suse
 
 # Set up the TFTP server as well.
 case node[:platform]
@@ -152,17 +171,32 @@ when "ubuntu", "debian"
   end
 when "redhat","centos"
   package "tftp-server"
+when "suse"
+  package "tftp"
 end
 
-bluepill_service "tftpd" do
-  variables(:processes => [ {
-                              "daemonize" => true,
-                              "start_command" => "in.tftpd -4 -L -a 0.0.0.0:69 -s #{tftproot}",
-                              "stderr" => "/dev/null",
-                              "stdout" => "/dev/null",
-                              "name" => "tftpd"
-                            } ] )
-  action [:create, :load]
+if node[:platform] == "suse"
+  service "tftp" do
+    # just enable, don't start (xinetd takes care of it)
+    enabled true
+    action [ :enable ]
+  end
+  service "xinetd" do
+    running true
+    enabled true
+    action [ :enable, :start ]
+  end
+else
+  bluepill_service "tftpd" do
+    variables(:processes => [ {
+                                "daemonize" => true,
+                                "start_command" => "in.tftpd -4 -L -a 0.0.0.0:69 -s #{tftproot}",
+                                "stderr" => "/dev/null",
+                                "stdout" => "/dev/null",
+                                "name" => "tftpd"
+                              } ] )
+    action [:create, :load]
+  end
 end
 
 bash "copy validation pem" do
