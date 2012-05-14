@@ -102,11 +102,11 @@ if [[ ! -x /etc/init.d/chef-client ]]; then
 
     while ! log_to zypper zypper -n refresh ; do
 	echo "Failed to do zypper refresh, wait and try again"
-	sleep 1
+	sleep 10
     done
     while ! log_to zypper zypper -n install rubygem-chef ; do
 	echo "Failed to do zypper install, wait and try again"
-	sleep 1
+	sleep 10
     done
 
     log_to chef chkconfig -a chef-client
