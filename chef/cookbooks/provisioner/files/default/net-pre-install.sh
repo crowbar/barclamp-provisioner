@@ -29,7 +29,7 @@
 HTTP_SERVER=$1
 
 IP=`echo $HTTP_SERVER | sed "s/:.*//g"`
-HOSTNAME=$(grep host-name /var/lib/dhcp3/dhclient.leases| \
+HOSTNAME=$(grep host-name /var/lib/dhcp*/dhclient.leases| \
     cut -d'"' -f2 | head -1)
 
 CROWBAR_KEY=$(grep -o 'crowbar.install.key=[^ ]*' /proc/cmdline)
