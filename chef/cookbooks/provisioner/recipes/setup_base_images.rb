@@ -82,53 +82,60 @@ link "#{pxecfg_dir}/default" do
   to "discovery"
 end
 
-include_recipe "bluepill" if node[:platform] != "suse"
-
-package "nginx"
-
-service "nginx" do
-  action :disable
-end
-
-link "/etc/nginx/sites-enabled/default" do
-  action :delete
-end
-
-# Set up our the webserver for the provisioner.
-file "/var/log/provisioner-webserver.log" do
-  owner "nobody"
-  action :create
-end
-
-template "/etc/nginx/provisioner.conf" do
-  source "base-nginx.conf.erb"
-  variables(:docroot => "/tftpboot",
-            :port => 8091,
-            :logfile => "/var/log/provisioner-webserver.log",
-            :pidfile => "/var/run/provisioner-webserver.pid")
-end
-
 if node[:platform] == "suse"
-  bash "Clobber /etc/nginx/nginx.conf" do
-    code "cp /etc/nginx/provisioner.conf /etc/nginx/nginx.conf"
+
+  include_recipe "apache2"
+
+  template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
+    source "base-apache.conf.erb"
+    mode 0644
+    variables(:docroot => "/tftpboot",
+              :port => 8091,
+              :logfile => "/var/log/apache2/provisioner-access_log",
+              :errorlog => "/var/log/apache2/provisioner-error_log")
+    notifies :reload, resources(:service => "apache2")
   end
-  service "nginx" do
-    running true
-    enabled true
-    action [ :enable, :start ]
-  end
+
 else
-bluepill_service "provisioner-webserver" do
-  variables(:processes => [ {
-                              "daemonize" => false,
-                              "pid_file" => "/var/run/provisioner-webserver.pid",
-                              "start_command" => "nginx -c /etc/nginx/provisioner.conf",
-                              "stderr" => "/var/log/provisioner-webserver.log",
-                              "stdout" => "/var/log/provisioner-webserver.log",
-                              "name" => "provisioner-webserver"
-                            } ] )
-  action [:create, :load]
-end
+
+  include_recipe "bluepill"
+
+  package "nginx"
+
+  service "nginx" do
+    action :disable
+  end
+
+  link "/etc/nginx/sites-enabled/default" do
+    action :delete
+  end
+
+  # Set up our the webserver for the provisioner.
+  file "/var/log/provisioner-webserver.log" do
+    owner "nobody"
+    action :create
+  end
+
+  template "/etc/nginx/provisioner.conf" do
+    source "base-nginx.conf.erb"
+    variables(:docroot => "/tftpboot",
+              :port => 8091,
+              :logfile => "/var/log/provisioner-webserver.log",
+              :pidfile => "/var/run/provisioner-webserver.pid")
+  end
+
+  bluepill_service "provisioner-webserver" do
+    variables(:processes => [ {
+                                "daemonize" => false,
+                                "pid_file" => "/var/run/provisioner-webserver.pid",
+                                "start_command" => "nginx -c /etc/nginx/provisioner.conf",
+                                "stderr" => "/var/log/provisioner-webserver.log",
+                                "stdout" => "/var/log/provisioner-webserver.log",
+                                "name" => "provisioner-webserver"
+                              } ] )
+    action [:create, :load]
+  end
+
 end # !suse
 
 # Set up the TFTP server as well.
