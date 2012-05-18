@@ -40,9 +40,12 @@ killall dhclient
 killall dhclient3
 
 # HACK fix for chef-client
-cd /root
-gem install --local rest-client
-cd -
+if [ -e /root/rest-client*gem ]
+then
+  pushd /root
+  gem install --local rest-client
+  popd
+fi
 
 # Other gem dependency installs.
 cat > /etc/gemrc <<EOF
@@ -50,6 +53,7 @@ cat > /etc/gemrc <<EOF
 - http://$ADMIN_IP:8091/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
+gem install rest-client
 gem install xml-simple
 gem install libxml-ruby
 gem install wsman
