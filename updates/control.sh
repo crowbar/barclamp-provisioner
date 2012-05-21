@@ -39,25 +39,29 @@ done
 killall dhclient
 killall dhclient3
 
-# HACK fix for chef-client
-if [ -e /root/rest-client*gem ]
-then
-  pushd /root
-  gem install --local rest-client
-  popd
-fi
 
-# Other gem dependency installs.
-cat > /etc/gemrc <<EOF
+if [ ! -f /etc/SuSE-release ]
+then
+  # HACK fix for chef-client
+  if [ -e /root/rest-client*gem ]
+  then
+    pushd /root
+    gem install --local rest-client
+    popd
+  fi
+
+  # Other gem dependency installs.
+  cat > /etc/gemrc <<EOF
 :sources:
 - http://$ADMIN_IP:8091/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
-gem install rest-client
-gem install xml-simple
-gem install libxml-ruby
-gem install wsman
-gem install cstruct
+  gem install rest-client
+  gem install xml-simple
+  gem install libxml-ruby
+  gem install wsman
+  gem install cstruct
+fi
 
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then
