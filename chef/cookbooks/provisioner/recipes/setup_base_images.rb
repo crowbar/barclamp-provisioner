@@ -170,7 +170,7 @@ bash "copy validation pem" do
   cp /etc/chef/validation.pem #{tftproot}
   chmod 0444 #{tftproot}/validation.pem
 EOH
-  not_if "test -f #{tftproot}/validation.pem"  
+  not_if "test -f #{tftproot}/validation.pem"
 end
 
 # put our statically-linked curl into place
@@ -191,7 +191,7 @@ end
 
 node[:provisioner][:repositories] ||= Mash.new
 node[:provisioner][:supported_oses].each do |os,params|
-  
+
   web_path = "#{provisioner_web}/#{os}"
   admin_web="#{web_path}/install"
   crowbar_repo_web="#{web_path}/crowbar-extra"
@@ -218,11 +218,18 @@ node[:provisioner][:supported_oses].each do |os,params|
   if File.exists? "#{os_dir}/crowbar-extra" and File.directory? "#{os_dir}/crowbar-extra"
     Dir.foreach("#{os_dir}/crowbar-extra") do |f|
       next unless File.symlink? "#{os_dir}/crowbar-extra/#{f}"
-      node[:provisioner][:repositories][os_token][f] = case
-        when os_token =~ /ubuntu/
-          "deb http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f} /"
-        when os_token =~ /(redhat|centos|suse)/
-          "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f}"
+      node[:provisioner][:repositories][os_token][f] ||= Hash.new
+      case
+      when os_token =~ /(ubuntu|debian)/
+        bin="deb http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f} /"
+        src="deb-src http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f} /"
+        node[:provisioner][:repositories][os_token][f][bin] = true if
+          File.exists? "#{os_dir}/crowbar-extra/#{f}/Packages.gz"
+        node[:provisioner][:repositories][os_token][f][src] = true if
+          File.exists? "#{os_dir}/crowbar-extra/#{f}/Sources.gz"
+      when os_token =~ /(redhat|centos|suse)/
+        bin="baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f}"
+        node[:provisioner][:repositories][os_token][f][bin] = true
         else
           raise ::RangeError.new("Cannot handle repos for #{os_token}")
         end
@@ -233,7 +240,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   if node[:provisioner][:use_serial_console]
     append << " console=tty0 console=ttyS1,115200n8"
   end
-  
+
   # Make sure we get a crowbar install key as well.
   if ::File.exists?("/etc/crowbar.install.key")
     append << " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
@@ -243,7 +250,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   case
   when /^(suse)/ =~ os
     # Add base OS install repo for suse
-    node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install"
+    node[:provisioner][:repositories][os_token]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install" => true }
     template "#{os_dir}/autoyast.xml" do
       mode 0644
       source "autoyast.xml.erb"
@@ -256,7 +263,7 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")
     end
- 
+
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
@@ -268,9 +275,9 @@ node[:provisioner][:supported_oses].each do |os,params|
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     if ::File.exists? "/tftpboot/#{os_token}/install/repodata"
-      node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install"
+      node[:provisioner][:repositories][os_token]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install" => true }
     else
-      node[:provisioner][:repositories][os_token]["base"] = "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server"
+      node[:provisioner][:repositories][os_token]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server" => true }
     end
     # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
@@ -283,7 +290,7 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :web_port => web_port,
                 :repos => node[:provisioner][:repositories][os_token],
                 :admin_web => admin_web,
-                :crowbar_join => "#{web_path}/crowbar_join.sh")  
+                :crowbar_join => "#{web_path}/crowbar_join.sh")
     end
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
@@ -299,20 +306,20 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
   when /^ubuntu/ =~ os
-    node[:provisioner][:repositories][os_token]["base"] = "http://#{admin_ip}:#{web_port}/#{os_token}/install"
+    node[:provisioner][:repositories][os_token]["base"] = { "http://#{admin_ip}:#{web_port}/#{os_token}/install" => true }
     # Default files needed for Ubuntu.
     template "#{os_dir}/net_seed" do
       mode 0644
       owner "root"
       group "root"
       source "net_seed.erb"
-      variables(:install_name => os,  
+      variables(:install_name => os,
                 :cc_use_local_security => use_local_security,
                 :cc_install_web_port => web_port,
                 :cc_built_admin_node_ip => admin_ip,
                 :install_path => "#{os}/install")
     end
-    
+
     template "#{os_dir}/net-post-install.sh" do
       mode 0644
       owner "root"
@@ -324,14 +331,14 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :provisioner_web => provisioner_web,
                 :web_path => web_path)
     end
-    
+
     cookbook_file "#{os_dir}/net-pre-install.sh" do
       mode 0644
       owner "root"
       group "root"
       source "net-pre-install.sh"
     end
-    
+
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
@@ -345,7 +352,7 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :web_path => web_path)
     end
   end
-  
+
   # Create the pxe linux config for this OS.
   template "#{pxecfg_dir}/#{role}" do
     mode 0644
@@ -358,7 +365,7 @@ node[:provisioner][:supported_oses].each do |os,params|
               :initrd => "../#{os}/install/#{initrd}",
               :kernel => "../#{os}/install/#{kernel}")
   end
-  
+
   # If this is our default, create the appropriate symlink.
   if os == default_os
     link "#{pxecfg_dir}/os_install" do
