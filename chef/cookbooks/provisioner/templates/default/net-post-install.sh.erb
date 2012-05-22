@@ -27,16 +27,18 @@
 # We are a net install. 
 #
 
-<% @repos.each do |repo,url| -%>
-<% case repo -%>
-<% when "base" -%>
+<% @repos.keys.sort.each do |repo|
+     @repos[repo].keys.sort.each do |url|
+       case repo 
+       when "base" -%>
 echo "deb <%=url%> <%= @os_codename %> main restricted" > \
     /target/etc/apt/sources.list.d/00-base.list
-<% else -%>
+<%     else -%>
 echo "<%=url%>" >> \
     /target/etc/apt/sources.list.d/10-barclamp-<%=repo%>.list
-<% end -%>
-<% end -%>
+<%     end
+     end
+   end -%>
 
 rm -f /target/etc/apt/sources.list
 
