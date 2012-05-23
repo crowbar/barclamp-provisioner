@@ -30,13 +30,6 @@
   <add-on>
     <add_on_products config:type="list">
        <listentry>
-            <media_url>http://<%= @admin_node_ip %>:8091/repos/Chef/</media_url>
-            <product>chef</product>
-            <product_dir>/</product_dir>
-            <ask_on_error config:type="boolean">false</ask_on_error> <!-- available since openSUSE 11.0 -->
-            <name>chef</name> <!-- available since openSUSE 11.1/SLES11 (bnc#433981) -->
-        </listentry>
-       <listentry>
             <media_url>http://<%= @admin_node_ip %>:8091/repos/Ruby/</media_url>
             <product>ruby</product>
             <product_dir>/</product_dir>
