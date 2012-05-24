@@ -56,12 +56,10 @@ EOH
   not_if "test -f /etc/dhcp3/omapi.key"
 end
 
-# This needs to be evaled.
-intfs = [ Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").interface ]
-address = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+intfs = [node.interface.name]
+address = node.address.addr
 
 d_opts = node[:dhcp][:options]
-
 
 case node[:platform]
 when "ubuntu","debian"
