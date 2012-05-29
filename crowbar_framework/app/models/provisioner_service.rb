@@ -114,6 +114,10 @@ class ProvisionerService < ServiceObject
     # test state machine and call chef-client if state changes
     #
     node = NodeObject.find_node_by_name(name)
+    if ! node
+      @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
+      return [404, "Failed to find node"]
+    end
     unless node.admin? or role.default_attributes["provisioner"]["dhcp"]["state_machine"][state].nil? 
       # All non-admin nodes call single_chef_client if the state machine says to.
       @logger.info("Provisioner transition: Run the chef-client locally")
