@@ -142,10 +142,6 @@ nuke_everything() {
     for i in `ls /dev/sd?`; do  parted -m -s  $i mklabel bsd ; sleep 1 ; done
 }
 
-run_chef () {
-  chef-client -S http://$ADMIN_IP:4000/ -N $1
-}
-
 reboot_system () {
   sync
   sleep 30
@@ -176,44 +172,68 @@ wait_for_state_change () {
 
 report_state () {
     if [ -a /var/log/chef/hw-problem.log ]; then
-	cp /var/log/chef/hw-problem.log /install-logs/$HOSTNAME-hw-problem.log 
-        post_state $HOSTNAME problem
+	"cp /var/log/chef/hw-problem.log /install-logs/$1-hw-problem.log"
+        post_state "$1" problem
     else
-        post_state $HOSTNAME $1
+        post_state "$1" "$2"
     fi
+}
+
+walk_node_through () {
+    # $1 = hostname for chef-client run
+    # $@ = states to walk through
+    local name="$1" f=''
+    shift
+    while (( $# > 1)); do
+        post_state "$name" "$1"
+        if [[ -d /updates/$HOSTNAME/$1-pre ]]; then
+            for f in "/updates/$HOSTNAME/$1-pre/"*.hook; do
+                [[ -x $f ]] && "$f"
+            done
+        fi
+        if [[ -d /updates/$1-pre ]]; then
+            for f in "/updates/$1-pre/"*.hook; do
+                [[ -x $f ]] && "$f"
+            done
+        fi
+        chef-client -S http://$ADMIN_IP:4000/ -N "$name"
+        if [[ -d /updates/$1-post ]]; then
+            for f in "/updates/$1-post/"*.hook; do
+                [[ -x $f ]] && "$f"
+            done
+        fi
+        if [[ -d /updates/$HOSTNAME/$1-post ]]; then
+            for f in "/updates/$HOSTNAME/$1-post/"*.hook; do
+                [[ -x $f ]] && "$f"
+            done
+        fi
+        shift
+    done
+    report_state "$name" "$1"
 }
 
 
 case $STATE in
     discovery)
         echo "Discovering with: $HOSTNAME_MAC"
-        post_state $HOSTNAME_MAC discovering
-        run_chef $HOSTNAME_MAC
-        post_state $HOSTNAME_MAC discovered
-
+        walk_node_through $HOSTNAME_MAC discovering discovered
         wait_for_state_change
 
         echo "Hardware installing with: $HOSTNAME"
         rm -f /etc/chef/client.pem
-        post_state $HOSTNAME hardware-installing
         nuke_everything
-        run_chef $HOSTNAME
-	report_state hardware-installed
+        walk_node_through $HOSTNAME hardware-installing hardware-installed
 	nuke_everything
 	;;
     hwinstall)  
         wait_for_state_change
-        post_state $HOSTNAME hardware-installing
-        nuke_everything
         echo "Hardware installing with: $HOSTNAME"
-        run_chef $HOSTNAME
-	report_state hardware-installed
+        nuke_everything
+        walk_node_through $HOSTNAME hardware-installing hardware-installed
         nuke_everything
 	;;
     update)
-        post_state $HOSTNAME hardware-updating
-        run_chef $HOSTNAME
-	report_state hardware-updated
+        walk_node_through $HOSTNAME hardware-updating hardware-updated
 	;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
 [[ $STATE = 'debug' ]] && exit
