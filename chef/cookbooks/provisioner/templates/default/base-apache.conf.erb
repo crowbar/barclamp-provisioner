@@ -27,7 +27,7 @@ NameVirtualHost *:<%=@port%>
     </Directory>
 
     <Directory <%= @docroot %>/>
-        Options Indexes
+        Options Indexes FollowSymLinks
         AllowOverride None
         Order allow,deny
         allow from all
