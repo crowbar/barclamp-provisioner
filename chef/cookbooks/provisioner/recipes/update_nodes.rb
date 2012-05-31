@@ -49,8 +49,6 @@ if not nodes.nil? and not nodes.empty?
       end
     end
 
-    admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
-
     # Build entries for each mac address.
     count = 0
     mac_list.each do |mac|
@@ -74,7 +72,7 @@ if not nodes.nil? and not nodes.empty?
         end
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
-          ipaddress admin_data_net.address
+          ipaddress mnode.address("admin",IP::IP4).addr
           macaddress mac
           action :add
         end
