@@ -65,7 +65,7 @@ if not nodes.nil? and not nodes.empty?
         end
       else
         # Skip if we don't have admin
-        next if admin_data_net.nil?
+        next if mnode.address("admin",IP::IP4).nil?
 
         link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
           to "#{new_group}"
