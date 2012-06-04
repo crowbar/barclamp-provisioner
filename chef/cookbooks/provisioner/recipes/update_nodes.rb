@@ -19,14 +19,19 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 nodes = search(:node, "crowbar_usedhcp:true")
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 if not nodes.nil? and not nodes.empty?
-  nodes.each do |mnode|
-    next if mnode[:state].nil?
+  nodes.map{|n|Node.load(n.name)}.each do |mnode|
+    Chef::Log.info("Testing if #{mnode[:fqdn]} needs a state transition")
+    if mnode[:state].nil?
+      Chef::Log.info("#{mnode[:fqdn]} has no current state!")
+      next
+    end
+    new_group = states[mnode[:state]]
 
-    new_group = nil
-    newstate = states[mnode[:state]]
-    new_group = newstate if !newstate.nil? && newstate != "noop"
-
-    next if new_group.nil?
+    if new_group.nil? || new_group == "noop"
+      Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
+      next
+    end
+    Chef::Log.info("#{mnode[:fqdn]} transitioning to group #{new_group}")
 
     # Delete the node
     system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
