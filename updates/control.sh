@@ -21,9 +21,11 @@ MYINDEX=${MYIP##*.}
 STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 STATE=${STATE#*=}
 MAXTRIES=5
-export BMC_ADDRESS=""
-export BMC_NETMASK=""
-export BMC_ROUTER=""
+BMC_ADDRESS=""
+BMC_NETMASK=""
+BMC_ROUTER=""
+export STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
+export NODE_STATE HOSTNAME CROWBAR_KEY
 
 # Make sure date is up-to-date
 until /usr/sbin/ntpdate $ADMIN_IP || [[ $STATE = 'debug' ]]
@@ -69,55 +71,7 @@ curl -L -o /etc/chef/validation.pem \
     --connect-timeout 60 -s \
     "http://$ADMIN_IP:8091/validation.pem"
 
-parse_node_data() {
-  node_data=$(/tmp/parse_node_data -a name -a crowbar.network.bmc.netmask -a crowbar.network.bmc.address -a crowbar.network.bmc.router -a crowbar.allocated $1)
-  export ERROR_CODE=$?
-
-  if [ ${ERROR_CODE} -eq 0 ]
-  then
-    for s in ${node_data} ; do
-      VAL=${s#*=}
-      case ${s%%=*} in
-        name) export HOSTNAME=$VAL;;
-        crowbar.allocated) export NODE_STATE=$VAL;;
-        crowbar.network.bmc.router) export BMC_ROUTER=$VAL;;
-        crowbar.network.bmc.address) export BMC_ADDRESS=$VAL;;
-        crowbar.network.bmc.netmask) export BMC_NETMASK=$VAL;;
-      esac
-    done
-
-    echo BMC_ROUTER=${BMC_ROUTER}
-    echo BMC_ADDRESS=${BMC_ADDRESS}
-    echo BMC_NETMASK=${BMC_NETMASK}
-    echo HOSTNAME=${HOSTNAME}
-    echo NODE_STATE=${NODE_STATE}
-  else
-    echo "Error code: ${ERROR_CODE}"
-    echo ${node_data}
-  fi
-   echo "Local IP addresses:"
-  ifconfig | awk ' /127.0.0.1/ { next; } /inet addr:/ { print } '
-}
-
-
-post_state() {
-  local curlargs=(-o "/tmp/node_data.$$" --connect-timeout 60 -s \
-      -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
-      -H "Accept: application/json" -H "Content-Type: application/json")
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
-  parse_node_data /tmp/node_data.$$
-  rm /tmp/node_data.$$
-}
-
-get_state() {
-    local curlargs=(-o "/tmp/node_data.$$" --connect-timeout 60 -s \
-      -L -H "Accept: application/json" -H "Content-Type: application/json")
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest)
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/show?name=$HOSTNAME"
-  parse_node_data /tmp/node_data.$$
-  rm /tmp/node_data.$$
-}
+. "/updates/control_lib.sh"
 
 nuke_everything() {
     # Make sure that the kernel knows about all the partitions
@@ -142,99 +96,78 @@ nuke_everything() {
     for i in `ls /dev/sd?`; do  parted -m -s  $i mklabel bsd ; sleep 1 ; done
 }
 
-reboot_system () {
-  sync
-  sleep 30
-  umount -l /updates /install-logs
-  reboot
-}
-
-wait_for_state_change () {
-  tries=0
-  while [ "$NODE_STATE" != "true" ] ; do
-    sleep 15
-    tries=$((${tries}+1))
-    get_state
-    if [ ${ERROR_CODE} -ne 0 ]
-    then
-      if [ ${tries} -ge ${MAXTRIES} ]
-      then
-        echo "get_state failed ${tries} times.  Rebooting..."
-        reboot_system
-      else
-        echo "get_state failed ${tries} times.  Retrying..."
-      fi
-    else 
-      tries=0
-    fi
-  done
-}
-
-report_state () {
-    if [ -a /var/log/chef/hw-problem.log ]; then
-	"cp /var/log/chef/hw-problem.log /install-logs/$1-hw-problem.log"
-        post_state "$1" problem
-    else
-        post_state "$1" "$2"
-    fi
+# If there are pre/post transition hooks for this state (per system or not),
+# handle them.
+run_hooks() {
+    # $1 = hostname
+    # $2 = state
+    # $3 = pre or post
+    local hookdirs=() hookdir='' hook=''
+    # We only handle pre and post hooks.  Anything else is a bug in
+    # control.sh that we should debug.
+    case $3 in
+        pre) hookdirs=("/updates/$1/$2-$3" "/updates/$2-$3");;
+        post) hookdirs=("/updates/$2-$3" "/updates/$1/$2-$3");;
+        *) post_state "$1" debug; reboot_system;;
+    esac
+    for hookdir in "${hookdirs[@]}"; do
+        [[ -d $hookdir ]] || continue
+        for hook in "$hookdir/"*.hook; do
+            [[ -x $hook ]] || continue
+            # If a hook fails, then Something Weird happened, and it
+            # needs to be debugged.
+            "$hook" && continue
+            post_state "$1" debug
+            reboot_system
+        done
+    done
 }
 
 walk_node_through () {
     # $1 = hostname for chef-client run
     # $@ = states to walk through
-    local name="$1" f=''
+    local name="$1" f='' state=''
     shift
     while (( $# > 1)); do
+        state="$1"
         post_state "$name" "$1"
-        if [[ -d /updates/$HOSTNAME/$1-pre ]]; then
-            for f in "/updates/$HOSTNAME/$1-pre/"*.hook; do
-                [[ -x $f ]] && "$f"
-            done
-        fi
-        if [[ -d /updates/$1-pre ]]; then
-            for f in "/updates/$1-pre/"*.hook; do
-                [[ -x $f ]] && "$f"
-            done
-        fi
+        run_hooks "$HOSTNAME" "$1" pre
         chef-client -S http://$ADMIN_IP:4000/ -N "$name"
-        if [[ -d /updates/$1-post ]]; then
-            for f in "/updates/$1-post/"*.hook; do
-                [[ -x $f ]] && "$f"
-            done
-        fi
-        if [[ -d /updates/$HOSTNAME/$1-post ]]; then
-            for f in "/updates/$HOSTNAME/$1-post/"*.hook; do
-                [[ -x $f ]] && "$f"
-            done
-        fi
+        run_hooks "$HOSTNAME" "$1" post
         shift
     done
+    state="$1"
+    run_hooks "$HOSTNAME" "$1" pre
     report_state "$name" "$1"
+    run_hooks "$HOSTNAME" "$1" post
 }
 
+# If there is a custom control.sh for this system, source it.
+[[ -x /updates/$HOSTNAME/control.sh ]] && \
+    . "/updates/$HOSTNAME/control.sh"
+
+discover() {
+    echo "Discovering with: $HOSTNAME_MAC"
+    walk_node_through $HOSTNAME_MAC discovering discovered
+    wait_for_state_change "$HOSTNAME"
+}
+
+hardware_install () {
+    echo "Hardware installing with: $HOSTNAME"
+    rm -f /etc/chef/client.pem
+    nuke_everything
+    walk_node_through $HOSTNAME hardware-installing hardware-installed
+    nuke_everything
+}
+
+hwupdate () {
+    walk_node_through $HOSTNAME hardware-updating hardware-updated
+}
 
 case $STATE in
-    discovery)
-        echo "Discovering with: $HOSTNAME_MAC"
-        walk_node_through $HOSTNAME_MAC discovering discovered
-        wait_for_state_change
-
-        echo "Hardware installing with: $HOSTNAME"
-        rm -f /etc/chef/client.pem
-        nuke_everything
-        walk_node_through $HOSTNAME hardware-installing hardware-installed
-	nuke_everything
-	;;
-    hwinstall)  
-        wait_for_state_change
-        echo "Hardware installing with: $HOSTNAME"
-        nuke_everything
-        walk_node_through $HOSTNAME hardware-installing hardware-installed
-        nuke_everything
-	;;
-    update)
-        walk_node_through $HOSTNAME hardware-updating hardware-updated
-	;;
+    discovery) discover && hardware_install;;
+    hwinstall) hardware_install;;
+    update) hwupdate;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
 [[ $STATE = 'debug' ]] && exit
 reboot_system
