@@ -63,7 +63,7 @@ if File.exists? pxecfg_default
   append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
   if append_line
     append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|console=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'').strip
-  else
+  elsif node[:platform] != "suse"
     append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
   end
 end
