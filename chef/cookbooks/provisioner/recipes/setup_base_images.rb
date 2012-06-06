@@ -28,10 +28,6 @@ os_token="#{node[:platform]}-#{node[:platform_version]}"
 
 tftproot = node[:provisioner][:root]
 
-if node[:provisioner][:use_serial_console]
-  append_line += " console=tty0 console=ttyS1,115200n8"
-end
-
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 
@@ -54,6 +50,9 @@ if ::File.exists?("/etc/crowbar.install.key")
   append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
 
+if node[:provisioner][:use_serial_console]
+  append_line += " console=tty0 console=ttyS1,115200n8"
+end
 
 # Generate the appropriate pxe config file for each state
 [ "discovery","update","hwinstall"].each do |state|
