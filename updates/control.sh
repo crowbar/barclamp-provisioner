@@ -32,11 +32,20 @@ export BMC_NETMASK=""
 export BMC_ROUTER=""
 
 # Make sure date is up-to-date
-while ! /usr/sbin/ntpdate $ADMIN_IP 
-do
-  echo "Waiting for NTP server"
-  sleep 1
-done
+if [ ! -f /etc/SuSE-release ]
+then
+  while ! /usr/sbin/ntpdate $ADMIN_IP
+  do
+    echo "Waiting for NTP server"
+    sleep 1
+  done
+else
+  while ! sntp -P no -r $ADMIN_IP
+  do
+    echo "Waiting for NTP server"
+    sleep 1
+  done
+fi
 
 #
 # rely on the DHCP server to do the right thing
