@@ -31,7 +31,9 @@ export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
 # Make sure date is up-to-date
-until /usr/sbin/ntpdate $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
+NTPDATE=/usr/sbin/ntpdate
+[ -f /etc/SuSE-release ] && NTPDATE="sntp -P no -r"
+until $NTPDATE $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
 do
   echo "Waiting for NTP server"
   sleep 1
