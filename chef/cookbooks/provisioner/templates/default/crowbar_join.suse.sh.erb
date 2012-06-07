@@ -15,6 +15,12 @@
 # limitations under the License.
 #
 
+# This is required if the autoyast.xml had any <media_url> elements
+# containing credentials; if so, they get cached in
+# /root/.zypp/credentials.cat and so subsequent zypper runs need HOME
+# set in order to reuse them.
+export HOME=/root
+
 HTTP_SERVER="<%= @admin_ip %>:8091"
 IP=${HTTP_SERVER%:*}
 
