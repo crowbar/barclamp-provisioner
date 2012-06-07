@@ -17,10 +17,16 @@
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
+DHCPDIR=/var/lib/dhclient
+
+[ -e /etc/SuSE-release ] && {
+ DHCPDIR=/var/lib/dhcp
+}
+
 MYINDEX=${MYIP##*.}
 STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 STATE=${STATE#*=}
-DEBUG=`grep dhcp-client-debug /var/lib/dhclient/dhclient*.leases | uniq | cut -d" " -f5 | cut -d";" -f1`
+DEBUG=`grep dhcp-client-debug $DHCPDIR/dhclient*.leases | uniq | cut -d" " -f5 | cut -d";" -f1`
 export BMC_ADDRESS=""
 export BMC_NETMASK=""
 export BMC_ROUTER=""
