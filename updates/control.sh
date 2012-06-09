@@ -17,18 +17,21 @@
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
+set -x
+
 MYINDEX=${MYIP##*.}
-STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
-STATE=${STATE#*=}
+DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
+DHCP_STATE=${DHCP_STATE#*=}
 MAXTRIES=5
 BMC_ADDRESS=""
 BMC_NETMASK=""
 BMC_ROUTER=""
-export STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
-export NODE_STATE HOSTNAME CROWBAR_KEY
+ALLOCATED=false
+export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
+export ALLOCATED HOSTNAME CROWBAR_KEY
 
 # Make sure date is up-to-date
-until /usr/sbin/ntpdate $ADMIN_IP || [[ $STATE = 'debug' ]]
+until /usr/sbin/ntpdate $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
 do
   echo "Waiting for NTP server"
   sleep 1
@@ -149,7 +152,7 @@ walk_node_through () {
 discover() {
     echo "Discovering with: $HOSTNAME_MAC"
     walk_node_through $HOSTNAME_MAC discovering discovered
-    wait_for_state_change "$HOSTNAME"
+    wait_for_allocated "$HOSTNAME"
 }
 
 hardware_install () {
@@ -164,10 +167,10 @@ hwupdate () {
     walk_node_through $HOSTNAME hardware-updating hardware-updated
 }
 
-case $STATE in
+case $DHCP_STATE in
     discovery) discover && hardware_install;;
     hwinstall) hardware_install;;
     update) hwupdate;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
-[[ $STATE = 'debug' ]] && exit
+[[ $DHCP_STATE = 'debug' ]] && exit
 reboot_system

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+[[ $MAXTRIES ]] || export MAXTRIES=5
+
 # Code library for control.sh and the state transition hooks.
 parse_node_data() {
     local res=0
@@ -13,7 +15,7 @@ parse_node_data() {
             VAL=${s#*=}
             case ${s%%=*} in
                 name) export HOSTNAME=$VAL;;
-                crowbar.allocated) export NODE_STATE=$VAL;;
+                crowbar.allocated) export ALLOCATED=$VAL;;
                 crowbar.network.bmc.router) export BMC_ROUTER=$VAL;;
                 crowbar.network.bmc.address) export BMC_ADDRESS=$VAL;;
                 crowbar.network.bmc.netmask) export BMC_NETMASK=$VAL;;
@@ -23,7 +25,7 @@ parse_node_data() {
         echo "BMC_ADDRESS=${BMC_ADDRESS}"
         echo "BMC_NETMASK=${BMC_NETMASK}"
         echo "HOSTNAME=${HOSTNAME}"
-        echo "NODE_STATE=${NODE_STATE}"
+        echo "ALLOCATED=${ALLOCATED}"
     else
         res=$?
         echo "Error code: $res"
@@ -34,8 +36,24 @@ parse_node_data() {
     return $res
 }
 
+try_to() {
+    # $1 = max times to try a command.
+    # $2 = times to wait in between tries
+    # $@ function and args to try
+    local tries=1 maxtries="$1" sleeptime="$2"
+    shift 2
+    until "$@"; do
+        ((tries >= maxtries)) && {
+            echo "$* failed ${tries} times.  Rebooting..."
+            reboot_system
+        }
+        echo "$* failed ${tries} times.  Retrying..."
+        sleep "$sleeptime"
+        tries=$((${tries}+1))
+    done
+}
 
-post_state() {
+__post_state() {
   local curlargs=(--connect-timeout 60 -s -L -X POST \
       --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
       -H "Accept: application/json" -H "Content-Type: application/json")
@@ -44,7 +62,7 @@ post_state() {
       "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default")
 }
 
-get_state() {
+__get_state() {
     # $1 = hostname
     local curlargs=(--connect-timeout 60 -s -L -H "Accept: application/json" \
         -H "Content-Type: application/json")
@@ -53,6 +71,8 @@ get_state() {
       "http://$ADMIN_IP:3000/crowbar/machines/1.0/show?name=$1")
 }
 
+post_state() { try_to "$MAXTRIES" 15 __post_state "$@"; }
+get_state() { try_to "$MAXTRIES" 15 __get_state "$@"; }
 
 reboot_system () {
   sync
@@ -61,17 +81,12 @@ reboot_system () {
   reboot
 }
 
-wait_for_state_change () {
+wait_for_allocated () {
     # $1 = hostname
-    local tries=1
-    until get_state "$1"; do
-        ((tries >= MAXTRIES)) && {
-            echo "get_state failed ${tries} times.  Rebooting..."
-            reboot_system
-        }
-        echo "get_state failed ${tries} times.  Retrying..."
+    while [[ $ALLOCATED = false ]]; do
+        get_state "$1"
+        [[ $ALLOCATED = true ]] && return
         sleep 15
-        tries=$((${tries}+1))
     done
 }
 
