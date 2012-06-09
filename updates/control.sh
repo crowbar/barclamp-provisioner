@@ -119,9 +119,13 @@ run_hooks() {
             [[ -x $hook ]] || continue
             # If a hook fails, then Something Weird happened, and it
             # needs to be debugged.
-            "$hook" && continue
-            post_state "$1" debug
-            reboot_system
+            if "$hook"; then
+                get_state "$1"
+                continue
+            else
+                post_state "$1" debug
+                reboot_system
+            fi
         done
     done
 }
