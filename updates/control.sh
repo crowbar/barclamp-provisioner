@@ -119,7 +119,9 @@ run_hooks() {
             [[ -x $hook ]] || continue
             # If a hook fails, then Something Weird happened, and it
             # needs to be debugged.
+            export HOOKSTATE="$2-$3" HOOKNAME="${hook##*/}"
             if "$hook"; then
+                unset HOOKSTATE HOOKNAME
                 get_state "$1"
                 continue
             else
