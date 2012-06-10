@@ -93,6 +93,16 @@ wait_for_allocated() {
     done
 }
 
+hook_has_run() {
+    local statefile="/install-logs/$HOSTNAME-$HOOKNAME-$HOOKSTATE"
+    if [[ -f $statefile ]]; then
+        return 0
+    else
+        touch "$statefile"
+        return 1
+    fi
+}
+
 wait_for_crowbar_state() {
     # $1 = hostname
     # $2 = crowbar state to wait for.  If empty, wait for a state change
