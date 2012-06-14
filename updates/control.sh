@@ -31,7 +31,9 @@ export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
 # Make sure date is up-to-date
-until /usr/sbin/ntpdate $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
+NTPDATE=/usr/sbin/ntpdate
+[ -f /etc/SuSE-release ] && NTPDATE="sntp -P no -r"
+until $NTPDATE $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
 do
   echo "Waiting for NTP server"
   sleep 1
@@ -44,21 +46,29 @@ done
 killall dhclient
 killall dhclient3
 
-# HACK fix for chef-client
-cd /root
-gem install --local rest-client
-cd -
 
-# Other gem dependency installs.
-cat > /etc/gemrc <<EOF
+if [ ! -f /etc/SuSE-release ]
+then
+  # HACK fix for chef-client
+  if [ -e /root/rest-client*gem ]
+  then
+    pushd /root
+    gem install --local rest-client
+    popd
+  fi
+
+  # Other gem dependency installs.
+  cat > /etc/gemrc <<EOF
 :sources:
 - http://$ADMIN_IP:8091/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
-gem install xml-simple
-gem install libxml-ruby
-gem install wsman
-gem install cstruct
+  gem install rest-client
+  gem install xml-simple
+  gem install libxml-ruby
+  gem install wsman
+  gem install cstruct
+fi
 
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then
