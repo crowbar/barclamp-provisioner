@@ -156,6 +156,7 @@ nuke_everything() {
         else
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=$blocks"
         fi
+        echo w | fdisk /dev/$name # write new unique MBR signature
     done < <(tac /proc/partitions)
 
     ## for good measure, nuke partition tables on disks (nothing should remain bootable)
