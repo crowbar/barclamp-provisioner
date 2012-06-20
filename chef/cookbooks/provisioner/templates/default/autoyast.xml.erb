@@ -130,7 +130,8 @@ curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
 mkdir -p /mnt/root/.ssh
 chmod 700 /mnt/root/.ssh
 if ! curl -s -o /mnt/root/.ssh/authorized_keys.wget \
-    http://$HTTP_SERVER/authorized_keys; then
+    http://$HTTP_SERVER/authorized_keys ||\
+    grep -q "Error 404" /mnt/root/.ssh/authorized_keys.wget; then
     rm -f /mnt/root/.ssh/authorized_keys.wget
 else
     chmod 644 /mnt/root/.ssh/authorized_keys
