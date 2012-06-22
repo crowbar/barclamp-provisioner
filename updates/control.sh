@@ -168,10 +168,10 @@ walk_node_through () {
 discover() {
     echo "Discovering with: $HOSTNAME_MAC"
     walk_node_through $HOSTNAME_MAC discovering discovered
-    wait_for_allocated "$HOSTNAME"
 }
 
 hardware_install () {
+    wait_for_allocated "$HOSTNAME"
     echo "Hardware installing with: $HOSTNAME"
     rm -f /etc/chef/client.pem
     nuke_everything
