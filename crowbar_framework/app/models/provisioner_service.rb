@@ -69,12 +69,7 @@ class ProvisionerService < ServiceObject
           tnodes.each do |n|
             next if n.nil?
             node = NodeObject.find_node_by_name(n)
-            pub = node.get_network_by_type("public")
-            if pub and pub["address"] and pub["address"] != ""
-              server_ip = pub["address"]
-            else
-              server_ip = node.get_network_by_type("admin")["address"]
-            end
+            server_ip = node.address("public").addr rescue node.address.addr
           end
         end
 
