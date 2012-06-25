@@ -1,7 +1,7 @@
 
 
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
-admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+admin_ip = node.address.addr
 admin_net = node[:network][:networks]["admin"]
 dhcp_start = admin_net[:ranges]["dhcp"]["start"]
 dhcp_end = admin_net[:ranges]["dhcp"]["end"]
