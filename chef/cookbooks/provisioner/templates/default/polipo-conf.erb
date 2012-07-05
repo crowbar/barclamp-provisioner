@@ -1,0 +1,15 @@
+proxyAddress = "0.0.0.0"        # both IPv4 and IPv6
+allowedClients = <%=@allowed_clients%>
+cacheIsShared = false
+chunkHighMark = 50331648
+objectHighMark = 16384
+diskCacheRoot = "/var/cache/polipo"
+diskCacheTruncateTime = 720d
+diskCacheUnlinkTime = 720d
+maxAge = 720d
+daemonise = true
+pidFile = "/var/run/polipo/polipo.pid"
+uncachableFile = "/etc/polipo/uncachable"
+<% if @upstream_proxy != "" -%>
+parentProxy = "<%=@upstream_proxy%>"
+<% end -%>

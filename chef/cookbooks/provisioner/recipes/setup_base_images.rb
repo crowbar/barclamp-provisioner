@@ -166,6 +166,29 @@ else
 
 end # !suse
 
+# Set up our cluster HTTP proxy for package installs
+package "polipo"
+service "polipo" do
+  action :enable
+  supports :stop => true, :start => true, :restart => true
+end
+
+template "/etc/polipo/config" do
+  source "polipo-conf.erb"
+  mode 0644
+  variables(:allowed_clients => "127.0.0.1, #{node.all_addresses.map{|a|a.network.to_s}.sort.join(", ")}",
+            :upstream_proxy => (node[:provisioner][:upstream_proxy] || "" rescue "")
+            )
+  notifies :restart, resources(:service => "polipo"), :immediately
+end
+
+template "/etc/polipo/uncachable" do
+  source "polipo-uncachable.erb"
+  mode 0644
+  variables(:provisioner_web => ::Regexp.escape("#{admin_ip}"))
+  notifies :restart, resources(:service => "polipo"), :immediately
+end
+
 # Set up the TFTP server as well.
 case node[:platform]
 when "ubuntu", "debian"
