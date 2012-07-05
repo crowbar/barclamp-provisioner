@@ -3,6 +3,7 @@
   "description": "The roles and recipes to set up the provisioning server and a base environment for all nodes",
   "attributes": {
     "provisioner": {
+      "online": false,
       "default_user": "crowbar",
       "default_password_hash": "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
       "supported_oses": {
