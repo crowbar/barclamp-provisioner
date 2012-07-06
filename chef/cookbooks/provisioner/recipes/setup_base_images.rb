@@ -247,7 +247,7 @@ end
 # Otherwise use the OS the provisioner node is using.
 
 unless default_os = node[:provisioner][:default_os]
-  node[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
+  node[:provisioner][:default_os] = default = os_token
   node.save
 end
 
@@ -276,27 +276,53 @@ node[:provisioner][:supported_oses].each do |os,params|
   next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
 
   # Index known barclamp repositories for this OS
-  node[:provisioner][:repositories][os_token] ||= Mash.new
+  node[:provisioner][:repositories][os] ||= Mash.new
   if File.exists? "#{os_dir}/crowbar-extra" and File.directory? "#{os_dir}/crowbar-extra"
     Dir.foreach("#{os_dir}/crowbar-extra") do |f|
       next unless File.symlink? "#{os_dir}/crowbar-extra/#{f}"
-      node[:provisioner][:repositories][os_token][f] ||= Hash.new
+      node[:provisioner][:repositories][os][f] ||= Mash.new
       case
-      when os_token =~ /(ubuntu|debian)/
-        bin="deb http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f} /"
-        src="deb-src http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f} /"
-        node[:provisioner][:repositories][os_token][f][bin] = true if
+      when os =~ /(ubuntu|debian)/
+        bin="deb http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
+        src="deb-src http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
+        node[:provisioner][:repositories][os][f][bin] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Packages.gz"
-        node[:provisioner][:repositories][os_token][f][src] = true if
+        node[:provisioner][:repositories][os][f][src] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Sources.gz"
-      when os_token =~ /(redhat|centos|suse)/
-        bin="baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/crowbar-extra/#{f}"
-        node[:provisioner][:repositories][os_token][f][bin] = true
+      when os =~ /(redhat|centos|suse)/
+        bin="baseurl=http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f}"
+        node[:provisioner][:repositories][os][f][bin] = true
         else
-          raise ::RangeError.new("Cannot handle repos for #{os_token}")
-        end
+          raise ::RangeError.new("Cannot handle repos for #{os}")
+      end
     end
   end
+
+  if node[:provisioner][:online]
+    data_bag("barclamps").each do |bc_name|
+      bc = data_bag_item("barclamps",bc_name)
+      if bc["debs"]
+        bc["debs"]["repos"].each do |repo|
+          node[:provisioner][:repositories][os]["#{bc_name}_online"] ||= Mash.new
+          node[:provisioner][:repositories][os]["#{bc_name}_online"][repo] = true
+        end if bc["debs"]["repos"]
+        bc["debs"][os]["repos"].each do |repo|
+          node[:provisioner][:repositories][os]["#{bc_name}_online"] ||= Mash.new
+          node[:provisioner][:repositories][os]["#{bc_name}_online"][repo] = true
+        end if (bc["debs"][os]["repos"] rescue nil)
+      end if os =~ /(ubuntu|debian)/
+      if bc["rpms"]
+        bc["rpms"]["repos"].each do |repo|
+          node[:provisioner][:repositories][os]["#{bc_name}_online"] ||= Mash.new
+          node[:provisioner][:repositories][os]["#{bc_name}_online"][repo] = true
+        end if bc["rpms"]["repos"]
+        bc["rpms"][os]["repos"].each do |repo|
+          node[:provisioner][:repositories][os]["#{bc_name}_online"] ||= Mash.new
+          node[:provisioner][:repositories][os]["#{bc_name}_online"][repo] = true
+        end if (bc["rpms"][os]["repos"] rescue nil)
+      end if os =~ /(centos|redhat)/
+    end
+  end 
 
   # If we were asked to use a serial console, arrange for it.
   if node[:provisioner][:use_serial_console]
@@ -312,7 +338,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   case
   when /^(suse)/ =~ os
     # Add base OS install repo for suse
-    node[:provisioner][:repositories][os_token]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install" => true }
+    node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     template "#{os_dir}/autoyast.xml" do
       mode 0644
       source "autoyast.xml.erb"
@@ -321,7 +347,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       variables(
                 :admin_node_ip => admin_ip,
                 :web_port => web_port,
-                :repos => node[:provisioner][:repositories][os_token],
+                :repos => node[:provisioner][:repositories][os],
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")
     end
@@ -336,10 +362,10 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
-    if ::File.exists? "/tftpboot/#{os_token}/install/repodata"
-      node[:provisioner][:repositories][os_token]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install" => true }
+    if ::File.exists? "/tftpboot/#{os}/install/repodata"
+      node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     else
-      node[:provisioner][:repositories][os_token]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os_token}/install/Server" => true }
+      node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
     end
     # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
@@ -350,7 +376,9 @@ node[:provisioner][:supported_oses].each do |os,params|
       variables(
                 :admin_node_ip => admin_ip,
                 :web_port => web_port,
-                :repos => node[:provisioner][:repositories][os_token],
+                :online => node[:provisioner][:online],
+                :proxy => "http://#{node.address.addr}:8123/",
+                :repos => node[:provisioner][:repositories][os],
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")
     end
@@ -368,7 +396,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
   when /^ubuntu/ =~ os
-    node[:provisioner][:repositories][os_token]["base"] = { "http://#{admin_ip}:#{web_port}/#{os_token}/install" => true }
+    node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     # Default files needed for Ubuntu.
     template "#{os_dir}/net_seed" do
       mode 0644
@@ -388,7 +416,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       group "root"
       variables(:admin_web => admin_web,
                 :os_codename => os_codename,
-                :repos => node[:provisioner][:repositories][os_token],
+                :repos => node[:provisioner][:repositories][os],
                 :admin_ip => admin_ip,
                 :provisioner_web => provisioner_web,
                 :web_path => web_path)
