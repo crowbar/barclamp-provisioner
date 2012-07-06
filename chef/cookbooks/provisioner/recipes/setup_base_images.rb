@@ -236,11 +236,11 @@ EOH
 end
 
 # put our statically-linked curl into place
-directory "/tftpboot/curl"
-bash "copy curl into place" do
-  code "cp /tftpboot/files/curl /tftpboot/curl/"
-  not_if do ::File.exist?("/tftpboot/curl/curl") end
-end
+#directory "/tftpboot/curl"
+#bash "copy curl into place" do
+#  code "cp /tftpboot/files/curl /tftpboot/curl/"
+#  not_if do ::File.exist?("/tftpboot/curl/curl") end
+#end
 
 # By default, install the same OS that the admin node is running
 # If the comitted proposal has a defualt, try it.
