@@ -32,14 +32,8 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 
 bash "Install pxelinux.0" do
-  code <<EOC
-for s in /usr/share/syslinux /usr/lib/syslinux; do
-  [[ -f $s/pxelinux.0 ]] || continue
-  cp "$s/pxelinux.0" "#{tftproot}/discovery"
-  exit 0
-done
-exit 1
-EOC
+  libdir = node[:platform] == "suse" ? "share" : "lib"
+  code "cp /usr/#{libdir}/syslinux/pxelinux.0 #{tftproot}/discovery"
   not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
 end
 
@@ -426,13 +420,6 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_ip => admin_ip,
                 :provisioner_web => provisioner_web,
                 :web_path => web_path)
-    end
-
-    cookbook_file "#{os_dir}/net-pre-install.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "net-pre-install.sh"
     end
 
     template "#{os_dir}/crowbar_join.sh" do
