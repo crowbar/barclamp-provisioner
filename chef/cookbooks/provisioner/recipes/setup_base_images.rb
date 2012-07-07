@@ -32,8 +32,14 @@ pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 
 bash "Install pxelinux.0" do
-  libdir = node[:platform] == "suse" ? "share" : "lib"
-  code "cp /usr/#{libdir}/syslinux/pxelinux.0 #{tftproot}/discovery"
+  code <<EOC
+for s in /usr/share/syslinux /usr/lib/syslinux; do
+  [[ -f $s/pxelinux.0 ]] || continue
+  cp "$s/pxelinux.0" "#{tftproot}/discovery"
+  exit 0
+done
+exit 1
+EOC
   not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
 end
 
