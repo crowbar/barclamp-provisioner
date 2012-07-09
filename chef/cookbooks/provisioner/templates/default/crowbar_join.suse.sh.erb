@@ -24,7 +24,11 @@ export HOME=/root
 HTTP_SERVER="<%= @admin_ip %>:8091"
 IP=${HTTP_SERVER%:*}
 
-exec 2>>/var/log/crowbar-join.errlog
+if [[ ! -d /var/log/crowbar-join ]] ; then
+  mkdir -p /var/log/crowbar-join/
+fi
+
+exec 2>>/var/log/crowbar-join/errlog
 
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 set -x
@@ -41,7 +45,7 @@ fi
 log_to() {
     # $1 = install log to log to
     # $@ = rest of args
-    local __log="/var/log/crowbar-join-$1"
+    local __log="/var/log/crowbar-join/$1"
     local __timestamp="$(date '+%F %T %z')"
     shift
     printf "\n%s\n" "$__timestamp: Running $*" | \
