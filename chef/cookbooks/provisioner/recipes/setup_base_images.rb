@@ -378,6 +378,7 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :web_port => web_port,
                 :online => node[:provisioner][:online],
                 :proxy => "http://#{node.address.addr}:8123/",
+                :provisioner_web => provisioner_web,
                 :repos => node[:provisioner][:repositories][os],
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")
@@ -418,7 +419,9 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :os_codename => os_codename,
                 :repos => node[:provisioner][:repositories][os],
                 :admin_ip => admin_ip,
+                :online => node[:provisioner][:online],
                 :provisioner_web => provisioner_web,
+                :proxy => "http://#{node.address.addr}:8123/",
                 :web_path => web_path)
     end
 

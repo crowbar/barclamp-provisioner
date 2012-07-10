@@ -36,12 +36,19 @@ if not nodes.nil? and not nodes.empty?
     # Delete the node
     system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
     system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
+    if new_group == "os_install"
+      target_os = mnode[:crowbar][:os] || node[:provisioner][:default_os]
+      if node[:provisioner][:supported_oses][target_os]
+        new_group = "#{target_os}_install"
+      else
+        raise ArgumentError.new("#{mnode.name} wants to install #{target_os}, but #{node.name} doesn't know how to do that!")
+      end
+    end
 
     mac_list = []
     mnode["network"]["interfaces"].each do |net, net_data|
       net_data.each do |field, field_data|
-        next if field != "addresses"
-        
+        next if field != "addresses" 
         field_data.each do |addr, addr_data|
           next if addr_data["family"] != "lladdr"
           mac_list << addr unless mac_list.include? addr
