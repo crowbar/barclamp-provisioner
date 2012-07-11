@@ -72,6 +72,25 @@ d-i mirror/http/directory string /<%= @install_path %>
 d-i mirror/http/proxy string
 #d-i mirror/http/mirror select <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
 
+### Apt setup
+# You can choose to install restricted and universe software, or to install
+# software from the backports repository.
+#d-i apt-setup/restricted boolean true
+#d-i apt-setup/universe boolean true
+#d-i apt-setup/backports boolean true
+# Uncomment this if you don't want to use a network mirror.
+#d-i apt-setup/use_mirror boolean false
+# Select which update services to use; define the mirrors to be used.
+# Values shown below are the normal defaults.
+#d-i apt-setup/services-select multiselect security
+#d-i apt-setup/security_host string security.ubuntu.com
+#d-i apt-setup/security_path string /ubuntu
+<% if @cc_use_local_security -%>
+d-i apt-setup/security_host string <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
+d-i apt-setup/security_path string /<%=@install_path %>
+<% end -%>
+
+
 # Alternatively: by default, the installer uses CC.archive.ubuntu.com where
 # CC is the ISO-3166-2 code for the selected country. You can preseed this
 # so that it does so without asking.
@@ -222,29 +241,11 @@ d-i passwd/user-password-crypted password <%= node[:provisioner][:default_passwo
 d-i user-setup/allow-password-weak boolean true
 
 # The user account will be added to some standard initial groups. To
-# override that, use this.
+# override that, use this
 #d-i passwd/user-default-groups string audio cdrom video
 
 # Set to true if you want to encrypt the first user's home directory.
 d-i user-setup/encrypt-home boolean false
-
-### Apt setup
-# You can choose to install restricted and universe software, or to install
-# software from the backports repository.
-#d-i apt-setup/restricted boolean true
-#d-i apt-setup/universe boolean true
-#d-i apt-setup/backports boolean true
-# Uncomment this if you don't want to use a network mirror.
-#d-i apt-setup/use_mirror boolean false
-# Select which update services to use; define the mirrors to be used.
-# Values shown below are the normal defaults.
-#d-i apt-setup/services-select multiselect security
-#d-i apt-setup/security_host string security.ubuntu.com
-#d-i apt-setup/security_path string /ubuntu
-<% if @cc_use_local_security -%>
-d-i apt-setup/security_host string <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
-d-i apt-setup/security_path string /ubuntu_dvd
-<% end -%>
 
 # Additional repositories, local[0-9] available
 #d-i apt-setup/local0/repository string \
@@ -385,7 +386,6 @@ xserver-xorg xserver-xorg/config/monitor/mode-list \
 # This first command is run as early as possible, just after
 # preseeding is read.
 #d-i preseed/early_command string anna-install some-udeb
-d-i preseed/early_command string wget http://<%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>/<%= @install_name %>/net-pre-install.sh -O /tmp/net-pre-install.sh ; chmod +x /tmp/net-pre-install.sh ; //tmp/net-pre-install.sh <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
 
 # This command is run immediately before the partitioner starts. It may be
 # useful to apply dynamic partitioner preseeding that depends on the state

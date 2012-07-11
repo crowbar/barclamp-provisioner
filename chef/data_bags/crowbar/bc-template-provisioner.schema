@@ -12,6 +12,8 @@
           "type": "map",
           "required": true,
           "mapping": {
+            "online": { "type": "bool", "required": false },
+            "upstream_proxy": { "type": "str", "required": false },
             "default_user": { "type": "str", "required": true },
             "default_password": { "type": "str" },
             "default_password_hash": { "type": "str" },

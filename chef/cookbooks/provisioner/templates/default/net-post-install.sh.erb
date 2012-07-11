@@ -26,6 +26,8 @@
 #
 # We are a net install. 
 #
+set -x
+echo "Acquire::http::Proxy \"<%=@proxy%>\";" >/target/etc/apt/apt.conf.d/00-proxy
 
 <% @repos.keys.sort.each do |repo|
      @repos[repo].keys.sort.each do |url|
@@ -40,8 +42,8 @@ echo "<%=url%>" >> \
      end
    end -%>
 
+# This is the one we used to bootstrap from.  It is useless to us now.
 rm -f /target/etc/apt/sources.list
-
 rsyslog_dir="/target/etc/rsyslog.d"
 if [ -d "$rsyslog_dir" ]; then
     if [ ! -f "$rsyslog_dir/10-crowbar-client.conf" ]; then
@@ -52,6 +54,15 @@ if [ -d "$rsyslog_dir" ]; then
 	fi
     fi
 fi
+
+# Make sure we can install gems
+cat >/target/etc/gemrc <<EOF
+<% unless @online -%>
+:sources:
+- <%=@provisioner_web%>/gemsite/
+<% end -%>
+gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
+EOF
 
 mkdir -p /target/root/.ssh
 chmod 700 /target/root/.ssh

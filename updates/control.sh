@@ -151,7 +151,14 @@ walk_node_through () {
         state="$1"
         post_state "$name" "$1"
         run_hooks "$HOSTNAME" "$1" pre
-        chef-client -S http://$ADMIN_IP:4000/ -N "$name"
+        chef-client -S http://$ADMIN_IP:4000/ -N "$name" || {
+            cp /var/chef/cache/chef-stacktrace.out \
+                "/install-logs/$name-$1-chef-stacktrace.out"
+            cp /var/chef/cache/failed-run-data.json \
+                "/install-logs/$name-$1-failed-run-data.json"
+            post_state "$1" debug
+            exit
+        }
         run_hooks "$HOSTNAME" "$1" post
         shift
     done
@@ -177,6 +184,7 @@ hardware_install () {
     nuke_everything
     walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything
+    post_state "$HOSTNAME" installing
 }
 
 hwupdate () {
