@@ -73,6 +73,7 @@
           "hardware-installed": "os_install",
           "hardware-updating": "update",
           "hardware-updated": "execute",
+          "installing": "os_install",
           "installed": "execute",
           "update": "update",
           "readying": "execute",
