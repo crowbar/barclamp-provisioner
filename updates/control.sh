@@ -31,6 +31,8 @@ export BMC_ADDRESS=""
 export BMC_NETMASK=""
 export BMC_ROUTER=""
 
+FINAL_STATE_FILE="/tmp/final-state.$$"
+
 # Make sure date is up-to-date
 if [ ! -f /etc/SuSE-release ]
 then
@@ -120,6 +122,7 @@ post_state() {
   curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
   parse_node_data /tmp/node_data.$$
   rm /tmp/node_data.$$
+  echo "$2" > $FINAL_STATE_FILE
 }
 
 get_state() {
@@ -207,6 +210,28 @@ esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
 if [[ $DEBUG != 1 && $DEBUG != true ]]; then
     sync
     sleep 30
+    case "$(cat $FINAL_STATE_FILE 2>/dev/null)" in
+	hardware-installed|hardware-updated)
+            # If we've transitioned to one of these states, there needs to be a
+            # link for pxe boot for this MAC address.  Without it, we'll just
+            # reboot into discovery again and get "stuck".  This can happen if
+            # the admin node is very slow updating pxe config.  So just in case
+            # we'll poll here for up to five minutes before giving up and just
+            # rebooting
+            let pc=0
+            pxe_link="01-$(echo $MAC | tr '[:upper:]:' '[:lower:]-')"
+            pxe_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$pxe_link"
+            while ! curl -s --head $pxe_link | head -n 1 | grep -q 'HTTP.*200' ; do
+                echo "$pxe_link not found, waiting..." | tee -a /install-logs/$HOSTNAME-update.log
+                sleep 10
+                let pc=pc+1
+                [ $pc -gt 30 ] && {
+                    echo "$pxe_link still not found, giving up" | tee -a /install-logs/$HOSTNAME-update.log
+                    break
+                }
+            done
+        ;;
+    esac
     umount /updates /install-logs
     reboot
 fi
