@@ -64,17 +64,9 @@ tcpdump
 exec > /root/post-install.log 2>&1
 set -x
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
+<% unless @online -%>
 (cd /etc/yum.repos.d && rm *)
-<% @repos.keys.sort.each do |repo| -%>
-cat >/etc/yum.repos.d/crowbar-<%=repo%>.repo <<EOF
-[crowbar-<%=repo%>]
-name=Crowbar <%=repo%> Repo
-<% @repos[repo].keys.sort.each do |url| -%>
-<%= url %>
 <% end -%>
-gpgcheck=0
-EOF
-<% end %>
 
 HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
 IP="<%= @admin_node_ip %>"
@@ -98,6 +90,54 @@ post_state() {
 }
 
 post_state $HOSTNAME "installing"
+
+echo "proxy=<%=@proxy%>" >> /etc/yum.conf
+sed -i '/^enabled/ s/1/0/' /etc/yum/pluginconf.d/fastestmirror.conf
+echo "Setting up repositories"
+<% @repos.keys.sort.each do |repo|
+  case
+  when repo =~ /.*_online/
+    rpm_sources, bare_sources = urls.keys.partition{|r|r =~ /^rpm /}
+    bare_sources.each do |source|
+      _, name, _, url = source.split
+      url = "baseurl=#{url}" if url =~ /^http/ -%>
+cat >/etc/yum.repos.d/crowbar-<%=repo%>.repo <<EOF
+[crowbar-<%=repo%>]
+name=Crowbar <%=repo%> Repo
+<%= url %>
+gpgcheck=0
+EOF
+<%  end
+    rpm_sources.each do |repo|
+      url = repo.split(' ',2)[1]
+      file = url.split('/').last
+      file = file << ".rpm" unless file =~ /\.rpm$/ -%>
+(
+        export http_proxy=<%=@proxy%>
+        curl -o '/var/cache/<%=file%>' -L '<%=url%>'
+        rpm -Uvh '/var/cache/<%=file%>'
+)
+<%  end
+  else -%>
+cat >/etc/yum.repos.d/crowbar-<%=repo%>.repo <<EOF
+[crowbar-<%=repo%>]
+name=Crowbar <%=repo%> Repo
+<% @repos[repo].keys.sort.each do |url| -%>
+<%= url %>
+<% end -%>
+gpgcheck=0
+EOF
+<% end
+end %>
+
+# Make sure we can install gems
+cat >/etc/gemrc <<EOF
+<% unless @online -%>
+:sources:
+- <%=@provisioner_web%>/gemsite/
+<% end -%>
+gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
+EOF
 
 #"Blacklisting IPv6".
 echo "blacklist ipv6" >>/etc/modprobe.d/blacklist-ipv6.conf
