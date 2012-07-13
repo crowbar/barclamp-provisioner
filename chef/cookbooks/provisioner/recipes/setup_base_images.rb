@@ -14,10 +14,6 @@
 # limitations under the License
 #
 
-package "syslinux"
-
-# Set up the OS images as well
-# Common to all OSes
 admin_ip = node.address.addr
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 web_port = node[:provisioner][:web_port]
@@ -25,17 +21,11 @@ use_local_security = node[:provisioner][:use_local_security]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
 os_token="#{node[:platform]}-#{node[:platform_version]}"
-
 tftproot = node[:provisioner][:root]
-
-pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
-pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
-
-bash "Install pxelinux.0" do
-  libdir = node[:platform] == "suse" ? "share" : "lib"
-  code "cp /usr/#{libdir}/syslinux/pxelinux.0 #{tftproot}/discovery"
-  not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
-end
+discover_dir="#{tftproot}/discovery"
+pxecfg_dir="#{discover_dir}/pxelinux.cfg"
+uefi_dir=discover_dir
+pxecfg_default="#{pxecfg_dir}/default"
 
 # FIXME: What is the purpose of this, really? If pxecfg_default does not exist
 # the root= parameters will not get appended to the kernel commandline. (Luckily
@@ -43,6 +33,8 @@ end
 # Later on pxecfg_default will even be replace with a link to "discovery"
 # Probably this pxecfg_default check can go a way and we can just unconditionally
 # append the root= parameters?
+# ANSWER:  This hackery exists to automatically do The Right Thing in handling
+# CentOS 5 vs. CentOS 6 based sledgehammer images.
 if File.exists? pxecfg_default
   append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
   if append_line
@@ -61,12 +53,24 @@ if node[:provisioner][:use_serial_console]
 end
 
 # Generate the appropriate pxe config file for each state
-[ "discovery","update","hwinstall"].each do |state|
+[ "discovery","update","hwinstall","debug"].each do |state|
   template "#{pxecfg_dir}/#{state}" do
     mode 0644
     owner "root"
     group "root"
     source "default.erb"
+    variables(:append_line => "#{append_line} crowbar.state=#{state}",
+              :install_name => state,
+              :initrd => "initrd0.img",
+              :kernel => "vmlinuz0")
+  end
+
+  # Do uefi as well.
+  template "#{uefi_dir}/#{state}.uefi" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.elilo.erb"
     variables(:append_line => "#{append_line} crowbar.state=#{state}",
               :install_name => state,
               :initrd => "initrd0.img",
@@ -82,33 +86,37 @@ cookbook_file "#{pxecfg_dir}/execute" do
   source "localboot.default"
 end
 
+# This is designed to fail.  Success here is not an option.
+template "#{uefi_dir}/execute.uefi" do
+  mode 0644
+  owner "root"
+  group "root"
+  source "default.elilo.erb"
+  variables(:append_line => "fake",
+            :install_name => "execute",
+            :initrd => "__fake",
+            :kernel => "__fake")
+end
+
 # Make discovery our default state
 link "#{pxecfg_dir}/default" do
   to "discovery"
 end
+link "#{uefi_dir}/elilo.conf" do
+  to "discovery.uefi"
+end
 
 # We have a debugging image available.  Make it available.
-if File.exists? "#{tftproot}/omsahammer/pxelinux.cfg/default"
-  bash "Setup omsahammer image" do
-    code <<EOC
-sed -e 's@(vmlinuz0|initrd0\.image)@../omsahammer/\1@' < \
-    "#{tftproot}/omsahammer/pxelinux.cfg/default" > \
-    "#{tftproot}/discovery/pxelinux.cfg/debug"
-EOC
-    not_if { File.exists? "#{tftproot}/discovery/pxelinux.cfg/debug" }
-  end
-else
-  template "#{pxecfg_dir}/debug" do
-    mode 0644
-    owner "root"
-    group "root"
-    source "default.erb"
-    variables(:append_line => "#{append_line} crowbar.state=debug",
-              :install_name => "debug",
-              :initrd => "initrd0.img",
-              :kernel => "vmlinuz0")
-  end
-end
+#if File.exists? "#{tftproot}/omsahammer/pxelinux.cfg/default"
+#  bash "Setup omsahammer image" do
+#    code <<EOC
+#sed -e 's@(vmlinuz0|initrd0\.image)@/omsahammer/\1@' < \
+#    "#{tftproot}/omsahammer/pxelinux.cfg/default" > \
+#    "#{tftproot}/pxelinux.cfg/debug"
+#EOC
+#    not_if { File.exists? "#{tftproot}/pxelinux.cfg/debug" }
+#  end
+#end
 
 if node[:platform] == "suse"
 
@@ -447,7 +455,17 @@ node[:provisioner][:supported_oses].each do |os,params|
     source "default.erb"
     variables(:append_line => "#{append}",
               :install_name => os,
-              :webserver => "#{admin_web}",
+              :initrd => "../#{os}/install/#{initrd}",
+              :kernel => "../#{os}/install/#{kernel}")
+  end
+
+  template "#{uefi_dir}/#{role}.uefi" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.elilo.erb"
+    variables(:append_line => "#{append}",
+              :install_name => os,
               :initrd => "../#{os}/install/#{initrd}",
               :kernel => "../#{os}/install/#{kernel}")
   end
@@ -458,7 +476,44 @@ node[:provisioner][:supported_oses].each do |os,params|
       link_type :symbolic
       to "#{role}"
     end
+
+    link "#{uefi_dir}/os_install.uefi" do
+      link_type :symbolic
+      to "#{role}.uefi"
+    end
   end
 end
+
+package "syslinux"
+
+bash "Install pxelinux.0" do
+  libdir = node[:platform] == "suse" ? "share" : "lib"
+  code "cp /usr/#{libdir}/syslinux/pxelinux.0 #{discover_dir}"
+  not_if do ::File.exists?("#{discover_dir}/pxelinux.0") end
+end
+
+bash "Fetch elilo 3.14" do
+  code <<EOC
+http_proxy=http://#{admin_ip}:8123
+cd #{tftproot}/files
+curl -LO 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
+EOC
+  not_if "test -f '#{tftproot}/files/elilo-3.14-all.tar.gz'"
+end if node[:provisioner][:online]
+
+
+bash "Install elilo as UEFI netboot loader" do
+  code <<EOC
+cd #{uefi_dir}
+tar xzf '#{tftproot}/files/elilo-3.14-all.tar.gz'
+mv elilo-3.14-x86_64.efi bootx64.efi
+mv elilo-3.14-ia32.efi bootia32.efi
+mv elilo-3.14-ia64.efi bootia64.efi
+rm elilo*.efi elilo*.tar.gz || :
+EOC
+  not_if "test -f '#{uefi_dir}/bootx64.efi'"
+end
+
+
 # Save this node config.
 node.save
