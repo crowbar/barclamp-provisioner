@@ -1,6 +1,13 @@
 # File managed by Crowbar
 
 subnet <%= @subnet %> netmask <%= @netmask%> {
+   if option arch = 00:06 {
+      filename = "discovery/bootia32.efi";
+   } else if option arch = 00:07 {
+      filename = "discovery/bootx64.efi";
+   } else {
+      filename = "discovery/pxelinux.0";
+   }
 <% unless @routers.nil? or @routers.empty? -%>
   option routers <%= @routers.collect! {|i| "#{i}" }.join(",") %>;
 <% end -%>
