@@ -7,18 +7,14 @@ omapi-port 9991;
 };
 omapi-key omapi_key;
 
-
-
 <% if not @options.empty? -%>
   <% @options.each do |option| -%>
 <%= option %>;
   <% end -%>
 <% end -%>
 
-
 next-server <%=@provisioner_ip%>;
-filename "discovery/pxelinux.0";
-
+option arch code 93 = unsigned integer 16;
 
 # Use this to send dhcp log messages to a different log file (you also
 # have to hack syslog.conf to complete the redirection).
@@ -27,4 +23,3 @@ log-facility local7;
 include "/etc/dhcp3/groups.d/group_list.conf";
 include "/etc/dhcp3/subnets.d/subnet_list.conf";
 include "/etc/dhcp3/hosts.d/host_list.conf";
-
