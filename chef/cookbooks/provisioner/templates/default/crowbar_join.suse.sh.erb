@@ -106,10 +106,16 @@ mkdir -p /etc/chef
 curl -o /etc/chef/validation.pem \
     "http://$HTTP_SERVER/validation.pem"
 
-if [[ ! -x /etc/init.d/chef-client ]]; then 
-    # Make sure that the client knows how to talk to the server
+# Make sure that the client knows how to talk to the server.
+# "http://chef.example.com:4000" is part of the default config; if it's there,
+# we can overwrite it
+grep -q '^\s*chef_server_url\s*"http://chef.example.com:4000"' /etc/chef/client.rb 2> /dev/null
+if [[ $? -eq 0 || ! -f /etc/chef/chef.rb ]]; then
+    test -f /etc/chef/chef.rb && mv /etc/chef/chef.rb /etc/chef/chef.rb.bak
     echo "chef_server_url \"http://$IP:4000\"" >/etc/chef/client.rb
+fi
 
+if [[ ! -x /etc/init.d/chef-client ]]; then
     # Install Chef
     echo "Installing Chef..."
 
