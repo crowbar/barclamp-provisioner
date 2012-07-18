@@ -13,9 +13,20 @@
 # limitations under the License.
 #
 
+admin_ip = node.address.addr
+domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
+web_port = node[:provisioner][:web_port]
+use_local_security = node[:provisioner][:use_local_security]
+provisioner_web="http://#{admin_ip}:#{web_port}"
+append_line = ''
+os_token="#{node[:platform]}-#{node[:platform_version]}"
+tftproot = node[:provisioner][:root]
+discover_dir="#{tftproot}/discovery"
+pxecfg_dir="#{discover_dir}/pxelinux.cfg"
+uefi_dir=discover_dir
+pxecfg_default="#{pxecfg_dir}/default"
+
 states = node["provisioner"]["dhcp"]["state_machine"]
-tftproot=node["provisioner"]["root"]
-pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 nodes = search(:node, "crowbar_usedhcp:true")
 
 if not nodes.nil? and not nodes.empty?
@@ -76,6 +87,9 @@ if not nodes.nil? and not nodes.empty?
 
         link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
           to "#{new_group}"
+        end
+        link "#{uefi_dir}/#{sprintf("%X",mnode.address("admin",IP::IP4).address)}.conf" do
+          to "#{new_group}.uefi"
         end
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
