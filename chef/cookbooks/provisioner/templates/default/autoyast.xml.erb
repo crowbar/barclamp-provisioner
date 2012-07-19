@@ -34,14 +34,21 @@
             <product>SLE-Cloud</product>
             <product_dir>/</product_dir>
             <ask_on_error config:type="boolean">false</ask_on_error> <!-- available since openSUSE 11.0 -->
-            <name>SLE-cloud</name> <!-- available since openSUSE 11.1/SLES11 (bnc#433981) -->
+            <name>SLE-Cloud</name> <!-- available since openSUSE 11.1/SLES11 (bnc#433981) -->
+        </listentry>
+       <listentry>
+            <media_url>http://<%= @admin_node_ip %>:8091/repos/Cloud-PTF/</media_url>
+            <product>SLE-Cloud-PTF</product>
+            <product_dir>/</product_dir>
+            <ask_on_error config:type="boolean">false</ask_on_error> <!-- available since openSUSE 11.0 -->
+            <name>SLE-Cloud-PTF</name>
         </listentry>
         <listentry>
             <media_url>http://<%= @admin_node_ip %>:8091/repos/SLES11-SP2-Core/</media_url>
             <product>SLES11-SP2-Core</product>
             <product_dir>/</product_dir>
             <ask_on_error config:type="boolean">false</ask_on_error>
-            <name>SLES11-SP2-Core </name>
+            <name>SLES11-SP2-Core</name>
         </listentry>
         <listentry>
             <media_url>http://<%= @admin_node_ip %>:8091/repos/SLES11-SP2-Updates/</media_url>
