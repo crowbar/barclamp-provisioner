@@ -113,6 +113,30 @@ grep -q '^\s*chef_server_url\s*"http://chef.example.com:4000"' /etc/chef/client.
 if [[ $? -eq 0 || ! -f /etc/chef/chef.rb ]]; then
     test -f /etc/chef/chef.rb && mv /etc/chef/chef.rb /etc/chef/chef.rb.bak
     echo "chef_server_url \"http://$IP:4000\"" >/etc/chef/client.rb
+
+    # add reboot handler to chef-client
+    # FIXME: there is a cleaner way of adding handlers:
+    # http://wiki.opscode.com/display/chef/Opscode+LWRP+Resources#OpscodeLWRPResources-chefhandler
+    
+    cat >> /etc/chef/client.rb <<EOF
+require "/var/chef/handlers/reboot_handler"
+reboot_handler = RebootHandler.new
+report_handlers << reboot_handler # these fire at the end of a successful run
+EOF
+
+    # create reboot handler
+    mkdir -p /var/chef/handlers
+    cat > /var/chef/handlers/reboot_handler.rb <<EOF
+class RebootHandler < Chef::Handler
+  def report
+    if node.run_state[:reboot]
+      Chef::Log.info("Reboot requested through node.run_state[:reboot]")
+      system("/sbin/reboot")
+    end
+  end  
+end    
+EOF
+
 fi
 
 if [[ ! -x /etc/init.d/chef-client ]]; then
