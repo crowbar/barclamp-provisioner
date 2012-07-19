@@ -25,8 +25,6 @@ discover_dir="#{tftproot}/discovery"
 pxecfg_dir="#{discover_dir}/pxelinux.cfg"
 uefi_dir=discover_dir
 pxecfg_default="#{pxecfg_dir}/default"
-
-states = node["provisioner"]["dhcp"]["state_machine"]
 nodes = search(:node, "crowbar_usedhcp:true")
 
 if not nodes.nil? and not nodes.empty?
@@ -36,7 +34,7 @@ if not nodes.nil? and not nodes.empty?
       Chef::Log.info("#{mnode[:fqdn]} has no current state!")
       next
     end
-    new_group = states[mnode[:state]]
+    new_group = mnode[:provisioner_state]
 
     if new_group.nil? || new_group == "noop"
       Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
@@ -47,14 +45,6 @@ if not nodes.nil? and not nodes.empty?
     # Delete the node
     system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
     system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
-    if new_group == "os_install"
-      target_os = mnode[:crowbar][:os] || node[:provisioner][:default_os]
-      if node[:provisioner][:supported_oses][target_os]
-        new_group = "#{target_os}_install"
-      else
-        raise ArgumentError.new("#{mnode.name} wants to install #{target_os}, but #{node.name} doesn't know how to do that!")
-      end
-    end
 
     mac_list = []
     mnode["network"]["interfaces"].each do |net, net_data|
@@ -70,10 +60,14 @@ if not nodes.nil? and not nodes.empty?
     # Build entries for each mac address.
     count = 0
     mac_list.each do |mac|
+      pxelink = "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}"
+      uefilink = "#{uefi_dir}/#{sprintf("%X",mnode.address("admin",IP::IP4).address)}.conf"
       count = count+1
       if new_group == "reset" or new_group == "delete"
-        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
-          action :delete
+        [ pxelink,uefilink ].each do |l|
+          link l do
+            action :delete
+          end
         end
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
@@ -84,11 +78,10 @@ if not nodes.nil? and not nodes.empty?
       else
         # Skip if we don't have admin
         next if mnode.address("admin",IP::IP4).nil?
-
-        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
+        link pxelink do
           to "#{new_group}"
         end
-        link "#{uefi_dir}/#{sprintf("%X",mnode.address("admin",IP::IP4).address)}.conf" do
+        link uefilink do
           to "#{new_group}.uefi"
         end
         dhcp_host "#{mnode.name}-#{count}" do

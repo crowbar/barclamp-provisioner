@@ -6,6 +6,7 @@
       "online": false,
       "upstream_proxy": "",
       "default_user": "crowbar",
+      "default_os": "%default_os%",
       "default_password_hash": "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
       "supported_oses": {
         "ubuntu-10.10": {

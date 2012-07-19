@@ -98,10 +98,26 @@ class ProvisionerService < ServiceObject
       @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
       return [404, "Failed to find node"]
     end
-    unless node.admin? or role.default_attributes["provisioner"]["dhcp"]["state_machine"][state].nil? 
+    unless node.admin?
+      cstate = node.crowbar["provisioner_state"]
+      nstate = (role.default_attributes["provisioner"]["dhcp"]["state_machine"][state] || nil)
       # All non-admin nodes call single_chef_client if the state machine says to.
-      @logger.info("Provisioner transition: Run the chef-client locally")
-      system("sudo -i /opt/dell/bin/single_chef_client.sh")
+      if cstate != nstate
+        if nstate == "os_install"
+          target_os = (node[:crowbar][:os] rescue nil)
+          target_os ||= role.default_attributes["provisioner"]["default_os"]
+          if role.default_attributes["provisioner"]["supported_oses"][target_os]
+            nstate = "#{target_os}_install"
+          else
+            return [500, "#{node.name} wants to install #{target_os}, but #{name} doesn't know how to do that!"]
+          end
+        end
+
+        node.crowbar["provisioner_state"] = nstate
+        node.save
+        @logger.info("Provisioner transition: Run the chef-client locally")
+        system("sudo -i /opt/dell/bin/single_chef_client.sh")
+      end
     end
     @logger.debug("Provisioner transition: exiting for #{name} for #{state}")
     [200, node.to_hash ]
