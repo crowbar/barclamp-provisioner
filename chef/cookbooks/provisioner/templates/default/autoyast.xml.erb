@@ -86,7 +86,7 @@
     <keep_install_network config:type="boolean">true</keep_install_network>
     <dns>
       <dhcp_hostname config:type="boolean">true</dhcp_hostname>
-      <domain>crowbar.site</domain>
+      <domain><%= node[:domain] %></domain>
       <resolv_conf_policy>auto</resolv_conf_policy>
       <write_hostname config:type="boolean">false</write_hostname>
     </dns>
