@@ -30,7 +30,9 @@
 	          "mapping": {
 		    "append": { "type": "str", "required": true },
 		    "kernel": { "type": "str", "required": true },
-		    "initrd": { "type": "str", "required": true }
+		    "initrd": { "type": "str", "required": true },
+                    "online_mirror": { "type": "str", "required": false },
+                    "codename": { "type": "str", "required": false }
 	          }
                 }
               }
