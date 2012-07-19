@@ -82,6 +82,30 @@ do
   sleep 1
 done
 
+# wait for hostname to become available
+tries_left=120
+while ! hostname -f > /dev/null; do
+  HOSTNAME=$(hostname -f)
+  exit_code=$?
+
+  echo $HOSTNAME
+  echo $exit_code
+  if [ $exit_code -eq 0 ]; then
+    break
+  fi
+
+  echo "sleeping 5 seconds"
+  sleep 5
+
+  tries_left=$(($tries_left-1))
+  if [ $tries_left -eq 0 ]; then
+    echo "giving up... reboot"
+    reboot
+    exit 1
+  fi
+
+done
+
 # Get our hostname
 HOSTNAME=$(hostname -f)
 
@@ -205,6 +229,9 @@ fi
 
 # Transition to our final state
 post_state $HOSTNAME "$final_state"
+
+# make sure to keep hostname
+echo $HOSTNAME > /etc/HOSTNAME
 
 log_to time service ntp start
 service chef-client start
