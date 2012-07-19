@@ -57,39 +57,42 @@ if not nodes.nil? and not nodes.empty?
       end
     end
 
-    # Build entries for each mac address.
-    count = 0
-    mac_list.each do |mac|
-      pxelink = "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}"
-      uefilink = "#{uefi_dir}/#{sprintf("%X",mnode.address("admin",IP::IP4).address)}.conf"
-      count = count+1
-      if new_group == "reset" or new_group == "delete"
-        [ pxelink,uefilink ].each do |l|
-          link l do
-            action :delete
-          end
-        end
+    # Build DHCP, PXE, and ELILO config files for each system
+    nodeaddr = sprintf("%X",mnode.address("admin",IP::IP4).address)
+    pxelink = "#{pxecfg_dir}/#{nodeaddr}"
+    uefilink = "#{uefi_dir}/#{nodeaddr}.conf"
+    if new_group == "reset" or new_group == "delete"
+      mac_list.each do |mac|
+        count = 0
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
           ipaddress "0.0.0.0"
           macaddress mac
           action :remove
         end
-      else
-        # Skip if we don't have admin
-        next if mnode.address("admin",IP::IP4).nil?
-        link pxelink do
-          to "#{new_group}"
+        count = count + 1
+      end
+      [ pxelink,uefilink ].each do |l|
+        link l do
+          action :delete
         end
-        link uefilink do
-          to "#{new_group}.uefi"
-        end
+      end
+    elsif mnode.address("admin",IP::IP4)
+      mac_list.each do |mac|
+        count = 0
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
           ipaddress mnode.address("admin",IP::IP4).addr
           macaddress mac
           action :add
         end
+        count = count+1
+      end
+      link pxelink do
+        to "#{new_group}"
+      end
+      link uefilink do
+        to "#{new_group}.uefi"
       end
     end
   end
