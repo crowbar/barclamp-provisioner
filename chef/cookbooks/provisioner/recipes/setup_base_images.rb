@@ -366,6 +366,7 @@ EOC
   node[:provisioner][:boot_specs][os] ||= Mash.new
   node[:provisioner][:boot_specs][os][:kernel] = "../#{os}/install/#{kernel}"
   node[:provisioner][:boot_specs][os][:initrd] = "../#{os}/install/#{initrd}"
+  node[:provisioner][:boot_specs][os][:os_install_site] = os_install_site
   node[:provisioner][:boot_specs][os][:kernel_params] = append
 
   case

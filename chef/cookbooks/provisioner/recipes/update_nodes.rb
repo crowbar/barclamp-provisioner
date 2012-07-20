@@ -119,15 +119,17 @@ if not nodes.nil? and not nodes.empty?
         os_dir="#{tftproot}/#{os}"
         os_codename=node[:lsb][:codename]
         params = node[:provisioner][:boot_specs][os]
+        append_line = ""
         # These should really be made libraries or something.
         case
         when /^(suse)/ =~ os
-          template "#{os_dir}/autoyast.xml" do
+          template "#{os_dir}/#{mnode.name}.xml" do
             mode 0644
             source "autoyast.xml.erb"
             owner "root"
             group "root"
             variables(:admin_node_ip => admin_ip,
+                      :name => mnode.name,
                       :web_port => web_port,
                       :repos => node[:provisioner][:repositories][os],
                       :admin_web => admin_web,
@@ -140,15 +142,17 @@ if not nodes.nil? and not nodes.empty?
             source "crowbar_join.suse.sh.erb"
             variables(:admin_ip => admin_ip)
           end
+          append_line = " autoyast=#{web_path}/#{mnode.name}.xml"
         when /^(redhat|centos)/ =~ os
           # Default kickstarts and crowbar_join scripts for redhat.
-          template "#{os_dir}/compute.ks" do
+          template "#{os_dir}/#{mnode.name}.ks" do
             mode 0644
             source "compute.ks.erb"
             owner "root"
             group "root"
             variables(:admin_node_ip => admin_ip,
                       :web_port => web_port,
+                      :name => mnode.name,
                       :online => node[:provisioner][:online],
                       :proxy => "http://#{node.address.addr}:8123/",
                       :provisioner_web => provisioner_web,
@@ -168,14 +172,16 @@ if not nodes.nil? and not nodes.empty?
                       :provisioner_web => provisioner_web,
                       :web_path => web_path)
           end
+          append_line = " ks=#{web_path}/#{mnode.name}.ks ksdevice=link"
         when /^ubuntu/ =~ os
           # Default files needed for Ubuntu.
-          template "#{os_dir}/net_seed" do
+          template "#{os_dir}/#{mnode.name}.seed" do
             mode 0644
             owner "root"
             group "root"
             source "net_seed.erb"
             variables(:install_name => os,
+                      :name => mnode.name,
                       :cc_use_local_security => use_local_security,
                       :os_install_site => params[:os_install_site],
                       :online => node[:provisioner][:online],
@@ -183,10 +189,11 @@ if not nodes.nil? and not nodes.empty?
                       :web_path => web_path,
                       :proxy => "http://#{node.address.addr}:8123/")
           end
-          template "#{os_dir}/net-post-install.sh" do
+          template "#{os_dir}/#{mnode.name}-post-install.sh" do
             mode 0644
             owner "root"
             group "root"
+            source "net-post-install.sh.erb"
             variables(:admin_web => admin_web,
                       :os_codename => os_codename,
                       :repos => node[:provisioner][:repositories][os],
@@ -208,6 +215,7 @@ if not nodes.nil? and not nodes.empty?
                       :provisioner_web => provisioner_web,
                       :web_path => web_path)
           end
+          append_line = " url=#{web_path}/#{mnode.name}.seed netcfg/get_hostname=#{mnode.name}"
         end
 
         # Create the pxe linux config for this OS.
@@ -216,7 +224,7 @@ if not nodes.nil? and not nodes.empty?
           owner "root"
           group "root"
           source "default.erb"
-          variables(:append_line => params[:kernel_params],
+          variables(:append_line => "#{params[:kernel_params]} #{append_line}",
                     :install_name => os,
                     :initrd => params[:initrd],
                     :kernel => params[:kernel])
@@ -227,7 +235,7 @@ if not nodes.nil? and not nodes.empty?
           owner "root"
           group "root"
           source "default.elilo.erb"
-          variables(:append_line => params[:kernel_params],
+          variables(:append_line => "#{params[:kernel_params]} #{append_line}",
                     :install_name => os,
                     :initrd => params[:initrd],
                     :kernel => params[:kernel])

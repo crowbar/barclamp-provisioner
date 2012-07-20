@@ -398,5 +398,5 @@ xserver-xorg xserver-xorg/config/monitor/mode-list \
 # packages and run commands in the target system.
 #d-i preseed/late_command string apt-install zsh; in-target chsh -s /bin/zsh
 
-d-i preseed/late_command string wget <%=@web_path%>/net-post-install.sh -O /target/net-post-install.sh ; chmod +x /target/net-post-install.sh ; /target/net-post-install.sh
+d-i preseed/late_command string wget <%=@web_path%>/<%=@name%>-post-install.sh -O /target/net-post-install.sh ; chmod +x /target/net-post-install.sh ; /target/net-post-install.sh
 

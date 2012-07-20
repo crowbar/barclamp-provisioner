@@ -12,63 +12,62 @@
         "ubuntu-10.10": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=redundant root=/dev/ram rw quiet --",
+	   "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto root=/dev/ram rw quiet --",
            "online_mirror": "http://us.archive.ubuntu.com/ubuntu/",
            "codename": "maverick"
 	},
 	"ubuntu-11.04": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "url=%os_site%/net_seed auto=true priority=critical vga=788 debian-installer/locale=en_US.utf8 keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=redundant root=/dev/ram rw quiet --",
+	   "append": "auto=true priority=critical vga=788 debian-installer/locale=en_US.utf8 keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto root=/dev/ram rw quiet --",
            "online_mirror": "http://us.archive.ubuntu.com/ubuntu/",
            "codename": "natty"
 	},
 	"ubuntu-11.10": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=redundant root=/dev/ram rw quiet --",
+	   "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto root=/dev/ram rw quiet --",
            "online_mirror": "http://us.archive.ubuntu.com/ubuntu/",
            "codename": "oneiric"
-
 	},
 	"ubuntu-12.04": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "url=%os_site%/net_seed debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=redundant root=/dev/ram rw quiet --",
+	   "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto root=/dev/ram rw quiet --",
            "online_mirror": "http://us.archive.ubuntu.com/ubuntu/",
            "codename": "precise"
 	},
         "redhat-5.6": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	  "append": "method=%os_install_site%"
 	},
 	"redhat-5.7": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	  "append": "method=%os_install_site%"
 	},
 	"redhat-6.2": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif"
+	  "append": "method=%os_install_site%"
 	},
 	"centos-5.7": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif",
+	  "append": "method=%os_install_site%",
           "online_mirror": "http://mirror.centos.org/centos/5/"
 	},
         "centos-6.2": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "method=%os_install_site% ks=%os_site%/compute.ks ksdevice=bootif",
+	  "append": "method=%os_install_site%",
           "online_mirror": "http://mirror.centos.org/centos/6/"
 	},
         "suse-11.2": {
          "initrd": "boot/x86_64/loader/initrd",
          "kernel": "boot/x86_64/loader/linux",
-         "append": "install=%os_install_site% autoyast=%os_site%/autoyast.xml"
+         "append": "install=%os_install_site%"
         }
 
       },
