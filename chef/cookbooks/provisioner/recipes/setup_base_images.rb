@@ -263,25 +263,18 @@ node[:provisioner][:repositories] ||= Mash.new
 node[:provisioner][:supported_oses].each do |os,params|
 
   web_path = "#{provisioner_web}/#{os}"
-  admin_web="#{web_path}/install"
+  admin_web = os_install_site = "#{web_path}/install"
   crowbar_repo_web="#{web_path}/crowbar-extra"
   os_dir="#{tftproot}/#{os}"
   os_codename=node[:lsb][:codename]
   role="#{os}_install"
-  replaces={
-    '%os_site%'         => web_path,
-    '%os_install_site%' => admin_web
-  }
-  append = params["append"]
+
   initrd = params["initrd"]
   kernel = params["kernel"]
 
-  # Sigh.  There has to be a more elegant way.
-  replaces.each { |k,v|
-    append.gsub!(k,v)
-  }
   # Don't bother for OSes that are not actaully present on the provisioner node.
-  next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+  next unless (File.directory? os_dir and File.directory? "#{os_dir}/install") or
+    (node[:provisioner][:online] and params[:online_mirror])
 
   # Index known barclamp repositories for this OS
   node[:provisioner][:repositories][os] ||= Mash.new
@@ -330,7 +323,52 @@ node[:provisioner][:supported_oses].each do |os,params|
         end if (bc["rpms"][os]["repos"] rescue nil)
       end if os =~ /(centos|redhat)/
     end
-  end 
+
+    if params[:online_mirror]
+      directory "#{os_dir}/install/#{initrd.split('/')[0...-1].join('/')}" do
+        recursive true
+      end
+      case
+      when os =~ /^(ubuntu|debian)/
+        raise ArgumentError.new("Cannot configure provisioner for online deploy of #{os}: missing codename") unless params[:codename]
+        netboot_urls = {
+          initrd => "#{params[:online_mirror]}/dists/#{params[:codename]}/main/installer-amd64/current/images/#{initrd.split('/')[1..-1].join('/')}",
+          kernel => "#{params[:online_mirror]}/dists/#{params[:codename]}/main/installer-amd64/current/images/#{kernel.split('/')[1..-1].join('/')}"
+        }
+        os_install_site = params[:online_mirror]
+      when os =~/^(centos|redhat)/
+        netboot_urls = {
+          initrd => "#{params[:online_mirror]}/os/x86_64/#{initrd}",
+          kernel => "#{params[:online_mirror]}/os/x86_64/#{kernel}"
+        }
+        os_install_site = "#{params[:online_mirror]}/os/x86_64"
+      else
+        raise ArgumentError.new("Cannot configure provisioner for online deploy of #{os}: missing codepaths.")
+      end
+      netboot_urls.each do |k,v|
+        bash "#{os}: fetch #{k}" do
+          code <<EOC
+set -x
+export http_proxy=http://127.0.0.1:8123/
+curl -sfL -o '#{os_dir}/install/#{k}.new' '#{v}' && \
+mv '#{os_dir}/install/#{k}.new' '#{os_dir}/install/#{k}'
+EOC
+          not_if "test -f '#{os_dir}/install/#{k}'"
+        end
+      end
+    end
+  end
+
+  replaces={
+    '%os_site%'         => web_path,
+    '%os_install_site%' => os_install_site
+  }
+  append = params["append"]
+
+  # Sigh.  There has to be a more elegant way.
+  replaces.each { |k,v|
+    append.gsub!(k,v)
+  }
 
   # If we were asked to use a serial console, arrange for it.
   if node[:provisioner][:use_serial_console]
@@ -356,7 +394,6 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_node_ip => admin_ip,
                 :web_port => web_port,
                 :repos => node[:provisioner][:repositories][os],
-                :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")
     end
 
@@ -375,6 +412,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     else
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
     end
+    append << " proxy=http://#{node.address.addr}:8123" if node[:provisioner][:online]
     # Default kickstarts and crowbar_join scripts for redhat.
     template "#{os_dir}/compute.ks" do
       mode 0644
@@ -385,10 +423,11 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_node_ip => admin_ip,
                 :web_port => web_port,
                 :online => node[:provisioner][:online],
-                :proxy => "http://#{node.address.addr}:8123/",
+                :proxy => "http://#{node.address.addr}:8123",
                 :provisioner_web => provisioner_web,
                 :repos => node[:provisioner][:repositories][os],
                 :admin_web => admin_web,
+                :os_install_site => os_install_site,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")
     end
     template "#{os_dir}/crowbar_join.sh" do
@@ -396,8 +435,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       owner "root"
       group "root"
       source "crowbar_join.redhat.sh.erb"
-      variables(:admin_web => admin_web,
-                :os_codename => os_codename,
+      variables(:os_codename => os_codename,
                 :crowbar_repo_web => crowbar_repo_web,
                 :admin_ip => admin_ip,
                 :provisioner_web => provisioner_web,
@@ -405,7 +443,9 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
   when /^ubuntu/ =~ os
-    node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+    if File.exists? "/tftpboot/#{os}/install/dists"
+      node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+    end
     # Default files needed for Ubuntu.
     template "#{os_dir}/net_seed" do
       mode 0644
@@ -414,9 +454,11 @@ node[:provisioner][:supported_oses].each do |os,params|
       source "net_seed.erb"
       variables(:install_name => os,
                 :cc_use_local_security => use_local_security,
-                :cc_install_web_port => web_port,
-                :cc_built_admin_node_ip => admin_ip,
-                :install_path => "#{os}/install")
+                :os_install_site => os_install_site,
+                :online => node[:provisioner][:online],
+                :provisioner_web => provisioner_web,
+                :web_path => web_path,
+                :proxy => "http://#{node.address.addr}:8123/")
     end
 
     template "#{os_dir}/net-post-install.sh" do
