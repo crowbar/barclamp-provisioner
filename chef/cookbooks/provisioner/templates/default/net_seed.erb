@@ -269,7 +269,7 @@ tasksel tasksel/first multiselect ubuntu-standard, openssh-server
 #tasksel tasksel/first multiselect kubuntu-desktop
 
 # Individual additional packages to install
-d-i pkgsel/include string openssh-server curl
+d-i pkgsel/include string openssh-server curl efibootmgr
 # Whether to upgrade packages after debootstrap.
 # Allowed values: none, safe-upgrade, full-upgrade
 #d-i pkgsel/upgrade select none
@@ -399,4 +399,5 @@ xserver-xorg xserver-xorg/config/monitor/mode-list \
 #d-i preseed/late_command string apt-install zsh; in-target chsh -s /bin/zsh
 
 d-i preseed/late_command string wget <%=@web_path%>/<%=@name%>-post-install.sh -O /target/net-post-install.sh ; chmod +x /target/net-post-install.sh ; /target/net-post-install.sh
+
 
