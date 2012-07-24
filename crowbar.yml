@@ -35,6 +35,8 @@ locale_additions:
       provisioner:
         edit_attributes: 
           attributes: Attributes
+          access_keys: Additional SSH keys
+          access_keys_hint: (newline separated)
         edit_deployment: 
           deployment: Deployment
 
