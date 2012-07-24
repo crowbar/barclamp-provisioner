@@ -33,9 +33,10 @@ if not nodes.nil? and not nodes.empty?
     end
     Chef::Log.info("#{mnode[:fqdn]} transitioning to group #{new_group}")
 
-    # Delete the node
-    system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
-    system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
+    if new_group == "delete"
+      system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
+      system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
+    end
 
     mac_list = []
     interfaces = mnode["network"]["interfaces"]

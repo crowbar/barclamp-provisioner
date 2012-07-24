@@ -183,7 +183,9 @@ walk_node_through () {
 
 discover() {
     echo "Discovering with: $HOSTNAME_MAC"
-    walk_node_through $HOSTNAME_MAC discovering discovered
+    walk_node_through $HOSTNAME_MAC discovering
+    post_state $HOSTNAME_MAC discovered
+    run_chef_client "http://$ADMIN_IP:4000/" "$HOSTNAME" discovered
 }
 
 hardware_install () {
