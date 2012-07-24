@@ -41,10 +41,6 @@ if not nodes.nil? and not nodes.empty?
     end
     Chef::Log.info("#{mnode[:fqdn]} transitioning to group #{new_group}")
 
-    # Delete the node
-    system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
-    system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
-
     mac_list = []
     mnode["network"]["interfaces"].each do |net, net_data|
       net_data.each do |field, field_data|
@@ -76,6 +72,11 @@ if not nodes.nil? and not nodes.empty?
         file f do
           action :delete
         end
+      end
+      # Delete the node
+      if new_group == "delete"
+        system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
+        system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
       end
     elsif mnode.address("admin",IP::IP4)
       # Make our DHCP config for this system.
@@ -120,6 +121,9 @@ if not nodes.nil? and not nodes.empty?
         os_codename=node[:lsb][:codename]
         params = node[:provisioner][:boot_specs][os]
         append_line = ""
+        if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
+          append_line = "BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':','-')}"
+        end
         # These should really be made libraries or something.
         case
         when /^(suse)/ =~ os
@@ -142,7 +146,7 @@ if not nodes.nil? and not nodes.empty?
             source "crowbar_join.suse.sh.erb"
             variables(:admin_ip => admin_ip)
           end
-          append_line = " autoyast=#{web_path}/#{mnode.name}.xml"
+          append_line << " autoyast=#{web_path}/#{mnode.name}.xml"
         when /^(redhat|centos)/ =~ os
           # Default kickstarts and crowbar_join scripts for redhat.
           template "#{os_dir}/#{mnode.name}.ks" do
@@ -172,7 +176,7 @@ if not nodes.nil? and not nodes.empty?
                       :provisioner_web => provisioner_web,
                       :web_path => web_path)
           end
-          append_line = " ks=#{web_path}/#{mnode.name}.ks ksdevice=link"
+          append_line << " ks=#{web_path}/#{mnode.name}.ks ksdevice=bootif"
         when /^ubuntu/ =~ os
           # Default files needed for Ubuntu.
           template "#{os_dir}/#{mnode.name}.seed" do
@@ -215,7 +219,7 @@ if not nodes.nil? and not nodes.empty?
                       :provisioner_web => provisioner_web,
                       :web_path => web_path)
           end
-          append_line = " url=#{web_path}/#{mnode.name}.seed netcfg/get_hostname=#{mnode.name}"
+          append_line << " url=#{web_path}/#{mnode.name}.seed netcfg/get_hostname=#{mnode.name}"
         end
 
         # Create the pxe linux config for this OS.
@@ -229,7 +233,7 @@ if not nodes.nil? and not nodes.empty?
                     :initrd => params[:initrd],
                     :kernel => params[:kernel])
       end
-        
+
         template uefifile do
           mode 0644
           owner "root"
@@ -248,7 +252,7 @@ if not nodes.nil? and not nodes.empty?
           group "root"
           source "localboot.default"
         end
-        
+
         # If we ever netboot through UEFI for the execute state, then something went wrong.
         # Drop the node into debug state intead.
         template uefifile do
