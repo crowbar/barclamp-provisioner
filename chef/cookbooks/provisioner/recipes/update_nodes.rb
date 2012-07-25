@@ -35,7 +35,7 @@ if not nodes.nil? and not nodes.empty?
     end
     new_group = mnode[:provisioner_state]
 
-    if new_group.nil? || new_group == "noop"
+    if new_group.nil?
       Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
       next
     end
@@ -59,8 +59,10 @@ if not nodes.nil? and not nodes.empty?
     pxefile = "#{pxecfg_dir}/#{nodeaddr}"
     uefifile = "#{uefi_dir}/#{nodeaddr}.conf"
     if new_group == "reset" or new_group == "delete"
+      Chef::Log.info("Deleting config for #{mnode.name}")
       # Kill DHCP config and netboot configs for this system.
       mac_list.each_index do |idx|
+        Chef::Log.info("Deleting DHCP config for #{mnode.name}-#{idx}")
         dhcp_host "#{mnode.name}-#{idx}" do
           hostname mnode.name
           ipaddress "0.0.0.0"
@@ -69,14 +71,10 @@ if not nodes.nil? and not nodes.empty?
         end
       end
       [ pxefile,uefifile ].each do |f|
+        Chef::Log.info("Deleting netboot info for #{mnode.name}: #{f}")
         file f do
           action :delete
         end
-      end
-      # Delete the node
-      if new_group == "delete"
-        system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
-        system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
       end
     elsif mnode.address("admin",IP::IP4)
       # Make our DHCP config for this system.

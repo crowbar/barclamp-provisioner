@@ -83,13 +83,6 @@ class ProvisionerService < ServiceObject
       end
     end
 
-    if state == "delete"
-      # BA LOCK NOT NEEDED HERE.  NODE IS DELETING
-      node = NodeObject.find_node_by_name(name)
-      node.crowbar["state"] = "delete-final"
-      node.save
-    end
-
     #
     # test state machine and call chef-client if state changes
     #
@@ -100,7 +93,7 @@ class ProvisionerService < ServiceObject
     end
     unless node.admin?
       cstate = node.crowbar["provisioner_state"]
-      nstate = (role.default_attributes["provisioner"]["dhcp"]["state_machine"][state] || nil)
+      nstate = (role.default_attributes["provisioner"]["dhcp"]["state_machine"][state] || node.crowbar["provisioner_state"])
       # All non-admin nodes call single_chef_client if the state machine says to.
       if cstate != nstate
         if nstate == "os_install"
@@ -115,11 +108,34 @@ class ProvisionerService < ServiceObject
 
         node.crowbar["provisioner_state"] = nstate
         node.save
+
+        # We need a real process runner here.
+        if cstate == "execute"
+          @logger.info("Provisioner transition: going from #{cstate} => #{nstate}, run chef-client on #{node.name}")
+          run_remote_chef_client(node["fqdn"], "chef-client", "log/#{node.name}.chef_client.log")
+          Process.waitall
+        end
         @logger.info("Provisioner transition: Run the chef-client locally")
         system("sudo -i /opt/dell/bin/single_chef_client.sh")
       end
+      #
+      # The temp booting images need to have clients cleared.
+      #
+      if ["discovered","hardware-installed","hardware-updated",
+          "hardware-installing","hardware-updating","reinstall",
+          "update","installing","installed"].member?(state) and !node.admin?
+        @logger.info("Provisioner transition: should be deleting a client entry for #{node.name}")
+        client = ClientObject.find_client_by_name node.name
+        @logger.info("Provisioner transition: found and trying to delete a client entry for #{node.name}") unless client.nil?
+        client.destroy unless client.nil?
+
+        # Make sure that the node can be accessed by knife ssh or ssh
+        if ["reset","reinstall","update","delete"].member?(state)
+          system("sudo rm /root/.ssh/known_hosts")
+        end
+      end
     end
-    @logger.debug("Provisioner transition: exiting for #{name} for #{state}")
+    @logger.info("Provisioner transition: exiting for #{name} for #{state}")
     [200, node.to_hash ]
   end
 

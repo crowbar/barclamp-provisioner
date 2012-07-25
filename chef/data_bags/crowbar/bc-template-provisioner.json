@@ -90,8 +90,7 @@
           "readying": "execute",
           "ready": "execute",
           "reset": "reset",
-          "delete": "noop",
-          "delete-final": "delete",
+          "delete": "delete",
           "reinstall": "os_install",
           "debug": "debug"
         }
