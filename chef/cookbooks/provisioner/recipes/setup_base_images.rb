@@ -370,7 +370,7 @@ EOC
   node[:provisioner][:boot_specs][os][:kernel_params] = append
 
   case
-  when /^ubuntu/ =~ os and File.exists?("/tftpboot/#{os}/install/dists")
+  when (/^ubuntu/ =~ os and File.exists?("/tftpboot/#{os}/install/dists"))
     node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
   when /^(suse)/ =~ os
     node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }

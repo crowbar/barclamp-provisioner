@@ -116,7 +116,7 @@ class ProvisionerService < ServiceObject
           Process.waitall
         end
         @logger.info("Provisioner transition: Run the chef-client locally")
-        system("sudo -i /opt/dell/bin/single_chef_client.sh")
+        system("sudo -i /opt/dell/bin/blocking_chef_client.sh")
       end
       #
       # The temp booting images need to have clients cleared.
