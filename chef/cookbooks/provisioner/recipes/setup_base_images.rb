@@ -101,6 +101,16 @@ if node[:platform] == "suse"
     notifies :reload, resources(:service => "apache2")
   end
 
+  # a vhost to redirect from port 80 to 3000
+  #  (will later be switched, when crowbar moves to port 80)
+  template "#{node[:apache][:dir]}/vhosts.d/default-redirect.conf" do
+    source "apache-default-redirect.erb"
+    group "root"
+    owner "root"
+    mode 0644
+    notifies :reload, resources(:service => "apache2")
+  end
+
 else
 
   include_recipe "bluepill"
