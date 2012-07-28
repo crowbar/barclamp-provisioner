@@ -386,10 +386,13 @@ end
 
 package "syslinux"
 
-bash "Install pxelinux.0" do
-  libdir = node[:platform] == "suse" ? "share" : "lib"
-  code "cp /usr/#{libdir}/syslinux/pxelinux.0 #{discover_dir}"
-  not_if do ::File.exists?("#{discover_dir}/pxelinux.0") end
+["share","lib"].each do |d|
+  next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
+  bash "Install pxelinux.0" do
+    code "cp /usr/#{d}/syslinux/pxelinux.0 #{discover_dir}"
+    not_if do ::File.exists?("#{discover_dir}/pxelinux.0") end
+  end
+  break
 end
 
 bash "Fetch elilo 3.14" do
