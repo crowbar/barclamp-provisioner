@@ -28,16 +28,16 @@ part /boot --fstype ext4 --size=100 --ondisk=sda
 part /boot/efi --fstype vfat --size=100 --ondisk=sda
 part swap --recommended
 part pv.6 --size=1 --grow --ondisk=sda
-volgroup lv_admin --pesize=32768 pv.6
-logvol / --fstype ext4 --name=lv_root --vgname=lv_admin --size=1 --grow
+volgroup <%=@name.split('.')[0]%> --pesize=32768 pv.6
+logvol / --fstype ext4 --name=lv_root --vgname=<%=@name.split('.')[0]%> --size=1 --grow
 <% else -%>
 ignoredisk --drives=sdb,sdc,sdd,sde,sdf,sdg,sdh,sdi,sdj,sdk,sdl,sdm,sdn,sdo,sdp,sdq,sdr,sds,sdt,sdu,sdv,sdw,sdx,sdy,sdz,hdb,hdc,hdd,hde,hdf,hdg,hdh,hdi,hdj,hdk,hdl,hdm,hdn,hdo,hdp,hdq,hdr,hds,hdt,hdu,hdv,hdw,hdx,hdy,hdz
 clearpart --all --drives=sda
 part /boot --fstype ext3 --size=100 --ondisk=sda
 part swap --recommended
 part pv.6 --size=0 --grow --ondisk=sda
-volgroup lv_admin --pesize=32768 pv.6
-logvol / --fstype ext3 --name=lv_root --vgname=lv_admin --size=1 --grow
+volgroup <%=@name.split('.')[0]%> --pesize=32768 pv.6
+logvol / --fstype ext3 --name=lv_root --vgname=<%=@name.split('.')[0]%> --size=1 --grow
 <% end -%>
 
 text
@@ -63,6 +63,7 @@ openssh
 curl.x86_64
 ntp
 tcpdump
+efibootmgr
 
 %post
 

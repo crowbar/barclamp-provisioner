@@ -6,8 +6,8 @@ run_list(
          "recipe[dhcp]",
          "recipe[nfs-server]",
          "recipe[provisioner::dhcp_update]",
-         "recipe[provisioner::update_nodes]",
-         "recipe[provisioner::setup_base_images]"
+         "recipe[provisioner::setup_base_images]",
+         "recipe[provisioner::update_nodes]"
 )
 default_attributes()
 override_attributes()
