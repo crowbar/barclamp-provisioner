@@ -118,22 +118,6 @@ class ProvisionerService < ServiceObject
         @logger.info("Provisioner transition: Run the chef-client locally")
         system("sudo -i /opt/dell/bin/blocking_chef_client.sh")
       end
-      #
-      # The temp booting images need to have clients cleared.
-      #
-      if ["discovered","hardware-installed","hardware-updated",
-          "hardware-installing","hardware-updating","reinstall",
-          "update","installing","installed"].member?(state) and !node.admin?
-        @logger.info("Provisioner transition: should be deleting a client entry for #{node.name}")
-        client = ClientObject.find_client_by_name node.name
-        @logger.info("Provisioner transition: found and trying to delete a client entry for #{node.name}") unless client.nil?
-        client.destroy unless client.nil?
-
-        # Make sure that the node can be accessed by knife ssh or ssh
-        if ["reset","reinstall","update","delete"].member?(state)
-          system("sudo rm /root/.ssh/known_hosts")
-        end
-      end
     end
     @logger.info("Provisioner transition: exiting for #{name} for #{state}")
     [200, node.to_hash ]
