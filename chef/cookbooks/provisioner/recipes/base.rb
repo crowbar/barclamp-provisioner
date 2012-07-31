@@ -15,7 +15,7 @@
 
 package "ipmitool" do
   package_name "OpenIPMI-tools" if node[:platform] =~ /^(redhat|centos)$/
-  action :install
+  action :upgrade
 end
 
 directory "/root/.ssh" do

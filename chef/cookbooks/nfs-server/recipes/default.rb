@@ -16,8 +16,12 @@
 rpcService="portmap"
 case node[:platform]
 when "ubuntu","debian"
-  package "nfs-common"
-  package "nfs-kernel-server"
+  package "nfs-common" do
+    action :upgrade
+  end
+  package "nfs-kernel-server" do
+    action :upgrade
+  end
 
   case node[:lsb][:codename]
   when "precise"
@@ -35,13 +39,17 @@ when "ubuntu","debian"
   end
 
 when "centos","redhat","suse"
-  package "nfs-utils"
+  package "nfs-utils" do
+    action :upgrade
+  end
   if node[:platform_version].to_f >= 6 || node[:platform] == "suse"
     rpcService="rpcbind"
   end
 end
 
-package rpcService
+package rpcService do
+  action :upgrade
+end
 
 service rpcService do
   running true

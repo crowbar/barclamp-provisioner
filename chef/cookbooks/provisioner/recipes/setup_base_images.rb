@@ -14,7 +14,9 @@
 # limitations under the License
 #
 
-package "syslinux"
+package "syslinux" do
+  action :upgrade
+end
 
 # Set up the OS images as well
 # Common to all OSes
@@ -115,7 +117,9 @@ else
 
   include_recipe "bluepill"
 
-  package "nginx"
+  package "nginx" do
+    action :upgrade
+  end
 
   service "nginx" do
     action :disable
@@ -156,15 +160,21 @@ end # !suse
 # Set up the TFTP server as well.
 case node[:platform]
 when "ubuntu", "debian"
-  package "tftpd-hpa"
+  package "tftpd-hpa" do
+    action :upgrade
+  end
   bash "stop ubuntu tftpd" do
     code "service tftpd-hpa stop; killall in.tftpd; rm /etc/init/tftpd-hpa.conf"
     only_if "test -f /etc/init/tftpd-hpa.conf"
   end
 when "redhat","centos"
-  package "tftp-server"
+  package "tftp-server" do
+    action :upgrade
+  end
 when "suse"
-  package "tftp"
+  package "tftp" do
+    action :upgrade
+  end
 end
 
 if node[:platform] == "suse"

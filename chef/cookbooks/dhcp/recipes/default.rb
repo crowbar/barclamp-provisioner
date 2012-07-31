@@ -19,13 +19,19 @@ pkg = ""
 case node[:platform]
 when "ubuntu","debian"
   pkg = "dhcp3"
-  package "dhcp3-server"
+  package "dhcp3-server" do
+    action :upgrade
+  end
 when "redhat","centos"
   pkg = "dhcp"
-  package "dhcp"
+  package "dhcp" do
+    action :upgrade
+  end
 when "suse"
   pkg = "dhcp-server"
-  package "dhcp-server"
+  package "dhcp-server" do
+    action :upgrade
+  end
 end
 
 directory "/etc/dhcp3"
