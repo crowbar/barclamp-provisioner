@@ -25,7 +25,7 @@ pxecfg_dir="#{discover_dir}/pxelinux.cfg"
 uefi_dir=discover_dir
 pxecfg_default="#{pxecfg_dir}/default"
 nodes = search(:node, "crowbar_usedhcp:true")
-
+admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
     Chef::Log.info("Testing if #{mnode[:fqdn]} needs a state transition")
@@ -53,7 +53,6 @@ if not nodes.nil? and not nodes.empty?
       end
     end
     mac_list.sort!
-
     # Build DHCP, PXE, and ELILO config files for each system
     nodeaddr = sprintf("%X",mnode.address("admin",IP::IP4).address)
     pxefile = "#{pxecfg_dir}/#{nodeaddr}"
@@ -79,10 +78,24 @@ if not nodes.nil? and not nodes.empty?
     elsif mnode.address("admin",IP::IP4)
       # Make our DHCP config for this system.
       mac_list.each_index do |idx|
+        if new_group == "execute"
+          dhcp_opts = []
+        else
+          dhcp_opts = [
+                     '  if option arch = 00:06 {
+      filename = "discovery/bootia32.efi";
+   } else if option arch = 00:07 {
+      filename = "discovery/bootx64.efi";
+   } else {
+      filename = "discovery/pxelinux.0";
+   }',
+                     "next-server #{admin_ip}"]
+        end
         dhcp_host "#{mnode.name}-#{idx}" do
           hostname mnode.name
-          ipaddress mnode.address("admin",IP::IP4).addr
+          ipaddress mnode.address.addr
           macaddress mac_list[idx]
+          options dhcp_opts
           action :add
         end
       end
