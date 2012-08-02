@@ -17,7 +17,7 @@ states = node["provisioner"]["dhcp"]["state_machine"]
 tftproot=node["provisioner"]["root"]
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 nodes = search(:node, "crowbar_usedhcp:true")
-
+admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 if not nodes.nil? and not nodes.empty?
   nodes.each do |mnode|
     next if mnode[:state].nil?
@@ -42,7 +42,6 @@ if not nodes.nil? and not nodes.empty?
     interfaces.each do |net, net_data|
       net_data.each do |field, field_data|
         next if field != "addresses"
-        
         field_data.each do |addr, addr_data|
           next if addr_data["family"] != "lladdr"
           mac_list << addr unless mac_list.include? addr
@@ -57,27 +56,39 @@ if not nodes.nil? and not nodes.empty?
     mac_list.each do |mac|
       count = count+1
       if new_group == "reset" or new_group == "delete"
-        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
-          action :delete
-        end
         dhcp_host "#{mnode.name}-#{count}" do
           hostname mnode.name
           ipaddress "0.0.0.0"
           macaddress mac
           action :remove
         end
+        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
+          action :delete
+        end
       else
         # Skip if we don't have admin
         next if admin_data_net.nil?
-
+        if new_group == "execute"
+          dhcp_host "#{mnode.name}-#{count}" do
+            hostname mnode.name
+            ipaddress admin_data_net.address
+            macaddress mac
+            action :add
+          end
+        else
+          dhcp_host "#{mnode.name}-#{count}" do
+            hostname mnode.name
+            ipaddress admin_data_net.address
+            macaddress mac
+            options [
+                     'filename "discovery/pxelinux.0"',
+                     "next-server #{admin_ip}"
+                    ]
+            action :add
+          end
+        end
         link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
           to "#{new_group}"
-        end
-        dhcp_host "#{mnode.name}-#{count}" do
-          hostname mnode.name
-          ipaddress admin_data_net.address
-          macaddress mac
-          action :add
         end
       end
     end
