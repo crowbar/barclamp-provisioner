@@ -99,8 +99,6 @@ post_state() {
 
 HOSTNAME=$(hostname -f)
 
-post_state $HOSTNAME "installing"
-
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true
 export LC_ALL=C LANGUAGE=C LANG=C
 apt-get -y --force-yes remove apparmor
