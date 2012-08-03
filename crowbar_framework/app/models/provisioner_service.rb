@@ -97,8 +97,11 @@ class ProvisionerService < ServiceObject
       # All non-admin nodes call single_chef_client if the state machine says to.
       if cstate != nstate
         if nstate == "os_install"
-          target_os = (node[:crowbar][:os] rescue nil)
-          target_os ||= role.default_attributes["provisioner"]["default_os"]
+          target_os = (node.crowbar["crowbar"]["os"] rescue nil)
+          if  target_os.nil? || (target_os == "default_os")
+            node.crowbar["crowbar"] ||= Mash.new
+            node.crowbar["crowbar"]["os"] = target_os = role.default_attributes["provisioner"]["default_os"]
+          end
           if role.default_attributes["provisioner"]["supported_oses"][target_os]
             nstate = "#{target_os}_install"
           else
