@@ -221,7 +221,7 @@ if ! log_to chef chef-client -l debug; then
         rm -rf /var/cache/chef/*
         echo "Checking Keys"
         rm -f /etc/chef/client.pem
-        post_state $HOSTNAME "hardware-updated"
+        post_state $HOSTNAME "installed"
         echo "Running Chef Client (pass 4) - password cleanup"
         if ! log_to chef chef-client -l debug; then
             log_to ifup /sbin/service network restart
@@ -229,6 +229,9 @@ if ! log_to chef chef-client -l debug; then
             echo "Failed"
             printf "Our IP address is: %s\n" "$(ip addr show)"
             final_state="problem"
+        else
+            post_state $HOSTNAME "$final_state"
+            log_to chef chef-client -l debug
         fi
     fi
 fi
