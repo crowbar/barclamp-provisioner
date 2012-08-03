@@ -102,7 +102,8 @@ class ProvisionerService < ServiceObject
             node.crowbar["crowbar"] ||= Mash.new
             node.crowbar["crowbar"]["os"] = target_os = role.default_attributes["provisioner"]["default_os"]
           end
-          if role.default_attributes["provisioner"]["supported_oses"][target_os]
+          provisioner = NodeObject.find('roles:provisioner-server')
+          if provisioner && provisioner[0] && provisioner[0]["provisioner"]["available_oses"][target_os]
             nstate = "#{target_os}_install"
           else
             return [500, "#{node.name} wants to install #{target_os}, but #{name} doesn't know how to do that!"]
