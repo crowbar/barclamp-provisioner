@@ -17,5 +17,15 @@ class ProvisionerController < BarclampController
   def initialize
     @service_object = ProvisionerService.new logger
   end
+
+  add_help(:oses)
+  def oses
+    provisioners = NodeObject.find('roles:provisioner-server')
+    res = provisioners ? provisioners.map{|n|n["provisioner"]["available_oses"].keys}.flatten.sort.uniq : []
+    respond_to do |format|
+      format.html
+      format.json { render :json => res }
+    end
+  end
 end
 

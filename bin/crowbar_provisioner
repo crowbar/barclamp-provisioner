@@ -17,5 +17,16 @@
 
 require File.join(File.expand_path(File.dirname(__FILE__)), "barclamp_lib")
 @barclamp = "provisioner"
+@commands["oses"] = [ "oses", "oses - Get a list of operating systems the provisioner can install" ]
+
+def oses
+  struct = get_json("/oses")
+  if struct[1] == 200
+    [ struct[0].inspect , 0]
+  else
+    [ "Unable to get list of operating systems", 1 ]
+  end
+end
+
 
 main
