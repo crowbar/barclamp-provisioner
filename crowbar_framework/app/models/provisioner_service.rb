@@ -97,9 +97,13 @@ class ProvisionerService < ServiceObject
       # All non-admin nodes call single_chef_client if the state machine says to.
       if cstate != nstate
         if nstate == "os_install"
-          target_os = (node[:crowbar][:os] rescue nil)
-          target_os ||= role.default_attributes["provisioner"]["default_os"]
-          if role.default_attributes["provisioner"]["supported_oses"][target_os]
+          target_os = (node.crowbar["crowbar"]["os"] rescue nil)
+          if  target_os.nil? || (target_os == "default_os")
+            node.crowbar["crowbar"] ||= Mash.new
+            node.crowbar["crowbar"]["os"] = target_os = role.default_attributes["provisioner"]["default_os"]
+          end
+          provisioner = NodeObject.find('roles:provisioner-server')
+          if provisioner && provisioner[0] && provisioner[0]["provisioner"]["available_oses"][target_os]
             nstate = "#{target_os}_install"
           else
             return [500, "#{node.name} wants to install #{target_os}, but #{name} doesn't know how to do that!"]
@@ -117,22 +121,6 @@ class ProvisionerService < ServiceObject
         end
         @logger.info("Provisioner transition: Run the chef-client locally")
         system("sudo -i /opt/dell/bin/blocking_chef_client.sh")
-      end
-      #
-      # The temp booting images need to have clients cleared.
-      #
-      if ["discovered","hardware-installed","hardware-updated",
-          "hardware-installing","hardware-updating","reinstall",
-          "update","installing","installed"].member?(state) and !node.admin?
-        @logger.info("Provisioner transition: should be deleting a client entry for #{node.name}")
-        client = ClientObject.find_client_by_name node.name
-        @logger.info("Provisioner transition: found and trying to delete a client entry for #{node.name}") unless client.nil?
-        client.destroy unless client.nil?
-
-        # Make sure that the node can be accessed by knife ssh or ssh
-        if ["reset","reinstall","update","delete"].member?(state)
-          system("sudo rm /root/.ssh/known_hosts")
-        end
       end
     end
     @logger.info("Provisioner transition: exiting for #{name} for #{state}")

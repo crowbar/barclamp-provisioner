@@ -14,8 +14,42 @@
 # 
 
 class ProvisionerController < BarclampController
+  self.help_contents = Array.new(superclass.help_contents)
   def initialize
     @service_object = ProvisionerService.new logger
+  end
+
+  add_help(:oses)
+  def oses
+    res = get_oses
+    respond_to do |format|
+      format.html
+      format.json { render :json => res }
+    end
+  end
+
+  add_help(:current_os, [:id,:name])
+  def current_os
+    node = NodeObject.find_node_by_name(params[:name])
+    return render :text => "Could not find node #{params[:name]}", :status => 404 unless node
+    render :json => [ node.crowbar["crowbar"]["os"].to_s ]
+  end
+
+  add_help(:set_os, [:id,:node,:os], [:post])
+  def set_os
+    node = NodeObject.find_node_by_name(params[:node])
+    return render :text => "Could not find node #{params[:name]}", :status => 404 unless node
+    oses = get_oses
+    return render :text => "#{params[:os]} is not an available OS", :status => 404 unless oses.member?(params[:os])
+    node.crowbar["crowbar"]["os"] = params[:os]
+    node.save
+    render :json => [ node.crowbar["crowbar"]["os"].to_s ]
+  end
+
+  private
+  def get_oses
+    provisioners = NodeObject.find('roles:provisioner-server')
+    provisioners ? provisioners.map{|n|n["provisioner"]["available_oses"].keys}.flatten.sort.uniq : []
   end
 end
 

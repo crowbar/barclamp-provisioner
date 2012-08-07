@@ -237,6 +237,7 @@ unless default_os = node[:provisioner][:default_os]
 end
 
 node[:provisioner][:repositories] ||= Mash.new
+node[:provisioner][:available_oses] = Mash.new
 node[:provisioner][:supported_oses].each do |os,params|
 
   web_path = "#{provisioner_web}/#{os}"
@@ -251,6 +252,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   # Don't bother for OSes that are not actaully present on the provisioner node.
   next unless (File.directory? os_dir and File.directory? "#{os_dir}/install") or
     (node[:provisioner][:online] and params[:online_mirror])
+  node[:provisioner][:available_oses][os] = true
 
   # Index known barclamp repositories for this OS
   node[:provisioner][:repositories][os] ||= Mash.new
