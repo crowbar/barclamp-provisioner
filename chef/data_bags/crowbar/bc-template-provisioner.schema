@@ -15,6 +15,7 @@
             "default_user": { "type": "str", "required": true },
             "default_password": { "type": "str" },
             "default_password_hash": { "type": "str" },
+            "root_password_hash": { "type": "str" },
             "access_keys": { "type": "str", "required": true },
             "web_port": { "type": "int", "required": true },
 	    "root": { "type": "str", "required": true },

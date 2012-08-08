@@ -272,6 +272,7 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_node_ip => admin_ip,
                 :web_port => web_port,
                 :repos => node[:provisioner][:repositories][os_token],
+                :rootpw_hash => node[:provisioner][:root_password_hash] || "",
                 :admin_web => admin_web,
                 :crowbar_join => "#{web_path}/crowbar_join.sh")
     end
