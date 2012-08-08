@@ -399,7 +399,7 @@ end
 
 bash "Fetch elilo 3.14" do
   code <<EOC
-http_proxy=http://#{admin_ip}:8123
+export http_proxy=http://#{admin_ip}:8123
 mkdir -p #{tftproot}/files
 cd #{tftproot}/files
 curl -LO 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
