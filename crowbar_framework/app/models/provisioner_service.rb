@@ -68,7 +68,7 @@ class ProvisionerService < ServiceObject
     #
     # test state machine and call chef-client if state changes
     #
-    node = NodeObject.find_by_name(name)
+    node = Node.find_by_name(name)
     if ! node
       @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
       return [404, "Failed to find node"]
