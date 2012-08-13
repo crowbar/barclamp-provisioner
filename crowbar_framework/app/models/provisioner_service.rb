@@ -61,10 +61,8 @@ class ProvisionerService < ServiceObject
     if state == "delete"
       # BA LOCK NOT NEEDED HERE.  NODE IS DELETING
       node = Node.find_by_name(name)
-      node.state = "delete-final"
+      node.set_state("delete-final")
       node.save
-      node.node_object.crowbar["state"] = "delete-final"
-      node.node_object.save
     end
 
     #
