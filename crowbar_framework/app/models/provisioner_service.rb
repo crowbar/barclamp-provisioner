@@ -48,7 +48,7 @@ class ProvisionerService < ServiceObject
         server_ip = nodes[0].address("public").addr rescue nodes[0].address.addr
 
         unless server_ip.nil?
-          node = Node.find_node_by_name(name)
+          node = Node.find_by_name(name)
           chash = prop_config.get_node_config_hash(node)
           chash["crowbar"] = {} if chash["crowbar"].nil?
           chash["crowbar"]["links"] = {} if chash["crowbar"]["links"].nil?
