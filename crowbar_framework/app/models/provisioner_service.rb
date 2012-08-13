@@ -73,7 +73,7 @@ class ProvisionerService < ServiceObject
       @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
       return [404, "Failed to find node"]
     end
-    unless node.is_admin? or prop_config.config_hash["dhcp"]["state_machine"][state].nil? 
+    unless node.is_admin? or prop_config.config_hash["provisioner"]["dhcp"]["state_machine"][state].nil? 
       # All non-admin nodes call single_chef_client if the state machine says to.
       @logger.info("Provisioner transition: Run the chef-client locally")
       system("sudo -i /opt/dell/bin/single_chef_client.sh")
