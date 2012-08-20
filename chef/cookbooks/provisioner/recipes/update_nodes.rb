@@ -33,7 +33,13 @@ if not nodes.nil? and not nodes.empty?
     system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
 
     mac_list = []
-    mnode["network"]["interfaces"].each do |net, net_data|
+    interfaces = mnode["network"]["interfaces"]
+    if ! interfaces
+      log("no interfaces found for node #{mnode.name}") {level :warn}
+      interfaces = []
+    end
+
+    interfaces.each do |net, net_data|
       net_data.each do |field, field_data|
         next if field != "addresses"
         
