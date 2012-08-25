@@ -17,12 +17,6 @@
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
-DHCPDIR=/var/lib/dhclient
-
-[ -e /etc/SuSE-release ] && {
- DHCPDIR=/var/lib/dhcp
-}
-
 [[ $DEBUG ]] && set -x
 
 MYINDEX=${MYIP##*.}
