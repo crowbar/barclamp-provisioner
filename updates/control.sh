@@ -142,30 +142,34 @@ run_hooks() {
     done
 }
 
+run_chef_client() {
+    # $1 = URL of server
+    # $2 = name of client
+    # $3 = Crowbar state client is in.
+    rm -f /etc/chef/client.pem
+    chef-client -S "$1" -N "$2" && return
+    cp /var/chef/cache/chef-stacktrace.out "/install-logs/$2-$3-chef-stacktrace.out"
+    cp /var/chef/cache/failed-run-data.json "/install-logs/$2-$3-failed-run-data.json"
+    post_state "$2" debug
+    exit
+}
+
 walk_node_through () {
     # $1 = hostname for chef-client run
     # $@ = states to walk through
     local name="$1" f='' state=''
     shift
-    while (( $# > 1)); do
-        state="$1"
-        post_state "$name" "$1"
+    while (( $# > 0)); do
+        if (( $# == 1)); then
+            report_state "$name" "$1"
+        else
+            post_state "$name" "$1"
+        fi
         run_hooks "$HOSTNAME" "$1" pre
-        chef-client -S http://$ADMIN_IP:4000/ -N "$name" || {
-            cp /var/chef/cache/chef-stacktrace.out \
-                "/install-logs/$name-$1-chef-stacktrace.out"
-            cp /var/chef/cache/failed-run-data.json \
-                "/install-logs/$name-$1-failed-run-data.json"
-            post_state "$1" debug
-            exit
-        }
+        run_chef_client "http://$ADMIN_IP:4000/" "$name" "$1"
         run_hooks "$HOSTNAME" "$1" post
         shift
     done
-    state="$1"
-    run_hooks "$HOSTNAME" "$1" pre
-    report_state "$name" "$1"
-    run_hooks "$HOSTNAME" "$1" post
 }
 
 # If there is a custom control.sh for this system, source it.
@@ -174,13 +178,14 @@ walk_node_through () {
 
 discover() {
     echo "Discovering with: $HOSTNAME_MAC"
-    walk_node_through $HOSTNAME_MAC discovering discovered
+    walk_node_through $HOSTNAME_MAC discovering
+    post_state $HOSTNAME_MAC discovered
+    run_chef_client "http://$ADMIN_IP:4000/" "$HOSTNAME" discovered
 }
 
 hardware_install () {
     wait_for_allocated "$HOSTNAME"
     echo "Hardware installing with: $HOSTNAME"
-    rm -f /etc/chef/client.pem
     nuke_everything
     walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything

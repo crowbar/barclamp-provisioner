@@ -14,10 +14,6 @@
 # limitations under the License
 #
 
-package "syslinux"
-
-# Set up the OS images as well
-# Common to all OSes
 admin_ip = node.address.addr
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 web_port = node[:provisioner][:web_port]
@@ -25,90 +21,79 @@ use_local_security = node[:provisioner][:use_local_security]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
 os_token="#{node[:platform]}-#{node[:platform_version]}"
-
 tftproot = node[:provisioner][:root]
+discover_dir="#{tftproot}/discovery"
+pxecfg_dir="#{discover_dir}/pxelinux.cfg"
+uefi_dir=discover_dir
+pxecfg_default="#{pxecfg_dir}/default"
 
-pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
-pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
-
-bash "Install pxelinux.0" do
-  libdir = node[:platform] == "suse" ? "share" : "lib"
-  code "cp /usr/#{libdir}/syslinux/pxelinux.0 #{tftproot}/discovery"
-  not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
-end
-
-# FIXME: What is the purpose of this, really? If pxecfg_default does not exist
-# the root= parameters will not get appended to the kernel commandline. (Luckily
-# we don't need those with the SLES base sledgehammer)
-# Later on pxecfg_default will even be replace with a link to "discovery"
-# Probably this pxecfg_default check can go a way and we can just unconditionally
-# append the root= parameters?
-if File.exists? pxecfg_default
-  append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
-  if append_line
-    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|console=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'').strip
-  elsif node[:platform] != "suse"
-    append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+unless node[:provisioner][:sledgehammer_kernel_params]
+  # FIXME: What is the purpose of this, really? If pxecfg_default does not exist
+  # the root= parameters will not get appended to the kernel commandline. (Luckily
+  # we don't need those with the SLES base sledgehammer)
+  # Later on pxecfg_default will even be replace with a link to "discovery"
+  # Probably this pxecfg_default check can go a way and we can just unconditionally
+  # append the root= parameters?
+  # ANSWER:  This hackery exists to automatically do The Right Thing in handling
+  # CentOS 5 vs. CentOS 6 based sledgehammer images.
+  if File.exists? pxecfg_default
+    append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
+    if append_line
+      append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|console=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'').strip
+    elsif node[:platform] != "suse"
+      append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
+    end
   end
-end
-
-if ::File.exists?("/etc/crowbar.install.key")
-  append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
-end
-
-if node[:provisioner][:use_serial_console]
-  append_line += " console=tty0 console=ttyS1,115200n8"
-end
-
-# Generate the appropriate pxe config file for each state
-[ "discovery","update","hwinstall"].each do |state|
-  template "#{pxecfg_dir}/#{state}" do
-    mode 0644
-    owner "root"
-    group "root"
-    source "default.erb"
-    variables(:append_line => "#{append_line} crowbar.state=#{state}",
-              :install_name => state,
-              :initrd => "initrd0.img",
-              :kernel => "vmlinuz0")
+  
+  if ::File.exists?("/etc/crowbar.install.key")
+    append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
   end
+  
+  if node[:provisioner][:use_serial_console]
+    append_line += " console=tty0 console=ttyS1,115200n8"
+  end
+  
+  node[:provisioner][:sledgehammer_kernel_params] = append_line
+else
+  append_line = node[:provisioner][:sledgehammer_kernel_params]
 end
 
-# and the execute state as well
-cookbook_file "#{pxecfg_dir}/execute" do
+# Generate the appropriate pxe and uefi config files for discovery
+# These will only be used if we have not already discovered the system.
+template "#{pxecfg_dir}/default" do
   mode 0644
   owner "root"
   group "root"
-  source "localboot.default"
+  source "default.erb"
+  variables(:append_line => "#{append_line} crowbar.state=discovery",
+            :install_name => "discovery",
+            :initrd => "initrd0.img",
+            :kernel => "vmlinuz0")
 end
 
-# Make discovery our default state
-link "#{pxecfg_dir}/default" do
-  to "discovery"
+# Do uefi as well.
+template "#{uefi_dir}/elilo.conf" do
+  mode 0644
+  owner "root"
+  group "root"
+  source "default.elilo.erb"
+  variables(:append_line => "#{append_line} crowbar.state=discovery",
+            :install_name => "discovery",
+            :initrd => "initrd0.img",
+            :kernel => "vmlinuz0")
 end
 
 # We have a debugging image available.  Make it available.
-if File.exists? "#{tftproot}/omsahammer/pxelinux.cfg/default"
-  bash "Setup omsahammer image" do
-    code <<EOC
-sed -e 's@(vmlinuz0|initrd0\.image)@../omsahammer/\1@' < \
-    "#{tftproot}/omsahammer/pxelinux.cfg/default" > \
-    "#{tftproot}/discovery/pxelinux.cfg/debug"
-EOC
-    not_if { File.exists? "#{tftproot}/discovery/pxelinux.cfg/debug" }
-  end
-else
-  template "#{pxecfg_dir}/debug" do
-    mode 0644
-    owner "root"
-    group "root"
-    source "default.erb"
-    variables(:append_line => "#{append_line} crowbar.state=debug",
-              :install_name => "debug",
-              :initrd => "initrd0.img",
-              :kernel => "vmlinuz0")
-  end
-end
+#if File.exists? "#{tftproot}/omsahammer/pxelinux.cfg/default"
+#  bash "Setup omsahammer image" do
+#    code <<EOC
+#sed -e 's@(vmlinuz0|initrd0\.image)@/omsahammer/\1@' < \
+#    "#{tftproot}/omsahammer/pxelinux.cfg/default" > \
+#    "#{tftproot}/pxelinux.cfg/debug"
+#EOC
+#    not_if { File.exists? "#{tftproot}/pxelinux.cfg/debug" }
+#  end
+#end
 
 if node[:platform] == "suse"
 
@@ -252,28 +237,22 @@ unless default_os = node[:provisioner][:default_os]
 end
 
 node[:provisioner][:repositories] ||= Mash.new
+node[:provisioner][:available_oses] = Mash.new
 node[:provisioner][:supported_oses].each do |os,params|
 
   web_path = "#{provisioner_web}/#{os}"
-  admin_web="#{web_path}/install"
+  admin_web = os_install_site = "#{web_path}/install"
   crowbar_repo_web="#{web_path}/crowbar-extra"
   os_dir="#{tftproot}/#{os}"
   os_codename=node[:lsb][:codename]
   role="#{os}_install"
-  replaces={
-    '%os_site%'         => web_path,
-    '%os_install_site%' => admin_web
-  }
-  append = params["append"]
   initrd = params["initrd"]
   kernel = params["kernel"]
 
-  # Sigh.  There has to be a more elegant way.
-  replaces.each { |k,v|
-    append.gsub!(k,v)
-  }
   # Don't bother for OSes that are not actaully present on the provisioner node.
-  next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+  next unless (File.directory? os_dir and File.directory? "#{os_dir}/install") or
+    (node[:provisioner][:online] and params[:online_mirror])
+  node[:provisioner][:available_oses][os] = true
 
   # Index known barclamp repositories for this OS
   node[:provisioner][:repositories][os] ||= Mash.new
@@ -322,7 +301,52 @@ node[:provisioner][:supported_oses].each do |os,params|
         end if (bc["rpms"][os]["repos"] rescue nil)
       end if os =~ /(centos|redhat)/
     end
-  end 
+
+    if params[:online_mirror]
+      directory "#{os_dir}/install/#{initrd.split('/')[0...-1].join('/')}" do
+        recursive true
+      end
+      case
+      when os =~ /^(ubuntu|debian)/
+        raise ArgumentError.new("Cannot configure provisioner for online deploy of #{os}: missing codename") unless params[:codename]
+        netboot_urls = {
+          initrd => "#{params[:online_mirror]}/dists/#{params[:codename]}/main/installer-amd64/current/images/#{initrd.split('/')[1..-1].join('/')}",
+          kernel => "#{params[:online_mirror]}/dists/#{params[:codename]}/main/installer-amd64/current/images/#{kernel.split('/')[1..-1].join('/')}"
+        }
+        os_install_site = params[:online_mirror]
+      when os =~/^(centos|redhat)/
+        netboot_urls = {
+          initrd => "#{params[:online_mirror]}/os/x86_64/#{initrd}",
+          kernel => "#{params[:online_mirror]}/os/x86_64/#{kernel}"
+        }
+        os_install_site = "#{params[:online_mirror]}/os/x86_64"
+      else
+        raise ArgumentError.new("Cannot configure provisioner for online deploy of #{os}: missing codepaths.")
+      end
+      netboot_urls.each do |k,v|
+        bash "#{os}: fetch #{k}" do
+          code <<EOC
+set -x
+export http_proxy=http://127.0.0.1:8123/
+curl -sfL -o '#{os_dir}/install/#{k}.new' '#{v}' && \
+mv '#{os_dir}/install/#{k}.new' '#{os_dir}/install/#{k}'
+EOC
+          not_if "test -f '#{os_dir}/install/#{k}'"
+        end
+      end
+    end
+  end
+
+  replaces={
+    '%os_site%'         => web_path,
+    '%os_install_site%' => os_install_site
+  }
+  append = params["append"]
+
+  # Sigh.  There has to be a more elegant way.
+  replaces.each { |k,v|
+    append.gsub!(k,v)
+  }
 
   # If we were asked to use a serial console, arrange for it.
   if node[:provisioner][:use_serial_console]
@@ -334,131 +358,66 @@ node[:provisioner][:supported_oses].each do |os,params|
     append << " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
   end
 
-  # These should really be made libraries or something.
+  # If we were asked to use a serial console, arrange for it.
+  if node[:provisioner][:use_serial_console]
+    append << " console=tty0 console=ttyS1,115200n8"
+  end
+  # Add per-OS base repos that may not have been added above.
+
+  node[:provisioner][:boot_specs] ||= Mash.new
+  node[:provisioner][:boot_specs][os] ||= Mash.new
+  node[:provisioner][:boot_specs][os][:kernel] = "../#{os}/install/#{kernel}"
+  node[:provisioner][:boot_specs][os][:initrd] = "../#{os}/install/#{initrd}"
+  node[:provisioner][:boot_specs][os][:os_install_site] = os_install_site
+  node[:provisioner][:boot_specs][os][:kernel_params] = append
+
   case
+  when (/^ubuntu/ =~ os and File.exists?("/tftpboot/#{os}/install/dists"))
+    node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
   when /^(suse)/ =~ os
-    # Add base OS install repo for suse
     node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
-    template "#{os_dir}/autoyast.xml" do
-      mode 0644
-      source "autoyast.xml.erb"
-      owner "root"
-      group "root"
-      variables(
-                :admin_node_ip => admin_ip,
-                :web_port => web_port,
-                :repos => node[:provisioner][:repositories][os],
-                :admin_web => admin_web,
-                :crowbar_join => "#{web_path}/crowbar_join.sh")
-    end
-
-    template "#{os_dir}/crowbar_join.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "crowbar_join.suse.sh.erb"
-      variables(:admin_ip => admin_ip)
-    end
-
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     if ::File.exists? "/tftpboot/#{os}/install/repodata"
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
-    else
+    elsif ::File.exists? "/tftpboot/#{os}/install/Server/repodata"
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
-    end
-    # Default kickstarts and crowbar_join scripts for redhat.
-    template "#{os_dir}/compute.ks" do
-      mode 0644
-      source "compute.ks.erb"
-      owner "root"
-      group "root"
-      variables(
-                :admin_node_ip => admin_ip,
-                :web_port => web_port,
-                :online => node[:provisioner][:online],
-                :proxy => "http://#{node.address.addr}:8123/",
-                :provisioner_web => provisioner_web,
-                :repos => node[:provisioner][:repositories][os],
-                :admin_web => admin_web,
-                :crowbar_join => "#{web_path}/crowbar_join.sh")
-    end
-    template "#{os_dir}/crowbar_join.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "crowbar_join.redhat.sh.erb"
-      variables(:admin_web => admin_web,
-                :os_codename => os_codename,
-                :crowbar_repo_web => crowbar_repo_web,
-                :admin_ip => admin_ip,
-                :provisioner_web => provisioner_web,
-                :web_path => web_path)
-    end
-
-  when /^ubuntu/ =~ os
-    node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
-    # Default files needed for Ubuntu.
-    template "#{os_dir}/net_seed" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "net_seed.erb"
-      variables(:install_name => os,
-                :cc_use_local_security => use_local_security,
-                :cc_install_web_port => web_port,
-                :cc_built_admin_node_ip => admin_ip,
-                :install_path => "#{os}/install")
-    end
-
-    template "#{os_dir}/net-post-install.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      variables(:admin_web => admin_web,
-                :os_codename => os_codename,
-                :repos => node[:provisioner][:repositories][os],
-                :admin_ip => admin_ip,
-                :online => node[:provisioner][:online],
-                :provisioner_web => provisioner_web,
-                :proxy => "http://#{node.address.addr}:8123/",
-                :web_path => web_path)
-    end
-
-    template "#{os_dir}/crowbar_join.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "crowbar_join.ubuntu.sh.erb"
-      variables(:admin_web => admin_web,
-                :os_codename => os_codename,
-                :crowbar_repo_web => crowbar_repo_web,
-                :admin_ip => admin_ip,
-                :provisioner_web => provisioner_web,
-                :web_path => web_path)
-    end
-  end
-
-  # Create the pxe linux config for this OS.
-  template "#{pxecfg_dir}/#{role}" do
-    mode 0644
-    owner "root"
-    group "root"
-    source "default.erb"
-    variables(:append_line => "#{append}",
-              :install_name => os,
-              :webserver => "#{admin_web}",
-              :initrd => "../#{os}/install/#{initrd}",
-              :kernel => "../#{os}/install/#{kernel}")
-  end
-
-  # If this is our default, create the appropriate symlink.
-  if os == default_os
-    link "#{pxecfg_dir}/os_install" do
-      link_type :symbolic
-      to "#{role}"
     end
   end
 end
+
+package "syslinux"
+
+["share","lib"].each do |d|
+  next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
+  bash "Install pxelinux.0" do
+    code "cp /usr/#{d}/syslinux/pxelinux.0 #{discover_dir}"
+    not_if do ::File.exists?("#{discover_dir}/pxelinux.0") end
+  end
+  break
+end
+
+bash "Fetch elilo 3.14" do
+  code <<EOC
+http_proxy=http://#{admin_ip}:8123
+cd #{tftproot}/files
+curl -LO 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
+EOC
+  not_if "test -f '#{tftproot}/files/elilo-3.14-all.tar.gz'"
+end if node[:provisioner][:online]
+
+
+bash "Install elilo as UEFI netboot loader" do
+  code <<EOC
+cd #{uefi_dir}
+tar xzf '#{tftproot}/files/elilo-3.14-all.tar.gz'
+mv elilo-3.14-x86_64.efi bootx64.efi
+mv elilo-3.14-ia32.efi bootia32.efi
+mv elilo-3.14-ia64.efi bootia64.efi
+rm elilo*.efi elilo*.tar.gz || :
+EOC
+  not_if "test -f '#{uefi_dir}/bootx64.efi'"
+end
+
 # Save this node config.
 node.save
