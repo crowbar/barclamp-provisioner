@@ -17,5 +17,65 @@
 
 require File.join(File.expand_path(File.dirname(__FILE__)), "barclamp_lib")
 @barclamp = "provisioner"
+@commands["oses"] = [ "oses", "oses - Get a list of operating systems the provisioner can install" ]
+@commands["current_os"] = [ "current_os(ARGV.shift)", "Get the operating system a node is currently configured to use" ]
+@commands["set_os"] = [ "set_os(ARGV.shift,ARGV.shift)", "Set the preferred operating system for a node." ]
+
+def get_oses
+  uri = URI.parse("http://#{@hostname}:#{@port}/#{@barclamp}/oses/foo")
+  res = authenticate(Net::HTTP::Get,uri)
+
+  puts "DEBUG: (g) hostname: #{uri.host}:#{uri.port}" if @debug
+  puts "DEBUG: (g) request: #{uri.path}" if @debug
+  puts "DEBUG: (g) return code: #{res.code}" if @debug
+  puts "DEBUG: (g) return body: #{res.body}" if @debug
+  struct = JSON.parse(res.body)
+
+  puts "DEBUG: (g) JSON parse structure = #{struct.inspect}" if @debug
+
+  if res.code.to_i == 200
+    [ struct , 0]
+  else
+    [ "Unable to get list of operating systems", 1 ]
+  end
+end
+
+def oses
+  str,res = get_oses
+  if res != 0
+    [ str,res ]
+  else
+    [ str.inspect,res ]
+  end
+end
+
+def current_os(node)
+  uri = URI.parse("http://#{@hostname}:#{@port}/#{@barclamp}/current_os/foo?name=#{node}")
+  res = authenticate(Net::HTTP::Get,uri)
+
+  puts "DEBUG: (g) hostname: #{uri.host}:#{uri.port}" if @debug
+  puts "DEBUG: (g) request: #{uri.path}" if @debug
+  puts "DEBUG: (g) return code: #{res.code}" if @debug
+  puts "DEBUG: (g) return body: #{res.body}" if @debug
+  struct = JSON.parse(res.body)
+
+  puts "DEBUG: (g) JSON parse structure = #{struct.inspect}" if @debug
+
+  if res.code.to_i == 200
+    [ struct[0].inspect , 0]
+  else
+    [ "Unable to get current OS for #{node}", 1 ]
+  end
+end
+
+def set_os(node,os)
+  @data = { "node" => node, "os" => os }.to_json
+  res = post_json("/set_os/foo",@data)
+  if res[1] == 200
+    [ "#{node} will install #{os} on next reinstall",0]
+  else
+    [ res[0], 1 ]
+  end
+end
 
 main

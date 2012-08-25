@@ -1,7 +1,7 @@
 #### Contents of the preconfiguration file (for &releasename;)
 ### Localization
 # Locale sets language and country.
-d-i debian-installer/locale string en_US.utf8
+d-i debian-installer/locale string c.utf8
 
 # Keyboard selection.
 # Disable automatic (interactive) keymap detection.
@@ -57,20 +57,19 @@ d-i netcfg/get_domain string unassigned-domain
 # change to false to disable asking.
 #d-i hw-detect/load_firmware boolean true
 
-### Mirror settings
-# If you select ftp, the mirror/country string does not need to be set.
-#d-i mirror/protocol string ftp
-#d-i mirror/country string manual
-#d-i mirror/http/hostname string http.us.debian.org
-#d-i mirror/http/directory string /ubuntu
-#d-i mirror/http/proxy string
-# If you select ftp, the mirror/country string does not need to be set.
+<%  m = /^([^:]*):\/\/([^\/]*)\/(.*)\/?$/.match(@os_install_site)
+    install_protocol = m[1]
+    install_site = m[2]
+    install_path = "/#{m[3]}"   -%>
 d-i mirror/country string manual
-d-i mirror/protocol string http
-d-i mirror/http/hostname string <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
-d-i mirror/http/directory string /<%= @install_path %>
+d-i mirror/protocol string <%=install_protocol%>
+d-i mirror/http/hostname string <%=install_site%>
+d-i mirror/http/directory string <%=install_path%>
+<% if @online -%>
+d-i mirror/http/proxy string <%=@proxy%>
+<% else -%>
 d-i mirror/http/proxy string
-#d-i mirror/http/mirror select <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
+<% end -%>
 
 ### Apt setup
 # You can choose to install restricted and universe software, or to install
@@ -83,11 +82,12 @@ d-i mirror/http/proxy string
 # Select which update services to use; define the mirrors to be used.
 # Values shown below are the normal defaults.
 #d-i apt-setup/services-select multiselect security
-#d-i apt-setup/security_host string security.ubuntu.com
-#d-i apt-setup/security_path string /ubuntu
-<% if @cc_use_local_security -%>
-d-i apt-setup/security_host string <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
-d-i apt-setup/security_path string /<%=@install_path %>
+<% if @online -%>
+d-i apt-setup/security_host string security.ubuntu.com
+d-i apt-setup/security_path string /ubuntu
+<% elsif @cc_use_local_security -%>
+d-i apt-setup/security_host string <%=install_site %>
+d-i apt-setup/security_path string <%=install_path %>
 <% end -%>
 
 
@@ -269,7 +269,7 @@ tasksel tasksel/first multiselect ubuntu-standard, openssh-server
 #tasksel tasksel/first multiselect kubuntu-desktop
 
 # Individual additional packages to install
-d-i pkgsel/include string openssh-server curl
+d-i pkgsel/include string openssh-server curl efibootmgr
 # Whether to upgrade packages after debootstrap.
 # Allowed values: none, safe-upgrade, full-upgrade
 #d-i pkgsel/upgrade select none
@@ -398,5 +398,6 @@ xserver-xorg xserver-xorg/config/monitor/mode-list \
 # packages and run commands in the target system.
 #d-i preseed/late_command string apt-install zsh; in-target chsh -s /bin/zsh
 
-d-i preseed/late_command string wget http://<%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>/<%= @install_name %>/net-post-install.sh -O /target/net-post-install.sh ; chmod +x /target/net-post-install.sh ; /target/net-post-install.sh <%= @cc_built_admin_node_ip %>:<%= @cc_install_web_port %>
+d-i preseed/late_command string wget <%=@web_path%>/<%=@name%>-post-install.sh -O /target/net-post-install.sh ; chmod +x /target/net-post-install.sh ; /target/net-post-install.sh
+
 

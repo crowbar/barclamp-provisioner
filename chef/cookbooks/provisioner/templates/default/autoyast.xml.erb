@@ -97,40 +97,6 @@
     </drive>
   </partitioning>
   <scripts>
-    <pre-scripts config:type="list">
-        <script>
-            <debug config:type="boolean">true</debug>
-            <feedback config:type="boolean">false</feedback>
-            <notification>Please wait while script is running...</notification>
-            <source>
-<![CDATA[
-export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
-HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
-IP="<%= @admin_node_ip %>"
-HOSTNAME=$(hostname)
-
-key_re='crowbar\.install\.key=([^ ]+)'
-if [[ $(cat /proc/cmdline) =~ $key_re ]]; then
-export CROWBAR_KEY="${BASH_REMATCH[1]}"
-echo "$CROWBAR_KEY" >/mnt/etc/crowbar.install.key
-elif [[ -f /mnt/etc/crowbar.install.key ]]; then
-export CROWBAR_KEY="$(cat /mnt/etc/crowbar.install.key)"
-fi
-
-post_state() {
-local curlargs=(-o "/var/log/$1-$2.json" --connect-timeout 60 -s \
-  -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
-  -H "Accept: application/json" -H "Content-Type: application/json" \
-  --max-time 240)
-[[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
-}
-
-post_state $HOSTNAME "installing"
-]]>
-            </source>
-        </script>
-    </pre-scripts>
     <chroot-scripts config:type="list">
         <script>
             <chrooted config:type="boolean">false</chrooted>

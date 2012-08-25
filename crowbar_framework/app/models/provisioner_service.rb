@@ -58,13 +58,6 @@ class ProvisionerService < ServiceObject
       end
     end
 
-    if state == "delete"
-      # BA LOCK NOT NEEDED HERE.  NODE IS DELETING
-      node = Node.find_by_name(name)
-      node.set_state("delete-final")
-      node.save
-    end
-
     #
     # test state machine and call chef-client if state changes
     #
@@ -73,12 +66,39 @@ class ProvisionerService < ServiceObject
       @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
       return [404, "Failed to find node"]
     end
-    unless node.is_admin? or prop_config.config_hash["provisioner"]["dhcp"]["state_machine"][state].nil? 
+    unless node.admin?
+      cstate = node.crowbar["provisioner_state"]
+      nstate = (prop_config.config_hash["provisioner"]["dhcp"]["state_machine"][state] | node.provisioner_state)
       # All non-admin nodes call single_chef_client if the state machine says to.
-      @logger.info("Provisioner transition: Run the chef-client locally")
-      system("sudo -i /opt/dell/bin/single_chef_client.sh")
+      if cstate != nstate
+        if nstate == "os_install"
+          target_os = (node.crowbar["crowbar"]["os"] rescue nil)
+          if  target_os.nil? || (target_os == "default_os")
+            node.crowbar["crowbar"] ||= Mash.new
+            node.crowbar["crowbar"]["os"] = target_os = role.default_attributes["provisioner"]["default_os"]
+          end
+          provisioner = NodeObject.find('roles:provisioner-server')
+          if provisioner && provisioner[0] && provisioner[0]["provisioner"]["available_oses"][target_os]
+            nstate = "#{target_os}_install"
+          else
+            return [500, "#{node.name} wants to install #{target_os}, but #{name} doesn't know how to do that!"]
+          end
+        end
+
+        node.crowbar["provisioner_state"] = nstate
+        node.save
+
+        # We need a real process runner here.
+        if cstate == "execute"
+          @logger.info("Provisioner transition: going from #{cstate} => #{nstate}, run chef-client on #{node.name}")
+          run_remote_chef_client(node["fqdn"], "chef-client", "log/#{node.name}.chef_client.log")
+          Process.waitall
+        end
+        @logger.info("Provisioner transition: Run the chef-client locally")
+        system("sudo -i /opt/dell/bin/blocking_chef_client.sh")
+      end
     end
-    @logger.debug("Provisioner transition: exiting for #{name} for #{state}")
+    @logger.info("Provisioner transition: exiting for #{name} for #{state}")
     [200, ""]
   end
 
