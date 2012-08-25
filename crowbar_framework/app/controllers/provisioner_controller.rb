@@ -15,9 +15,6 @@
 
 class ProvisionerController < BarclampController
   self.help_contents = Array.new(superclass.help_contents)
-  def initialize
-    @service_object = ProvisionerService.new logger
-  end
 
   add_help(:oses)
   def oses
@@ -27,6 +24,8 @@ class ProvisionerController < BarclampController
       format.json { render :json => res }
     end
   end
+
+  # XXX: This will need to converted to new formats.
 
   add_help(:current_os, [:id,:name])
   def current_os

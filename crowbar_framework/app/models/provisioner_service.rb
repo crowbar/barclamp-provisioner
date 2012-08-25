@@ -1,4 +1,4 @@
-# Copyright 2011, Dell 
+# Copyright 2012, Dell 
 # 
 # Licensed under the Apache License, Version 2.0 (the "License"); 
 # you may not use this file except in compliance with the License. 
@@ -15,70 +15,45 @@
 
 class ProvisionerService < ServiceObject
 
-  def initialize(thelogger)
-    @bc_name = "provisioner"
-    @logger = thelogger
-  end
-
-  def create_proposal
-    @logger.debug("Provisioner create_proposal: entering")
-    base = super
-    @logger.debug("Provisioner create_proposal: exiting")
-    base
-  end
-
   def transition(inst, name, state)
     @logger.debug("Provisioner transition: entering for #{name} for #{state}")
 
-    role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
+    prop = @barclamp.get_proposal(inst)
+    prop_config = prop.active_config
 
     #
     # If the node is discovered, add the provisioner base to the node
     #
     if state == "discovered"
       @logger.debug("Provisioner transition: discovered state for #{name} for #{state}")
-      db = ProposalObject.find_proposal "provisioner", inst
 
       #
       # Add the first node as the provisioner server
       #
-      if role.override_attributes["provisioner"]["elements"]["provisioner-server"].nil?
+      nodes = prop_config.get_nodes_by_role("provisioner-server")
+      if nodes.empty?
         @logger.debug("Provisioner transition: if we have no provisioner add one: #{name} for #{state}")
-        add_role_to_instance_and_node("provisioner", inst, name, db, role, "provisioner-server")
-
-        # Reload the roles
-        db = ProposalObject.find_proposal "provisioner", inst
-        role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
+        add_role_to_instance_and_node(name, inst, "provisioner-server")
+        nodes = [ Node.find_by_name(name) ]
       end
 
       @logger.debug("Provisioner transition: Make sure that base is on everything: #{name} for #{state}")
-      result = add_role_to_instance_and_node("provisioner", inst, name, db, role, "provisioner-base")
+      result = add_role_to_instance_and_node(name, inst, "provisioner-base")
 
       if !result
         @logger.error("Provisioner transition: existing discovered state for #{name} for #{state}: Failed")
         return [400, "Failed to add role to node"]
       else
-        # Set up the client url
-        role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
-
         # Get the server IP address
-        server_ip = nil
-        [ "provisioner-server" ].each do |element|
-          tnodes = role.override_attributes["provisioner"]["elements"][element]
-          next if tnodes.nil? or tnodes.empty?
-          tnodes.each do |n|
-            next if n.nil?
-            node = NodeObject.find_node_by_name(n)
-            server_ip = node.address("public").addr rescue node.address.addr
-          end
-        end
+        server_ip = nodes[0].address("public").addr rescue nodes[0].address.addr
 
         unless server_ip.nil?
-          node = NodeObject.find_node_by_name(name)
-          node.crowbar["crowbar"] = {} if node.crowbar["crowbar"].nil?
-          node.crowbar["crowbar"]["links"] = {} if node.crowbar["crowbar"]["links"].nil?
-          node.crowbar["crowbar"]["links"]["Chef"] = "http://#{server_ip}:4040/nodes/#{node.name}"
-          node.save
+          node = Node.find_by_name(name)
+          chash = prop_config.get_node_config_hash(node)
+          chash["crowbar"] = {} if chash["crowbar"].nil?
+          chash["crowbar"]["links"] = {} if chash["crowbar"]["links"].nil?
+          chash["crowbar"]["links"]["Chef"] = "http://#{server_ip}:4040/nodes/#{node.name}"
+          prop_config.set_node_config_hash(node, chash)
         end
       end
     end
@@ -86,14 +61,14 @@ class ProvisionerService < ServiceObject
     #
     # test state machine and call chef-client if state changes
     #
-    node = NodeObject.find_node_by_name(name)
+    node = Node.find_by_name(name)
     if ! node
       @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
       return [404, "Failed to find node"]
     end
     unless node.admin?
       cstate = node.crowbar["provisioner_state"]
-      nstate = (role.default_attributes["provisioner"]["dhcp"]["state_machine"][state] || node.crowbar["provisioner_state"])
+      nstate = (prop_config.config_hash["provisioner"]["dhcp"]["state_machine"][state] | node.provisioner_state)
       # All non-admin nodes call single_chef_client if the state machine says to.
       if cstate != nstate
         if nstate == "os_install"
@@ -124,7 +99,7 @@ class ProvisionerService < ServiceObject
       end
     end
     @logger.info("Provisioner transition: exiting for #{name} for #{state}")
-    [200, node.to_hash ]
+    [200, ""]
   end
 
 end
