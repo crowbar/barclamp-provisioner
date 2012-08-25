@@ -57,10 +57,11 @@ fi
 
 # Make sure we can install gems
 cat >/target/etc/gemrc <<EOF
-<% unless @online -%>
 :sources:
-- <%=@provisioner_web%>/gemsite/
+<% if @online -%>
+- http://rubygems.org/
 <% end -%>
+- <%=@provisioner_web%>/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
 EOF
 
@@ -97,8 +98,6 @@ post_state() {
 }
 
 HOSTNAME=$(hostname -f)
-
-post_state $HOSTNAME "installing"
 
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true
 export LC_ALL=C LANGUAGE=C LANG=C
