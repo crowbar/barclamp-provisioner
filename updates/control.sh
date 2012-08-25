@@ -145,6 +145,18 @@ run_hooks() {
     done
 }
 
+run_chef_client() {
+    # $1 = URL of server
+    # $2 = name of client
+    # $3 = Crowbar state client is in.
+    rm -f /etc/chef/client.pem
+    chef-client -S "$1" -N "$2" && return
+    cp /var/chef/cache/chef-stacktrace.out "/install-logs/$2-$3-chef-stacktrace.out"
+    cp /var/chef/cache/failed-run-data.json "/install-logs/$2-$3-failed-run-data.json"
+    post_state "$2" debug
+    exit
+}
+
 walk_node_through () {
     # $1 = hostname for chef-client run
     # $@ = states to walk through
