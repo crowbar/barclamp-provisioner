@@ -24,19 +24,10 @@ barclamp:
     - crowbar
 
 crowbar:
-  layout: 1
+  layout: 2
   order: 10
   run_order: 1060
   chef_order: 1060
-
-locale_additions:
-  en:
-    barclamp:
-      provisioner:
-        edit_attributes: 
-          attributes: Attributes
-        edit_deployment: 
-          deployment: Deployment
 
 debs:
   ubuntu-10.10:
