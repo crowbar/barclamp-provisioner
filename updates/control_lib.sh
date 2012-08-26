@@ -128,7 +128,7 @@ wait_for_pxe_state() {
     # very slow updating pxe config.  So just in case we'll poll here for up
     # to five minutes before giving up and just rebooting
 
-    local pc=0
+    let pc=0
     pxe_file="01-$(echo $MAC | tr '[:upper:]:' '[:lower:]-')"
     pxe_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$pxe_file"
     pxe_state_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$1"
