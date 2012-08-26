@@ -192,10 +192,12 @@ hardware_install () {
     nuke_everything
     # don't post state yet, since this is happening from AutoYaST
     #post_state "$HOSTNAME" installing
+    wait_for_pxe_state "os_install"
 }
 
 hwupdate () {
     walk_node_through $HOSTNAME hardware-updating hardware-updated
+    wait_for_pxe_state "execute"
 }
 
 case $DHCP_STATE in
