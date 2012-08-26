@@ -86,6 +86,10 @@ curl -L -o /etc/chef/validation.pem \
 
 . "/updates/control_lib.sh"
 
+# set hostname, so that hostname -f works correctly
+echo "127.0.0.1 $HOSTNAME_MAC d${MAC//:/-}" >> /etc/hosts
+echo "$HOSTNAME_MAC" > /etc/HOSTNAME
+
 nuke_everything() {
     # Make sure that the kernel knows about all the partitions
     for bd in /sys/block/sd*; do
@@ -147,6 +151,7 @@ run_chef_client() {
     # $1 = URL of server
     # $2 = name of client
     # $3 = Crowbar state client is in.
+    rm -f /etc/chef/client.pem
     chef-client -S "$1" -N "$2" && return
     cp /var/chef/cache/chef-stacktrace.out "/install-logs/$2-$3-chef-stacktrace.out"
     cp /var/chef/cache/failed-run-data.json "/install-logs/$2-$3-failed-run-data.json"
@@ -185,11 +190,9 @@ discover() {
 hardware_install () {
     wait_for_allocated "$HOSTNAME"
     echo "Hardware installing with: $HOSTNAME"
-    rm -f /etc/chef/client.pem
     nuke_everything
-    walk_node_through $HOSTNAME hardware-installing
+    walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything
-    post_state "$HOSTNAME" hardware-installed
     wait_for_pxe_state "os_install"
 }
 
