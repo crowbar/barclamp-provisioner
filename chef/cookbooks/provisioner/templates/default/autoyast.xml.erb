@@ -153,6 +153,8 @@ local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
 curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
 }
 
+mkdir -p /var/log/crowbar
+
 post_state $HOSTNAME "installing"
 ]]>
             </source>
@@ -179,7 +181,7 @@ export CROWBAR_KEY="$(cat /mnt/etc/crowbar.install.key)"
 fi
 
 post_state() {
-local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
+local curlargs=(-o "/mnt/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
   -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
   -H "Accept: application/json" -H "Content-Type: application/json" \
   --max-time 240)
@@ -201,6 +203,8 @@ fi
 
 curl -s -o /mnt/usr/local/sbin/crowbar_join.sh <%= @crowbar_join %>
 chmod +x /mnt/usr/local/sbin/crowbar_join.sh
+
+mkdir -p /mnt/var/log/crowbar
 
 sleep 30
 
