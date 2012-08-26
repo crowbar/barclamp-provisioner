@@ -190,7 +190,8 @@ hardware_install () {
     nuke_everything
     walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything
-    post_state "$HOSTNAME" installing
+    # don't post state yet, since this is happening from AutoYaST
+    #post_state "$HOSTNAME" installing
 }
 
 hwupdate () {
