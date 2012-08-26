@@ -147,7 +147,6 @@ run_chef_client() {
     # $1 = URL of server
     # $2 = name of client
     # $3 = Crowbar state client is in.
-    rm -f /etc/chef/client.pem
     chef-client -S "$1" -N "$2" && return
     cp /var/chef/cache/chef-stacktrace.out "/install-logs/$2-$3-chef-stacktrace.out"
     cp /var/chef/cache/failed-run-data.json "/install-logs/$2-$3-failed-run-data.json"
@@ -180,18 +179,17 @@ walk_node_through () {
 discover() {
     echo "Discovering with: $HOSTNAME_MAC"
     walk_node_through $HOSTNAME_MAC discovering
-    post_state $HOSTNAME_MAC discovered
-    run_chef_client "http://$ADMIN_IP:4000/" "$HOSTNAME" discovered
+    post_state "$HOSTNAME_MAC" discovered
 }
 
 hardware_install () {
     wait_for_allocated "$HOSTNAME"
     echo "Hardware installing with: $HOSTNAME"
+    rm -f /etc/chef/client.pem
     nuke_everything
-    walk_node_through $HOSTNAME hardware-installing hardware-installed
+    walk_node_through $HOSTNAME hardware-installing
     nuke_everything
-    # don't post state yet, since this is happening from AutoYaST
-    #post_state "$HOSTNAME" installing
+    post_state "$HOSTNAME" hardware-installed
     wait_for_pxe_state "os_install"
 }
 
