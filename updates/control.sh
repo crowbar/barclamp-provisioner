@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
@@ -31,20 +31,13 @@ export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
 # Make sure date is up-to-date
-if [ ! -f /etc/SuSE-release ]
-then
-  until /usr/sbin/ntpdate $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
-  do
-    echo "Waiting for NTP server"
-    sleep 1
-  done
-else
-  while ! sntp -P no -r $ADMIN_IP
-  do
-    echo "Waiting for NTP server"
-    sleep 1
-  done
-fi
+NTPDATE=/usr/sbin/ntpdate
+[ -f /etc/SuSE-release ] && NTPDATE="sntp -P no -r"
+until $NTPDATE $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
+do
+  echo "Waiting for NTP server"
+  sleep 1
+done
 
 #
 # rely on the DHCP server to do the right thing
@@ -53,12 +46,16 @@ fi
 killall dhclient
 killall dhclient3
 
+
 if [ ! -f /etc/SuSE-release ]
 then
   # HACK fix for chef-client
-  cd /root
-  gem install --local rest-client
-  cd -
+  if [ -e /root/rest-client*gem ]
+  then
+    pushd /root
+    gem install --local rest-client
+    popd
+  fi
 
   # Other gem dependency installs.
   cat > /etc/gemrc <<EOF
@@ -66,6 +63,7 @@ then
 - http://$ADMIN_IP:8091/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
+  gem install rest-client
   gem install xml-simple
   gem install libxml-ruby
   gem install wsman
@@ -162,25 +160,17 @@ walk_node_through () {
     # $@ = states to walk through
     local name="$1" f='' state=''
     shift
-    while (( $# > 1)); do
-        state="$1"
-        post_state "$name" "$1"
+    while (( $# > 0)); do
+        if (( $# == 1)); then
+            report_state "$name" "$1"
+        else
+            post_state "$name" "$1"
+        fi
         run_hooks "$HOSTNAME" "$1" pre
-        chef-client -S http://$ADMIN_IP:4000/ -N "$name" || {
-            cp /var/chef/cache/chef-stacktrace.out \
-                "/install-logs/$name-$1-chef-stacktrace.out"
-            cp /var/chef/cache/failed-run-data.json \
-                "/install-logs/$name-$1-failed-run-data.json"
-            post_state "$1" debug
-            exit
-        }
+        run_chef_client "http://$ADMIN_IP:4000/" "$name" "$1"
         run_hooks "$HOSTNAME" "$1" post
         shift
     done
-    state="$1"
-    run_hooks "$HOSTNAME" "$1" pre
-    report_state "$name" "$1"
-    run_hooks "$HOSTNAME" "$1" post
 }
 
 # If there is a custom control.sh for this system, source it.
@@ -197,7 +187,6 @@ discover() {
 hardware_install () {
     wait_for_allocated "$HOSTNAME"
     echo "Hardware installing with: $HOSTNAME"
-    rm -f /etc/chef/client.pem
     nuke_everything
     walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything
