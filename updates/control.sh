@@ -69,6 +69,7 @@ fi
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 DHCP_STATE=${DHCP_STATE#*=}
+echo "DHCP_STATE=$DHCP_STATE"
 MAXTRIES=5
 BMC_ADDRESS=""
 BMC_NETMASK=""
