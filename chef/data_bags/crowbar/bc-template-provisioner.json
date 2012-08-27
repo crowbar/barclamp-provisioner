@@ -69,14 +69,13 @@
         "state_machine": {
           "web_app_state":  "dhcp_state",
           "discovered": "hwinstall",
-          "hardware-installing": "hwinstall",
+          "hardare-installing": "hwinstall",
           "hardware-installed": "os_install",
-          "hardware-updating": "update",
+          "hardare-updating": "hwinstall",
           "hardware-updated": "execute",
           "installing": "os_install",
           "installed": "execute",
           "update": "update",
-          "readying": "execute",
           "ready": "execute",
           "reset": "reset",
           "delete": "noop",
@@ -95,7 +94,7 @@
       },
       "elements": {},
       "element_order": [
-        [ "provisioner-server" ],
+        [ "provisioner-server" ], 
         [ "provisioner-base" ]
       ],
       "config": {
