@@ -87,10 +87,6 @@ curl -L -o /etc/chef/validation.pem \
 
 . "/updates/control_lib.sh"
 
-# set hostname, so that hostname -f works correctly
-echo "127.0.0.1 $HOSTNAME_MAC d${MAC//:/-}" >> /etc/hosts
-echo "$HOSTNAME_MAC" > /etc/HOSTNAME
-
 nuke_everything() {
     # Make sure that the kernel knows about all the partitions
     for bd in /sys/block/sd*; do
