@@ -133,13 +133,12 @@ wait_for_pxe_state() {
     pxe_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$pxe_file"
     pxe_state_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$1"
 
-    while ! curl -s --head $pxe_link | head -n 1 | grep -q 'HTTP.*200' && \
-      diff <(curl -s $pxe_state_link) <(curl -s $pxe_link) > /dev/null; do
-      echo "$pxe_link not found or different from $pxe_state_link. waiting..." | tee -a /install-logs/$HOSTNAME-update.log
+    while ! diff <(curl -s $pxe_state_link) <(curl -s $pxe_link) > /dev/null; do
+      echo "$pxe_link not found or different from $pxe_state_link. waiting..."
       sleep 10
       let pc=pc+1
       [ $pc -gt 30 ] && {
-        echo "$pxe_link still not found or different. giving up" | tee -a /install-logs/$HOSTNAME-update.log
+        echo "$pxe_link still not found or different. giving up"
         break
       }
    done
