@@ -21,13 +21,22 @@ admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").
 if not nodes.nil? and not nodes.empty?
   nodes.each do |thenode|
     mnode = Node.load(thenode.name) 
-    next if mnode[:state].nil?
+
+    Chef::Log.info("Testing if #{mnode[:fqdn]} needs a state transition")
+    if mnode[:state].nil?
+      Chef::Log.info("#{mnode[:fqdn]} has no current state!")
+      next
+    end
 
     new_group = nil
     newstate = states[mnode[:state]]
     new_group = newstate if !newstate.nil? && newstate != "noop"
 
-    next if new_group.nil?
+    if new_group.nil? || new_group == "noop"
+      Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
+      next
+    end
+    Chef::Log.info("#{mnode[:fqdn]} transitioning to group #{new_group}")
 
     if new_group == "delete"
       system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
