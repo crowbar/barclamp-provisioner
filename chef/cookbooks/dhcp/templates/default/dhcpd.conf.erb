@@ -14,6 +14,12 @@ omapi-key omapi_key;
 <%= option %>;
   <% end -%>
 <% end -%>
+
+
+next-server <%=@provisioner_ip%>;
+filename "discovery/pxelinux.0";
+
+
 # Use this to send dhcp log messages to a different log file (you also
 # have to hack syslog.conf to complete the redirection).
 log-facility local7;

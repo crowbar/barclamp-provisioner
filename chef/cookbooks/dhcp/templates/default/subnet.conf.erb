@@ -1,20 +1,14 @@
 # File managed by Crowbar
 
-subnet <%= @network["subnet"] %> netmask <%= @network["netmask"]%> {
-<% if @network["router"] -%>
-  option routers <%= @network["router"] %>;
+subnet <%= @subnet %> netmask <%= @netmask%> {
+<% unless @routers.nil? or @routers.empty? -%>
+  option routers <%= @routers.collect! {|i| "#{i}" }.join(",") %>;
 <% end -%>
-  option subnet-mask <%= @network["netmask"] %>;
-  option broadcast-address <%= @network["broadcast"] %>;
-<% @options.each do |option| -%>
+  option subnet-mask <%= @netmask %>;
+  option broadcast-address <%= @broadcast %>;
+<% if not @options.empty? -%>
+<%   @options.each do |option| -%>
   <%= option %>;
 <%   end -%>
-<% @pools.each do |pool| -%>
-   pool {
-     range <%=@network["ranges"][pool]["start"]%> <%=@network["ranges"][pool]["end"]%>;
-     <% @pool_options[pool].each do |opt| -%>
-     <%=opt%>;
-     <% end if @pool_options[pool] -%>
-   }
 <% end -%>
 }

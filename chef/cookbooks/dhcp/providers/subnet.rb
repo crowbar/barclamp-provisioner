@@ -19,10 +19,11 @@ action :add do
     cookbook "dhcp"
     source "subnet.conf.erb"
     variables(
-      :network => new_resource.network,
-      :options => new_resource.options,
-      :pools => new_resource.pools,
-      :pool_options => new_resource.pool_options
+      :subnet => new_resource.subnet,
+      :netmask => new_resource.netmask,
+      :broadcast => new_resource.broadcast,
+      :routers => new_resource.routers,
+      :options => new_resource.options
     )
     owner "root"
     group "root"
