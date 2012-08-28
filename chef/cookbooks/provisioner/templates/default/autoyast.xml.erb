@@ -172,7 +172,8 @@ wait_for_pxe_state() {
     pxe_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$pxe_file"
     pxe_state_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$1"
 
-    while ! diff <(curl -s $pxe_state_link) <(curl -s $pxe_link) > /dev/null; do
+    curl -s $pxe_state_link > /tmp/expected_pxe_state
+    while ! curl -s $pxe_link | diff - /tmp/expected_pxe_state > /dev/null; do
       echo "$pxe_link not found or different from $pxe_state_link. waiting..."
       sleep 10
       let pc=pc+1
