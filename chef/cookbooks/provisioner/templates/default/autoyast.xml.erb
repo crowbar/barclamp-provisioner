@@ -136,6 +136,9 @@ HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
 IP="<%= @admin_node_ip %>"
 HOSTNAME=$(hostname)
 
+# set a mac address based on the hostname, that will be useable for wait_for_pxe_state()
+MAC=$(hostname -s | sed -e 's/^d//')
+
 key_re='crowbar\.install\.key=([^ ]+)'
 if [[ $(cat /proc/cmdline) =~ $key_re ]]; then
 export CROWBAR_KEY="${BASH_REMATCH[1]}"
@@ -151,6 +154,32 @@ local curlargs=(-o "/mnt/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
   --max-time 240)
 [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
 curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
+}
+
+# copy & pasted from /updates/control_lib.sh, which is also used in sledgehammer
+wait_for_pxe_state() {
+    # $1 = pxe state to wait for.
+
+    # If we've transitioned states, there sometimes needs to be a link for
+    # pxe boot for this MAC address.  Without it, we'll just reboot into
+    # discovery again and get "stuck".  This can happen if the admin node is
+    # very slow updating pxe config.  So just in case we'll poll here for up
+    # to five minutes before giving up and just rebooting
+
+    let pc=0
+    pxe_file="01-$(echo $MAC | tr '[:upper:]:' '[:lower:]-')"
+    pxe_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$pxe_file"
+    pxe_state_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$1"
+
+    while ! diff <(curl -s $pxe_state_link) <(curl -s $pxe_link) > /dev/null; do
+      echo "$pxe_link not found or different from $pxe_state_link. waiting..."
+      sleep 10
+      let pc=pc+1
+      [ $pc -gt 30 ] && {
+        echo "$pxe_link still not found or different. giving up"
+        break
+      }
+   done
 }
 
 mkdir -p /mnt/root/.ssh
@@ -170,12 +199,10 @@ chmod +x /mnt/usr/local/sbin/crowbar_join.sh
 
 mkdir -p /mnt/var/log/crowbar
 
-sleep 30
-
 post_state $HOSTNAME "installed"
+# wait for the node to be turned into execute state
+wait_for_pxe_state "execute"
 
-# Wait for DHCP to update - this is mainly for virtual environments or really large deploys
-sleep 60
 sync
 ]]>
             </source>
