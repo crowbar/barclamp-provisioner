@@ -136,6 +136,7 @@ HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
 IP="<%= @admin_node_ip %>"
 HOSTNAME=$(hostname)
 
+ADMIN_IP=<%= @admin_node_ip %>
 # set a mac address based on the hostname, that will be useable for wait_for_pxe_state()
 MAC=$(hostname -s | sed -e 's/^d//')
 
