@@ -27,8 +27,11 @@ BMC_ADDRESS=""
 BMC_NETMASK=""
 BMC_ROUTER=""
 ALLOCATED=false
+ADMIN_IP=<%=@provisioner_ip%>
+http_proxy="<%=@proxy%>"
+https_proxy="$http_proxy"
 export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
-export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
+export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE http_proxy https_proxy
 
 # Make sure date is up-to-date
 NTPDATE=/usr/sbin/ntpdate
@@ -60,8 +63,11 @@ then
   # Other gem dependency installs.
   cat > /etc/gemrc <<EOF
 :sources:
+<% if @online -%>
+- http://rubygems.org/
+<% end -%>
 - http://$ADMIN_IP:8091/gemsite/
-gem: --no-ri --no-rdoc --bindir /usr/local/bin
+gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
 EOF
   gem install rest-client
   gem install xml-simple
@@ -81,8 +87,7 @@ cp /updates/parse_node_data /tmp
 
 # get validation cert
 curl -L -o /etc/chef/validation.pem \
-    --connect-timeout 60 -s \
-    "http://$ADMIN_IP:8091/validation.pem"
+    --connect-timeout 60 -s "<%=@provisioner_web%>/validation.pem"
 
 . "/updates/control_lib.sh"
 
