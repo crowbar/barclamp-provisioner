@@ -399,7 +399,8 @@ end
 
 bash "Fetch elilo 3.14" do
   code <<EOC
-http_proxy=http://#{admin_ip}:8123
+export http_proxy=http://#{admin_ip}:8123
+mkdir -p #{tftproot}/files
 cd #{tftproot}/files
 curl -LO 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
 EOC
@@ -418,6 +419,20 @@ rm elilo*.efi elilo*.tar.gz || :
 EOC
   not_if "test -f '#{uefi_dir}/bootx64.efi'"
 end
+
+
+# Generate an appropriate control.sh for the system.
+template "/updates/control.sh" do
+  source "control.sh.erb"
+  mode "0755"
+  variables(
+            :provisioner_ip => admin_ip,
+            :online => node[:provisioner][:online],
+            :provisioner_web => provisioner_web,
+            :proxy => "http://#{admin_ip}:8123"
+            )
+end
+
 
 # Save this node config.
 node.save
