@@ -20,9 +20,18 @@ uefi_dir="#{tftproot}/discovery"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 web_port = node[:provisioner][:web_port]
 provisioner_web="http://#{admin_ip}:#{web_port}"
-nodes = search(:node, "*:*")
-if not nodes.nil? and not nodes.empty?
-  nodes.map{|n|Node.load(n.name)}.each do |mnode|
+nodes = search(:node, "*:*") || []
+
+mnodes = nodes
+#
+# hvolkmer: It is unclear of loading of all the nodes one by one is necessary. Search should
+#           return the node objects as they are. Not re-loading the nodes worked for us all the
+#
+#Chef::Log.info("Loading a lot of nodes...")
+#mnodes = nodes.map{|n|Node.load(n.name)}
+#Chef::Log.info("done loading.")
+
+mnodes.each do |mnode|
     next if mnode[:state].nil?
     new_group = states[mnode[:state]]
     Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group}")
@@ -196,4 +205,3 @@ if not nodes.nil? and not nodes.empty?
       end
     end
   end
-end
