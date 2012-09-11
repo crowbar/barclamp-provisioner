@@ -65,7 +65,10 @@ post_state() {
       -H "Accept: application/json" -H "Content-Type: application/json" \
       --max-time 240)
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+  oldumask=`umask`
+  umask 077
   curl "${curlargs[@]}" "http://<%=@admin_ip%>:3000/crowbar/crowbar/1.0/transition/default"
+  umask $oldumask
 }
 
 # Spin while we wait for the interface to come up.
