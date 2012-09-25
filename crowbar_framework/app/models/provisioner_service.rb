@@ -67,33 +67,39 @@ class ProvisionerService < ServiceObject
       return [404, "Failed to find node"]
     end
     unless node.admin?
-      cstate = node.crowbar["provisioner_state"]
-      nstate = (prop_config.config_hash["provisioner"]["dhcp"]["state_machine"][state] | node.provisioner_state)
+      node_hash = prop_config.get_node_config_hash(node)
+      node_hash["crowbar"] = {} if node_hash["crowbar"].nil?
+      cstate = node_hash["provisioner_state"]
+
+      nstate = prop_config.config_hash["provisioner"]["dhcp"]["state_machine"][state] rescue nil
+      nstate = cstate unless nstate
       # All non-admin nodes call single_chef_client if the state machine says to.
       if cstate != nstate
         if nstate == "os_install"
-          target_os = (node.crowbar["crowbar"]["os"] rescue nil)
+          target_os = node_hash["crowbar"]["os"]
           if  target_os.nil? || (target_os == "default_os")
-            node.crowbar["crowbar"] ||= Mash.new
-            node.crowbar["crowbar"]["os"] = target_os = role.default_attributes["provisioner"]["default_os"]
+            target_os = prop_config.config_hash["provisioner"]["default_os"]
+            node_hash["crowbar"]["os"] = target_os
           end
-          provisioner = NodeObject.find('roles:provisioner-server')
-          if provisioner && provisioner[0] && provisioner[0]["provisioner"]["available_oses"][target_os]
+          provisioner = Node.find_by_role_name('provisioner-server')
+          if provisioner && provisioner[0] && provisioner[0].cmdb_hash["provisioner"]["available_oses"][target_os]
             nstate = "#{target_os}_install"
           else
             return [500, "#{node.name} wants to install #{target_os}, but #{name} doesn't know how to do that!"]
           end
         end
 
-        node.crowbar["provisioner_state"] = nstate
-        node.save
+        node_hash["provisioner_state"] = nstate
+        prop_config.set_node_config_hash(node, node_hash)
+        node.update_cmdb
 
         # We need a real process runner here.
         if cstate == "execute"
           @logger.info("Provisioner transition: going from #{cstate} => #{nstate}, run chef-client on #{node.name}")
-          run_remote_chef_client(node["fqdn"], "chef-client", "log/#{node.name}.chef_client.log")
+          run_remote_chef_client(node.name, "chef-client", "log/#{node.name}.chef_client.log")
           Process.waitall
         end
+        # GREG: Remote the provisioner call.
         @logger.info("Provisioner transition: Run the chef-client locally")
         system("sudo -i /opt/dell/bin/blocking_chef_client.sh")
       end

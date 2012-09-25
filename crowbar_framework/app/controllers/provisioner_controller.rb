@@ -26,17 +26,18 @@ class ProvisionerController < BarclampController
   end
 
   # XXX: This will need to converted to new formats.
+  # os should be pulled from the provisioner config.
 
   add_help(:current_os, [:id,:name])
   def current_os
-    node = NodeObject.find_node_by_name(params[:name])
+    node = Node.find_by_name(params[:name])
     return render :text => "Could not find node #{params[:name]}", :status => 404 unless node
     render :json => [ node.crowbar["crowbar"]["os"].to_s ]
   end
 
   add_help(:set_os, [:id,:node,:os], [:post])
   def set_os
-    node = NodeObject.find_node_by_name(params[:node])
+    node = Node.find_node_name(params[:node])
     return render :text => "Could not find node #{params[:name]}", :status => 404 unless node
     oses = get_oses
     return render :text => "#{params[:os]} is not an available OS", :status => 404 unless oses.member?(params[:os])
@@ -47,8 +48,8 @@ class ProvisionerController < BarclampController
 
   private
   def get_oses
-    provisioners = NodeObject.find('roles:provisioner-server')
-    provisioners ? provisioners.map{|n|n["provisioner"]["available_oses"].keys}.flatten.sort.uniq : []
+    provisioners = Node.find_by_role_name('provisioner-server')
+    provisioners ? provisioners.map{|n|n.cmdb_hash["provisioner"]["available_oses"].keys}.flatten.sort.uniq : []
   end
 end
 
