@@ -97,8 +97,6 @@ post_state() {
   curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
 }
 
-post_state $HOSTNAME "installing"
-
 #"Blacklisting IPv6".
 echo "blacklist ipv6" >>/etc/modprobe.d/blacklist-ipv6.conf
 echo "options ipv6 disable=1" >>/etc/modprobe.d/blacklist-ipv6.conf

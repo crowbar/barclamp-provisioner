@@ -145,13 +145,6 @@ EOH
   not_if "test -f #{tftproot}/validation.pem"
 end
 
-# put our statically-linked curl into place
-directory "/tftpboot/curl"
-bash "copy curl into place" do
-  code "cp /tftpboot/files/curl /tftpboot/curl/"
-  not_if do ::File.exist?("/tftpboot/curl/curl") end
-end
-
 # By default, install the same OS that the admin node is running
 # If the comitted proposal has a defualt, try it.
 # Otherwise use the OS the provisioner node is using.
@@ -302,13 +295,6 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_ip => admin_ip,
                 :provisioner_web => provisioner_web,
                 :web_path => web_path)
-    end
-
-    cookbook_file "#{os_dir}/net-pre-install.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "net-pre-install.sh"
     end
 
     template "#{os_dir}/crowbar_join.sh" do

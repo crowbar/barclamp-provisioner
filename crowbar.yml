@@ -122,7 +122,3 @@ rpms:
     - gcc
     - glibc-devel
 
-extra_files:
-  - http://curl.haxx.se/download/curl-7.23.1.tar.gz
-
-build_cmd: build_curl.sh
