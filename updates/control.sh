@@ -167,6 +167,7 @@ hardware_install () {
     nuke_everything
     walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything
+    walk_node_through $HOSTNAME installing
 }
 
 hwupdate () {

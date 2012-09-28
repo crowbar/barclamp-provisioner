@@ -66,11 +66,12 @@
         "lease-time": 60,
         "state_machine": {
           "web_app_state":  "dhcp_state",
-          "discovered": "hwinstall",
+          "discovered": "discovery",
           "hardware-installing": "hwinstall",
           "hardware-installed": "os_install",
           "hardware-updating": "update",
           "hardware-updated": "execute",
+          "installing": "os_install",
           "installed": "execute",
           "update": "update",
           "readying": "execute",
