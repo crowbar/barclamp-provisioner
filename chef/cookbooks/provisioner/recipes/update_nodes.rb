@@ -21,16 +21,9 @@ nodes = search(:node, "*:*")
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
-    Chef::Log.info("Testing if #{mnode[:fqdn]} needs a state transition")
-    if mnode[:state].nil?
-      Chef::Log.info("#{mnode[:fqdn]} has no current state!")
-      next
-    end
+    next if mnode[:state].nil?
     new_group = states[mnode[:state]]
-    next if mnode[:provisioner_state] && (mnode[:provisioner_state] == new_group)
-    Chef::Log.info("#{mnode[:fqdn]}: transition from #{mnode[:provisioner_state]} to #{new_group}")
-    mnode[:provisioner_state] = new_group
-    mnode.save
+    Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group}")
 
     mac_list = []
     mnode["network"]["interfaces"].each do |net, net_data|
