@@ -1,4 +1,4 @@
-# Copyright 2011, Dell
+# Copyright 2011, Dell 
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 states = node["provisioner"]["dhcp"]["state_machine"]
 tftproot=node["provisioner"]["root"]
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
-nodes = search(:node, "crowbar_usedhcp:true")
+uefi_dir="#{tftproot}/discovery"
+nodes = search(:node, "*:*")
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
@@ -26,6 +27,10 @@ if not nodes.nil? and not nodes.empty?
       next
     end
     new_group = states[mnode[:state]]
+    next if mnode[:provisioner_state] && (mnode[:provisioner_state] == new_group)
+    Chef::Log.info("#{mnode[:fqdn]}: transition from #{mnode[:provisioner_state]} to #{new_group}")
+    mnode[:provisioner_state] = new_group
+    mnode.save
 
     mac_list = []
     mnode["network"]["interfaces"].each do |net, net_data|
@@ -39,7 +44,9 @@ if not nodes.nil? and not nodes.empty?
     end
     mac_list.sort!
     admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
-    nodeaddr = sprintf("%X",admin_data_net.address.split('.').inject(0){|acc,i|(acc<<8)+i.to_i})
+    nodeaddr = sprintf("%X",admin_data_net.address.split('.').inject(0){|acc,i|(acc << 8)+i.to_i})
+    pxefile="#{pxecfg_dir}/#{nodeaddr}"
+    uefifile="#{uefi_dir}/#{nodeaddr}.conf"
 
     case
     when  new_group.nil? || new_group == "noop"
@@ -59,7 +66,9 @@ if not nodes.nil? and not nodes.empty?
           macaddress mac_list[i]
           action :remove
         end
-        file "#{pxecfg_dir}/01-#{mac_list[i].gsub(':','-').downcase}" do
+      end
+      [pxefile,uefifile].each do |f|
+        file f do
           action :delete
         end
       end
@@ -71,7 +80,9 @@ if not nodes.nil? and not nodes.empty?
           macaddress mac_list[i]
           action :add
         end
-        file "#{pxecfg_dir}/01-#{mac_list[i].gsub(':','-').downcase}" do
+      end
+      [pxefile,uefifile].each do |f|
+        file f do
           action :delete
         end
       end
@@ -82,31 +93,42 @@ if not nodes.nil? and not nodes.empty?
           ipaddress admin_data_net.address
           macaddress mac_list[i]
           options [
-                   'filename "discovery/pxelinux.0"',
+                   '      if option arch = 00:06 {
+      filename = "discovery/bootia32.efi";
+   } else if option arch = 00:07 {
+      filename = "discovery/bootx64.efi";
+   } else {
+      filename = "discovery/pxelinux.0";
+   }',
                    "next-server #{admin_ip}"
                   ]
           action :add
         end
-        if new_group == "os_install"
-          # This eventaully needs to be conifgurable on a per-node basis
-          os=node[:provisioner][:default_os]
-          template "#{pxecfg_dir}/01-#{mac_list[i].gsub(':','-').downcase}" do
+      end
+      if new_group == "os_install"
+        # This eventaully needs to be conifgurable on a per-node basis
+        os=node[:provisioner][:default_os]
+        [{:file => pxefile, :src => "default.erb"},
+         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+          template t[:file] do
             mode 0644
             owner "root"
             group "root"
-            source "default.erb"
+            source t[:src]
             variables(:append_line =>  node[:provisioner][:available_oses][os][:append_line],
-                      :admin_web => node[:provisioner][:available_oses][os][:webserver],
                       :install_name => node[:provisioner][:available_oses][os][:install_name],
                       :initrd => node[:provisioner][:available_oses][os][:initrd],
                       :kernel => node[:provisioner][:available_oses][os][:kernel])
           end
-        else
-          template "#{pxecfg_dir}/01-#{mac_list[i].gsub(':','-').downcase}" do
+        end
+      else
+        [{:file => pxefile, :src => "default.erb"},
+         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+          template t[:file] do
             mode 0644
             owner "root"
             group "root"
-            source "default.erb"
+            source t[:src]
             variables(:append_line => "#{node[:provisioner][:sledgehammer_append_line]} crowbar.state=#{new_group}",
                       :install_name => new_group,
                       :initrd => "initrd0.img",

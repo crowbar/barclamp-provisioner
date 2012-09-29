@@ -34,11 +34,29 @@ end
 
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
+uefi_dir="#{tftproot}/discovery"
 
-bash "Install pxelinux.0" do
-  code "cp /usr/lib/syslinux/pxelinux.0 #{tftproot}/discovery"
-  not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
+["share","lib"].each do |d|
+  next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
+  bash "Install pxelinux.0" do
+    code "cp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery"
+    not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
+  end
+  break
 end
+
+bash "Install elilo as UEFI netboot loader" do
+  code <<EOC
+cd #{uefi_dir}
+tar xzf '#{tftproot}/files/elilo-3.14-all.tar.gz'
+mv elilo-3.14-x86_64.efi bootx64.efi
+mv elilo-3.14-ia32.efi bootia32.efi
+mv elilo-3.14-ia64.efi bootia64.efi
+rm elilo*.efi elilo*.tar.gz || :
+EOC
+  not_if "test -f '#{uefi_dir}/bootx64.efi'"
+end
+
 
 if File.exists? pxecfg_default
   append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
@@ -64,14 +82,13 @@ template "#{pxecfg_dir}/default" do
             :initrd => "initrd0.img",
             :kernel => "vmlinuz0")
 end
-
-template "#{pxecfg_dir}/debug" do
+template "#{uefi_dir}/elilo.conf" do
   mode 0644
   owner "root"
   group "root"
-  source "default.erb"
-  variables(:append_line => "#{append_line} crowbar.state=debug",
-            :install_name => "debug",
+  source "default.elilo.erb"
+  variables(:append_line => "#{append_line} crowbar.state=discovery",
+            :install_name => "discovery",
             :initrd => "initrd0.img",
             :kernel => "vmlinuz0")
 end
