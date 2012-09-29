@@ -108,6 +108,8 @@ if not nodes.nil? and not nodes.empty?
       if new_group == "os_install"
         # This eventaully needs to be conifgurable on a per-node basis
         os=node[:provisioner][:default_os]
+        append_line = node[:provisioner][:available_oses][os][:append_line]
+        append_line << " BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':',"-")}" rescue ''
         [{:file => pxefile, :src => "default.erb"},
          {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
           template t[:file] do
@@ -115,7 +117,7 @@ if not nodes.nil? and not nodes.empty?
             owner "root"
             group "root"
             source t[:src]
-            variables(:append_line =>  node[:provisioner][:available_oses][os][:append_line],
+            variables(:append_line =>  append_line,
                       :install_name => node[:provisioner][:available_oses][os][:install_name],
                       :initrd => node[:provisioner][:available_oses][os][:initrd],
                       :kernel => node[:provisioner][:available_oses][os][:kernel])
