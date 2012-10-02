@@ -233,16 +233,6 @@ node[:provisioner][:supported_oses].each do |os,params|
   when /^(suse)/ =~ os
     # Add base OS install repo for suse
     node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
-    template "#{os_dir}/autoyast.xml" do
-      mode 0644
-      source "autoyast.xml.erb"
-      owner "root"
-      group "root"
-      variables(
-                :admin_node_ip => admin_ip,
-                :web_port => web_port,
-                :crowbar_join => "#{web_path}/crowbar_join.sh")
-    end
 
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
@@ -260,18 +250,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
     end
     # Default kickstarts and crowbar_join scripts for redhat.
-    template "#{os_dir}/compute.ks" do
-      mode 0644
-      source "compute.ks.erb"
-      owner "root"
-      group "root"
-      variables(
-                :admin_node_ip => admin_ip,
-                :web_port => web_port,
-                :repos => node[:provisioner][:repositories][os],
-                :admin_web => admin_web,
-                :crowbar_join => "#{web_path}/crowbar_join.sh")
-    end
+    
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
@@ -288,17 +267,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   when /^ubuntu/ =~ os
     node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     # Default files needed for Ubuntu.
-    template "#{os_dir}/net_seed" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "net_seed.erb"
-      variables(:install_name => os,
-                :cc_use_local_security => use_local_security,
-                :cc_install_web_port => web_port,
-                :cc_built_admin_node_ip => admin_ip,
-                :install_path => "#{os}/install")
-    end
+    
 
     template "#{os_dir}/net-post-install.sh" do
       mode 0644

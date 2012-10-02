@@ -17,8 +17,10 @@ states = node["provisioner"]["dhcp"]["state_machine"]
 tftproot=node["provisioner"]["root"]
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 uefi_dir="#{tftproot}/discovery"
-nodes = search(:node, "*:*")
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+web_port = node[:provisioner][:web_port]
+provisioner_web="http://#{admin_ip}:#{web_port}"
+nodes = search(:node, "*:*")
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
     next if mnode[:state].nil?
@@ -102,7 +104,64 @@ if not nodes.nil? and not nodes.empty?
         # This eventaully needs to be conifgurable on a per-node basis
         os=node[:provisioner][:default_os]
         append_line = node[:provisioner][:available_oses][os][:append_line]
+        node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
+        node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
+        os_url="#{provisioner_web}/#{os}"
+        install_url="#{os_url}/install"
+        directory node_cfg_dir do
+          action :create
+          owner "root"
+          group "root"
+          mode "0755"
+          recursive true
+        end
         append_line << " BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':',"-")}" rescue ''
+        case
+        when os =~ /^ubuntu/
+          append_line << " url=#{node_url}/net_seed"
+          template "#{node_cfg_dir}/net_seed" do
+            mode 0644
+            owner "root"
+            group "root"
+            source "net_seed.erb"
+            variables(:install_name => os,
+                      :cc_use_local_security => node[:provisioner][:use_local_security],
+                      :cc_install_web_port => web_port,
+                      :cc_built_admin_node_ip => admin_ip,
+                      :node_name => mnode[:fqdn],
+                      :install_path => "#{os}/install")
+          end
+        when os =~ /^(redhat|centos)/
+          append_line << " ks=#{node_url}/compute.ks method=#{install_url}"
+          template "#{node_cfg_dir}/compute.ks" do
+            mode 0644
+            source "compute.ks.erb"
+            owner "root"
+            group "root"
+            variables(
+                      :admin_node_ip => admin_ip,
+                      :web_port => web_port,
+                      :node_name => mnode[:fqdn],
+                      :repos => node[:provisioner][:repositories][os],
+                      :admin_web => install_url,
+                      :crowbar_join => "#{os_url}/crowbar_join.sh")
+          end
+        when os =~ /^(open)?suse/
+          append_line << " install=#{install_url} autoyast=#{node_url}/autoyast.xml"
+          template "#{node_cfg_dir}/autoyast.xml" do
+            mode 0644
+            source "autoyast.xml.erb"
+            owner "root"
+            group "root"
+            variables(
+                      :admin_node_ip => admin_ip,
+                      :web_port => web_port,
+                      :node_name => mnode[:fqdn],
+                      :crowbar_join => "#{os_url}/crowbar_join.sh")
+          end
+        else
+          raise RangeError.new("Do not know how to handle #{os} in update_nodes.rb!")
+        end
         [{:file => pxefile, :src => "default.erb"},
          {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
           template t[:file] do
