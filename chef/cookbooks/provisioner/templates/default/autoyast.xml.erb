@@ -98,11 +98,6 @@ else
     rm -f /mnt/root/.ssh/authorized_keys.wget
 fi
 
-curl -s -o /mnt/etc/init.d/crowbar_join.sh <%= @crowbar_join %>
-chmod +x /mnt/etc/init.d/crowbar_join.sh
-
-sleep 30
-
 post_state $HOSTNAME "installed"
 
 # Wait for DHCP to update - this is mainly for virtual environments or really large deploys
@@ -115,7 +110,7 @@ sync
     <init-scripts config:type="list">
       <script>
         <filename>crowbar_join</filename>
-        <location>http://<%= @admin_node_ip %>:8091/suse-11.2/crowbar_join.sh</location>
+        <location><%=@crowbar_join%></location>
       </script>
     </init-scripts>
   </scripts>
