@@ -70,6 +70,7 @@ end
 if ::File.exists?("/etc/crowbar.install.key")
   append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
+append_line = append_line.split.join(' ')
 node[:provisioner][:sledgehammer_append_line] = append_line
 
 template "#{pxecfg_dir}/default" do
@@ -180,18 +181,10 @@ node[:provisioner][:supported_oses].each do |os,params|
   os_dir="#{tftproot}/#{os}"
   os_codename=node[:lsb][:codename]
   role="#{os}_install"
-  replaces={
-    '%os_site%'         => web_path,
-    '%os_install_site%' => admin_web
-  }
   append = params["append"]
   initrd = params["initrd"]
   kernel = params["kernel"]
 
-  # Sigh.  There has to be a more elegant way.
-  replaces.each { |k,v|
-    append.gsub!(k,v)
-  }
   # Don't bother for OSes that are not actaully present on the provisioner node.
   next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
 
