@@ -82,6 +82,7 @@ if not nodes.nil? and not nodes.empty?
         end
       end
     else
+      append = []
       mac_list.each_index do |i|
         dhcp_host "#{mnode.name}-#{i}" do
           hostname mnode.name
@@ -103,7 +104,7 @@ if not nodes.nil? and not nodes.empty?
       if new_group == "os_install"
         # This eventaully needs to be conifgurable on a per-node basis
         os=node[:provisioner][:default_os]
-        append_line = node[:provisioner][:available_oses][os][:append_line]
+        append << node[:provisioner][:available_oses][os][:append_line]
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
         node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
         os_url="#{provisioner_web}/#{os}"
@@ -115,10 +116,12 @@ if not nodes.nil? and not nodes.empty?
           mode "0755"
           recursive true
         end
-        append_line << " BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':',"-")}" rescue ''
+        if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
+          append << "BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':',"-")}"
+        end
         case
         when os =~ /^ubuntu/
-          append_line << " url=#{node_url}/net_seed"
+          append << "url=#{node_url}/net_seed"
           template "#{node_cfg_dir}/net_seed" do
             mode 0644
             owner "root"
@@ -132,7 +135,7 @@ if not nodes.nil? and not nodes.empty?
                       :install_path => "#{os}/install")
           end
         when os =~ /^(redhat|centos)/
-          append_line << " ks=#{node_url}/compute.ks method=#{install_url}"
+          append << "ks=#{node_url}/compute.ks method=#{install_url}"
           template "#{node_cfg_dir}/compute.ks" do
             mode 0644
             source "compute.ks.erb"
@@ -143,11 +146,12 @@ if not nodes.nil? and not nodes.empty?
                       :web_port => web_port,
                       :node_name => mnode[:fqdn],
                       :repos => node[:provisioner][:repositories][os],
+                      :uefi => (mnode[:crowbar_wall][:uefi] rescue nil),
                       :admin_web => install_url,
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
         when os =~ /^(open)?suse/
-          append_line << " install=#{install_url} autoyast=#{node_url}/autoyast.xml"
+          append<< "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
           template "#{node_cfg_dir}/autoyast.xml" do
             mode 0644
             source "autoyast.xml.erb"
@@ -169,7 +173,7 @@ if not nodes.nil? and not nodes.empty?
             owner "root"
             group "root"
             source t[:src]
-            variables(:append_line =>  append_line,
+            variables(:append_line => append.join(' '),
                       :install_name => node[:provisioner][:available_oses][os][:install_name],
                       :initrd => node[:provisioner][:available_oses][os][:initrd],
                       :kernel => node[:provisioner][:available_oses][os][:kernel])
