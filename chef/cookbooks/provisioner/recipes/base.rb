@@ -71,9 +71,6 @@ search(:node, "roles:provisioner-server AND provisioner_config_environment:#{nod
 end
 node.save if node_modified
 
-file "/root/.ssh/authorized_keys" do
-  action :delete
-end
 template "/root/.ssh/authorized_keys" do
   owner "root"
   group "root"
