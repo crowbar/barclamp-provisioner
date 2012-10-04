@@ -156,8 +156,8 @@ walk_node_through () {
     . "/updates/$HOSTNAME/control.sh"
 
 discover() {
-    echo "Discovering with: $HOSTNAME_MAC"
-    walk_node_through $HOSTNAME_MAC discovering discovered
+    echo "Discovering with: $HOSTNAME"
+    walk_node_through $HOSTNAME discovering discovered
 }
 
 hardware_install () {
@@ -167,6 +167,7 @@ hardware_install () {
     nuke_everything
     walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything
+    walk_node_through $HOSTNAME installing
 }
 
 hwupdate () {

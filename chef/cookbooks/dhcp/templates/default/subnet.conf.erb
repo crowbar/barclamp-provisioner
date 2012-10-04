@@ -13,7 +13,7 @@ subnet <%= @network["subnet"] %> netmask <%= @network["netmask"]%> {
    pool {
      range <%=@network["ranges"][pool]["start"]%> <%=@network["ranges"][pool]["end"]%>;
      <% @pool_options[pool].each do |opt| -%>
-     <%=opt%>;
+     <%=opt%><%=if opt[-1,1] != '}' then ';' else '' end%>
      <% end if @pool_options[pool] -%>
    }
 <% end -%>
