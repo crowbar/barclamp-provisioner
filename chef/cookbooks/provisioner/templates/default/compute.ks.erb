@@ -21,18 +21,21 @@ zerombr
 ignoredisk --only-use=sda
 clearpart --all --drives=sda
 part /boot --fstype ext4 --size=100 --ondisk=sda
-part swap --recommended
-part pv.6 --size=1 --grow --ondisk=sda
-volgroup lv_admin --pesize=32768 pv.6
-logvol / --fstype ext4 --name=lv_root --vgname=lv_admin --size=1 --grow
+<% if @uefi -%>
+part /boot/efi --fstype vfat --size 100 --ondisk=sda
+<% end -%>
+part pv.2 --size=1 --grow --ondisk=sda
+volgroup <%=@node_name.split('.')[0]%> --pesize=32768 pv.2
+logvol swap --fstype swap --name=swap --vgname=<%=@node_name.split('.')[0]%> --recommended
+logvol / --fstype ext4 --name=lv_root --vgname=<%=@node_name.split('.')[0]%> --size=1 --grow
 <% else -%>
 ignoredisk --drives=sdb,sdc,sdd,sde,sdf,sdg,sdh,sdi,sdj,sdk,sdl,sdm,sdn,sdo,sdp,sdq,sdr,sds,sdt,sdu,sdv,sdw,sdx,sdy,sdz,hdb,hdc,hdd,hde,hdf,hdg,hdh,hdi,hdj,hdk,hdl,hdm,hdn,hdo,hdp,hdq,hdr,hds,hdt,hdu,hdv,hdw,hdx,hdy,hdz
 clearpart --all --drives=sda
 part /boot --fstype ext3 --size=100 --ondisk=sda
 part swap --recommended
 part pv.6 --size=0 --grow --ondisk=sda
-volgroup lv_admin --pesize=32768 pv.6
-logvol / --fstype ext3 --name=lv_root --vgname=lv_admin --size=1 --grow
+volgroup <%=@node_name.split('.')[0]%> --pesize=32768 pv.6
+logvol / --fstype ext3 --name=lv_root --vgname=<%=@node_name.split('.')[0]%> --size=1 --grow
 <% end -%>
 
 text
@@ -96,8 +99,6 @@ post_state() {
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
   curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
 }
-
-post_state $HOSTNAME "installing"
 
 #"Blacklisting IPv6".
 echo "blacklist ipv6" >>/etc/modprobe.d/blacklist-ipv6.conf

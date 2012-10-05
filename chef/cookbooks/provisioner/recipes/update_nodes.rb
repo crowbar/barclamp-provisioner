@@ -1,4 +1,4 @@
-# Copyright 2011, Dell
+# Copyright 2011, Dell 
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,26 +16,16 @@
 states = node["provisioner"]["dhcp"]["state_machine"]
 tftproot=node["provisioner"]["root"]
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
-nodes = search(:node, "crowbar_usedhcp:true")
+uefi_dir="#{tftproot}/discovery"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+web_port = node[:provisioner][:web_port]
+provisioner_web="http://#{admin_ip}:#{web_port}"
+nodes = search(:node, "*:*")
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
-    Chef::Log.info("Testing if #{mnode[:fqdn]} needs a state transition")
-    if mnode[:state].nil?
-      Chef::Log.info("#{mnode[:fqdn]} has no current state!")
-      next
-    end
+    next if mnode[:state].nil?
     new_group = states[mnode[:state]]
-
-    if new_group.nil? || new_group == "noop"
-      Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
-      next
-    end
-    Chef::Log.info("#{mnode[:fqdn]} transitioning to group #{new_group}")
-
-    # Delete the node
-    system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
-    system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem") if new_group == "delete"
+    Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group}")
 
     mac_list = []
     mnode["network"]["interfaces"].each do |net, net_data|
@@ -47,47 +37,161 @@ if not nodes.nil? and not nodes.empty?
         end
       end
     end
-
+    mac_list.sort!
     admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
+    nodeaddr = sprintf("%X",admin_data_net.address.split('.').inject(0){|acc,i|(acc << 8)+i.to_i})
+    pxefile="#{pxecfg_dir}/#{nodeaddr}"
+    uefifile="#{uefi_dir}/#{nodeaddr}.conf"
 
-    # Build entries for each mac address.
-    count = 0
-    mac_list.each do |mac|
-      count = count+1
-      if new_group == "reset" or new_group == "delete"
-        dhcp_host "#{mnode.name}-#{count}" do
+    case
+    when  new_group.nil? || new_group == "noop"
+      Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
+      next
+    when (new_group == "delete") || (new_group == "reset")
+      Chef::Log.info("Deleting #{mnode[:fqdn]}")
+      # Delete the node
+      if new_group == "delete"
+        system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
+        system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
+      end
+      mac_list.each_index do |i|
+        dhcp_host "#{mnode.name}-#{i}" do
           hostname mnode.name
           ipaddress "0.0.0.0"
-          macaddress mac
+          macaddress mac_list[i]
           action :remove
         end
-        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
+      end
+      [pxefile,uefifile].each do |f|
+        file f do
           action :delete
         end
-      else
-        # Skip if we don't have admin
-        next if admin_data_net.nil?
-        if new_group == "execute"
-          dhcp_host "#{mnode.name}-#{count}" do
-            hostname mnode.name
-            ipaddress admin_data_net.address
-            macaddress mac
-            action :add
+      end
+    when new_group == "execute"
+      mac_list.each_index do |i|
+        dhcp_host "#{mnode.name}-#{i}" do
+          hostname mnode.name
+          ipaddress admin_data_net.address
+          macaddress mac_list[i]
+          action :add
+        end
+      end
+      [pxefile,uefifile].each do |f|
+        file f do
+          action :delete
+        end
+      end
+    else
+      append = []
+      mac_list.each_index do |i|
+        dhcp_host "#{mnode.name}-#{i}" do
+          hostname mnode.name
+          ipaddress admin_data_net.address
+          macaddress mac_list[i]
+          options [
+                   '      if option arch = 00:06 {
+      filename = "discovery/bootia32.efi";
+   } else if option arch = 00:07 {
+      filename = "discovery/bootx64.efi";
+   } else {
+      filename = "discovery/pxelinux.0";
+   }',
+                   "next-server #{admin_ip}"
+                  ]
+          action :add
+        end
+      end
+      if new_group == "os_install"
+        # This eventaully needs to be conifgurable on a per-node basis
+        os=node[:provisioner][:default_os]
+        append << node[:provisioner][:available_oses][os][:append_line]
+        node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
+        node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
+        os_url="#{provisioner_web}/#{os}"
+        install_url="#{os_url}/install"
+        directory node_cfg_dir do
+          action :create
+          owner "root"
+          group "root"
+          mode "0755"
+          recursive true
+        end
+        if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
+          append << "BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':',"-")}"
+        end
+        case
+        when os =~ /^ubuntu/
+          append << "url=#{node_url}/net_seed"
+          template "#{node_cfg_dir}/net_seed" do
+            mode 0644
+            owner "root"
+            group "root"
+            source "net_seed.erb"
+            variables(:install_name => os,
+                      :cc_use_local_security => node[:provisioner][:use_local_security],
+                      :cc_install_web_port => web_port,
+                      :cc_built_admin_node_ip => admin_ip,
+                      :node_name => mnode[:fqdn],
+                      :install_path => "#{os}/install")
+          end
+        when os =~ /^(redhat|centos)/
+          append << "ks=#{node_url}/compute.ks method=#{install_url}"
+          template "#{node_cfg_dir}/compute.ks" do
+            mode 0644
+            source "compute.ks.erb"
+            owner "root"
+            group "root"
+            variables(
+                      :admin_node_ip => admin_ip,
+                      :web_port => web_port,
+                      :node_name => mnode[:fqdn],
+                      :repos => node[:provisioner][:repositories][os],
+                      :uefi => (mnode[:crowbar_wall][:uefi] rescue nil),
+                      :admin_web => install_url,
+                      :crowbar_join => "#{os_url}/crowbar_join.sh")
+          end
+        when os =~ /^(open)?suse/
+          append<< "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
+          template "#{node_cfg_dir}/autoyast.xml" do
+            mode 0644
+            source "autoyast.xml.erb"
+            owner "root"
+            group "root"
+            variables(
+                      :admin_node_ip => admin_ip,
+                      :web_port => web_port,
+                      :node_name => mnode[:fqdn],
+                      :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
         else
-          dhcp_host "#{mnode.name}-#{count}" do
-            hostname mnode.name
-            ipaddress admin_data_net.address
-            macaddress mac
-            options [
-                     'filename "discovery/pxelinux.0"',
-                     "next-server #{admin_ip}"
-                    ]
-            action :add
+          raise RangeError.new("Do not know how to handle #{os} in update_nodes.rb!")
+        end
+        [{:file => pxefile, :src => "default.erb"},
+         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+          template t[:file] do
+            mode 0644
+            owner "root"
+            group "root"
+            source t[:src]
+            variables(:append_line => append.join(' '),
+                      :install_name => node[:provisioner][:available_oses][os][:install_name],
+                      :initrd => node[:provisioner][:available_oses][os][:initrd],
+                      :kernel => node[:provisioner][:available_oses][os][:kernel])
           end
         end
-        link "#{pxecfg_dir}/01-#{mac.gsub(':','-').downcase}" do
-          to "#{new_group}"
+      else
+        [{:file => pxefile, :src => "default.erb"},
+         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+          template t[:file] do
+            mode 0644
+            owner "root"
+            group "root"
+            source t[:src]
+            variables(:append_line => "#{node[:provisioner][:sledgehammer_append_line]} crowbar.state=#{new_group}",
+                      :install_name => new_group,
+                      :initrd => "initrd0.img",
+                      :kernel => "vmlinuz0")
+          end
         end
       end
     end
