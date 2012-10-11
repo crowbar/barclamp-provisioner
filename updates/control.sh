@@ -19,6 +19,35 @@
 
 [[ $DEBUG ]] && set -x
 
+HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+if [ -f /etc/sysconfig/network ] ; then
+  sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+fi
+echo "${HOSTNAME#*.}" >/etc/domainname
+hostname "$HOSTNAME"
+
+ip_re='inet ([0-9.]+)/([0-9]+)'
+ik_re='crowbar\.install\.key=([^ ]+)'
+
+[[ $(cat /proc/cmdline) =~ $ik_re ]] && \
+    export CROWBAR_KEY="${BASH_REMATCH[1]}"
+
+DHCPDIR=/var/lib/dhclient
+RSYSLOGSERVICE=rsyslog
+
+[[ -e /etc/SuSE-release ]] && {
+ DHCPDIR=/var/lib/dhcp
+ RSYSLOGSERVICE=syslog
+}
+
+# enable remote logging to our admin node.
+if ! grep -q "${ADMIN_IP}" /etc/rsyslog.conf; then
+    echo "# Sledgehammer added to log to the admin node" >> /etc/rsyslog.conf
+    echo "*.* @@${ADMIN_IP}" >> /etc/rsyslog.conf
+    service $RSYSLOGSERVICE restart
+fi
+
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 DHCP_STATE=${DHCP_STATE#*=}
@@ -156,8 +185,8 @@ walk_node_through () {
     . "/updates/$HOSTNAME/control.sh"
 
 discover() {
-    echo "Discovering with: $HOSTNAME_MAC"
-    walk_node_through $HOSTNAME_MAC discovering discovered
+    echo "Discovering with: $HOSTNAME"
+    walk_node_through $HOSTNAME discovering discovered
 }
 
 hardware_install () {
