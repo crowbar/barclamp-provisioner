@@ -79,20 +79,21 @@
         "lease-time": 60,
         "state_machine": {
           "web_app_state":  "dhcp_state",
-          "discovered": "hwinstall",
-          "hardware-installing": "hwinstall",
-          "hardware-installed": "os_install",
-          "hardware-updating": "update",
-          "hardware-updated": "execute",
-          "installing": "os_install",
-          "installed": "execute",
-          "update": "update",
-          "readying": "execute",
-          "ready": "execute",
-          "reset": "reset",
+          "debug": "debug",
           "delete": "delete",
+          "discovered": "discovery",
+          "discovering": "discovery",
+          "hardware-installed": "os_install",
+          "hardware-installing": "hwinstall",
+          "hardware-updated": "execute",
+          "hardware-updating": "update",
+          "installed": "execute",
+          "installing": "os_install",
+          "ready": "execute",
+          "readying": "execute",
           "reinstall": "os_install",
-          "debug": "debug"
+          "reset": "reset",
+          "update": "update"
         }
       }
     }
