@@ -32,6 +32,13 @@ when "ubuntu","debian"
       mode "0644"
       notifies :restart, "service[nfs-kernel-server]", :delayed
     end
+
+    #agordeev: straightforward workaround
+    # otherwise for unknown reason only 0600 be set
+    # and crowbar installation will fail
+    execute "set_permission_on_/etc/init.d/nfs-kernel-server" do
+      command "chmod 755 /etc/init.d/nfs-kernel-server"
+    end
   end
 
 when "centos","redhat"
