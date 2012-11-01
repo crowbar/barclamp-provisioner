@@ -118,6 +118,4 @@ rpms:
     - glibc-devel
 
 extra_files:
-  - http://curl.haxx.se/download/curl-7.23.1.tar.gz
   - http://downloads.sourceforge.net/project/elilo/elilo/elilo-3.14/elilo-3.14-all.tar.gz
-build_cmd: build_curl.sh
