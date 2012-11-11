@@ -28,6 +28,7 @@ if not nodes.nil? and not nodes.empty?
     Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group}")
 
     mac_list = []
+    next if mnode["network"].nil? or mnode["network"]["interfaces"].nil?
     mnode["network"]["interfaces"].each do |net, net_data|
       net_data.each do |field, field_data|
         next if field != "addresses"
@@ -39,6 +40,7 @@ if not nodes.nil? and not nodes.empty?
     end
     mac_list.sort!
     admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
+    next if admin_data_net.nil? or admin_data_net.address.nil?
     nodeaddr = sprintf("%X",admin_data_net.address.split('.').inject(0){|acc,i|(acc << 8)+i.to_i})
     pxefile="#{pxecfg_dir}/#{nodeaddr}"
     uefifile="#{uefi_dir}/#{nodeaddr}.conf"
