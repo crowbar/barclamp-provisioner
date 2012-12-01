@@ -19,6 +19,32 @@
 
 [[ $DEBUG ]] && set -x
 
+#
+# Override HOSTNAME if it is specified.  In kernel,
+# This handles changing boot IFs in the middle of
+# hardware updating.
+#
+# we could just use DHCP, but the discovery pass
+# doesn't have a hostname in it.  So, we need to
+# let the crowbar start-up script create our name.
+# From then on, we can use DHCP (port-install) or
+# kernel variable (pre-install).
+#
+hostname_re='crowbar\.hostname=([^ ]+)'
+[[ $(cat /proc/cmdline) =~ $hostname_re ]] && \
+  export NEW_HOSTNAME="${BASH_REMATCH[1]}"
+if [[ "$NEW_HOSTNAME" != "" ]] ; then
+  HOSTNAME=$NEW_HOSTNAME
+  sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+  if [ -f /etc/sysconfig/network ] ; then
+    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+  fi
+  echo "${HOSTNAME#*.}" >/etc/domainname
+  hostname "$HOSTNAME"
+  HOSTNAME_MAC="$HOSTNAME"
+  export HOSTNAME HOSTNAME_MAC
+fi
+
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 DHCP_STATE=${DHCP_STATE#*=}
