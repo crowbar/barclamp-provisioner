@@ -87,6 +87,11 @@ class ProvisionerService < ServiceObject
         end
       end
     end
+    if state == "hardware-installing"
+      role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
+      db = ProposalObject.find_proposal "provisioner", inst
+      add_role_to_instance_and_node("provisioner",inst,name,db,role,"provisioner-bootdisk-finder")
+    end
 
     if state == "delete"
       # BA LOCK NOT NEEDED HERE.  NODE IS DELETING
