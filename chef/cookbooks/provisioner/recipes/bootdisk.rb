@@ -13,8 +13,8 @@ return if node[:crowbar_wall][:boot_device]
   next unless File.symlink?("#{basedir}/#{path}")
   # Symlink does not point at a disk?  Also not interested.
   dev = File.readlink("#{basedir}/#{path}").split('/')[-1]
-  next unless dev =~ /^[hsv]d[a-z]+$/
-  break
+  break if dev =~ /^[hsv]d[a-z]+$/
+  dev = nil
 end
 
 raise "Cannot find a hard disk!" unless dev
