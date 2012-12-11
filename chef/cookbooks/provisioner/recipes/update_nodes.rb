@@ -132,6 +132,7 @@ if not nodes.nil? and not nodes.empty?
             variables(:install_name => os,
                       :cc_use_local_security => node[:provisioner][:use_local_security],
                       :cc_install_web_port => web_port,
+                      :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :cc_built_admin_node_ip => admin_ip,
                       :node_name => mnode[:fqdn],
                       :install_path => "#{os}/install")
@@ -147,6 +148,7 @@ if not nodes.nil? and not nodes.empty?
                       :admin_node_ip => admin_ip,
                       :web_port => web_port,
                       :node_name => mnode[:fqdn],
+                      :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :repos => node[:provisioner][:repositories][os],
                       :uefi => (mnode[:crowbar_wall][:uefi] rescue nil),
                       :admin_web => install_url,
@@ -162,6 +164,7 @@ if not nodes.nil? and not nodes.empty?
             variables(
                       :admin_node_ip => admin_ip,
                       :web_port => web_port,
+                      :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :node_name => mnode[:fqdn],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end

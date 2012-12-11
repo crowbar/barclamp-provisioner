@@ -15,25 +15,25 @@ firewall --disabled
 authconfig --enableshadow --enablemd5
 selinux --disabled
 timezone --utc UTC
-bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
+bootloader --location=mbr --driveorder=<%= @boot_device || "sda" %> --append="rhgb quiet"
 zerombr
 <% if node[:platform_version].to_f >= 6 -%>
-ignoredisk --only-use=sda
-clearpart --all --drives=sda
-part /boot --fstype ext4 --size=100 --ondisk=sda
+ignoredisk --only-use=<%= @boot_device || "sda" %>
+clearpart --all --drives=<%= @boot_device || "sda" %>
+part /boot --fstype ext4 --size=100 --ondisk=<%= @boot_device || "sda" %>
 <% if @uefi -%>
-part /boot/efi --fstype vfat --size 100 --ondisk=sda
+part /boot/efi --fstype vfat --size 100 --ondisk=<%= @boot_device || "sda" %>
 <% end -%>
-part pv.2 --size=1 --grow --ondisk=sda
+part pv.2 --size=1 --grow --ondisk=<%= @boot_device || "sda" %>
 volgroup <%=@node_name.split('.')[0]%> --pesize=32768 pv.2
 logvol swap --fstype swap --name=swap --vgname=<%=@node_name.split('.')[0]%> --recommended
 logvol / --fstype ext4 --name=lv_root --vgname=<%=@node_name.split('.')[0]%> --size=1 --grow
 <% else -%>
 ignoredisk --drives=sdb,sdc,sdd,sde,sdf,sdg,sdh,sdi,sdj,sdk,sdl,sdm,sdn,sdo,sdp,sdq,sdr,sds,sdt,sdu,sdv,sdw,sdx,sdy,sdz,hdb,hdc,hdd,hde,hdf,hdg,hdh,hdi,hdj,hdk,hdl,hdm,hdn,hdo,hdp,hdq,hdr,hds,hdt,hdu,hdv,hdw,hdx,hdy,hdz
-clearpart --all --drives=sda
-part /boot --fstype ext3 --size=100 --ondisk=sda
+clearpart --all --drives=<%= @boot_device || "sda" %>
+part /boot --fstype ext3 --size=100 --ondisk=<%= @boot_device || "sda" %>
 part swap --recommended
-part pv.6 --size=0 --grow --ondisk=sda
+part pv.6 --size=0 --grow --ondisk=<%= @boot_device || "sda" %>
 volgroup <%=@node_name.split('.')[0]%> --pesize=32768 pv.6
 logvol / --fstype ext3 --name=lv_root --vgname=<%=@node_name.split('.')[0]%> --size=1 --grow
 <% end -%>
