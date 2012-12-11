@@ -189,7 +189,7 @@ if not nodes.nil? and not nodes.empty?
             owner "root"
             group "root"
             source t[:src]
-            variables(:append_line => "#{node[:provisioner][:sledgehammer_append_line]} crowbar.state=#{new_group}",
+            variables(:append_line => "#{node[:provisioner][:sledgehammer_append_line]} crowbar.hostname=#{mnode[:fqdn]} crowbar.state=#{new_group}",
                       :install_name => new_group,
                       :initrd => "initrd0.img",
                       :kernel => "vmlinuz0")
