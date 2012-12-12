@@ -25,10 +25,14 @@ ruby_block "Find the fallback boot device" do
       f="#{basedir}/#{m}"
       File.symlink?(f) && (File.readlink(f).split('/')[-1] == dev)
     end
-    bootdisk = bootdisks.find{|b|b =~ /^scsi-/} ||
-      bootdisks.find{|b|b =~ /^ata-/} ||
-      bootdisks.first
-    node[:crowbar_wall][:boot_device] = "disk/by-id/#{bootdisk}"
+    if bootdisks.empty?
+      node[:crowbar_wall][:boot_device] = dev
+    else
+      bootdisk = bootdisks.find{|b|b =~ /^scsi-/} ||
+        bootdisks.find{|b|b =~ /^ata-/} ||
+        bootdisks.first
+      node[:crowbar_wall][:boot_device] = "disk/by-id/#{bootdisk}"
+    end
     node.save
   end
   not_if do node[:crowbar_wall][:boot_device] end
