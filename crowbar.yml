@@ -114,6 +114,7 @@ rpms:
     - tftp-server
     - xinetd
     - nginx
+    - curl
   build_pkgs:
     - flex
     - bison
@@ -122,7 +123,7 @@ rpms:
     - gcc
     - glibc-devel
 
-extra_files:
-  - http://curl.haxx.se/download/curl-7.23.1.tar.gz
+#extra_files:
+#  - http://curl.haxx.se/download/curl-7.23.1.tar.gz
 
-build_cmd: build_curl.sh
+#build_cmd: build_curl.sh
