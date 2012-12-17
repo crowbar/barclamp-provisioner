@@ -186,6 +186,8 @@ if node[:platform] == "suse"
     running true
     enabled true
     action [ :enable, :start ]
+    supports :reload => true
+    subscribes :reload, resources(:service => "tftp"), :immediately
   end
 else
 template "/etc/bluepill/tftpd.pill" do
