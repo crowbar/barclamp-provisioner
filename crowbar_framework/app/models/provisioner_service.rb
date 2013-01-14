@@ -93,6 +93,12 @@ class ProvisionerService < ServiceObject
       add_role_to_instance_and_node("provisioner",inst,name,db,role,"provisioner-bootdisk-finder")
     end
 
+    if state == "reset"
+      node = NodeObject.find_node_by_name(name)
+      node[:crowbar_wall][:boot_device] = nil if (node[:crowbar_wall][:boot_device] rescue nil)
+      node.save
+    end
+
     if state == "delete"
       # BA LOCK NOT NEEDED HERE.  NODE IS DELETING
       node = NodeObject.find_node_by_name(name)
