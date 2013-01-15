@@ -40,10 +40,13 @@ if not nodes.nil? and not nodes.empty?
     end
     mac_list.sort!
     admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
-    next if admin_data_net.nil? or admin_data_net.address.nil?
-    nodeaddr = sprintf("%08X",admin_data_net.address.split('.').inject(0){|acc,i|(acc << 8)+i.to_i})
-    pxefile="#{pxecfg_dir}/#{nodeaddr}"
-    uefifile="#{uefi_dir}/#{nodeaddr}.conf"
+    boot_ip_hex = mnode["crowbar_wall"]["boot_ip_hex"] rescue nil
+    if boot_ip_hex.nil? and !(admin_data_net.nil? or admin_data_net.address.nil?)
+      boot_ip_hex  = sprintf("%08X",admin_data_net.address.split('.').inject(0){|acc,i|(acc << 8)+i.to_i})
+      node["crowbar_wall"]["boot_ip_hex"] = boot_ip_hex
+    end
+    pxefile="#{pxecfg_dir}/#{boot_ip_hex}"
+    uefifile="#{uefi_dir}/#{boot_ip_hex}.conf"
 
     case
     when  new_group.nil? || new_group == "noop"
@@ -91,7 +94,7 @@ if not nodes.nil? and not nodes.empty?
           ipaddress admin_data_net.address
           macaddress mac_list[i]
           options [
-                   '      if option arch = 00:06 {
+   '      if option arch = 00:06 {
       filename = "discovery/bootia32.efi";
    } else if option arch = 00:07 {
       filename = "discovery/bootx64.efi";
