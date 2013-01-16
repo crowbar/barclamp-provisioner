@@ -52,7 +52,7 @@ if not nodes.nil? and not nodes.empty?
     when  new_group.nil? || new_group == "noop"
       Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
       next
-    when (new_group == "delete") || (new_group == "reset")
+    when (new_group == "delete") 
       Chef::Log.info("Deleting #{mnode[:fqdn]}")
       # Delete the node
       if new_group == "delete"
