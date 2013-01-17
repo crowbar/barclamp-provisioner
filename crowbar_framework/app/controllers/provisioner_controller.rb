@@ -49,7 +49,7 @@ class ProvisionerController < BarclampController
   private
   def get_oses
     provisioners = Node.find_by_role_name('provisioner-server')
-    provisioners ? provisioners.map{|n|n.cmdb_hash["provisioner"]["available_oses"].keys}.flatten.sort.uniq : []
+    provisioners ? provisioners.map{|n|n.jig_hash["provisioner"]["available_oses"].keys}.flatten.sort.uniq : []
   end
 end
 
