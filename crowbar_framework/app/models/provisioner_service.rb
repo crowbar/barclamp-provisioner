@@ -88,7 +88,7 @@ class ProvisionerService < ServiceObject
       provisioner = Node.find_by_role_name('provisioner-server')
       if provisioner &&
           provisioner[0] &&
-          provisioner[0].cmdb_hash["provisioner"]["available_oses"][target_os]
+          provisioner[0].jig_hash["provisioner"]["available_oses"][target_os]
         nstate = "#{target_os}_install"
       else
         return [500, "#{node.name} wants to install #{target_os}, but #{name} doesn't know how to do that!"]
@@ -97,7 +97,7 @@ class ProvisionerService < ServiceObject
 
     node_hash["provisioner_state"] = nstate
     prop_config.set_node_config_hash(node, node_hash)
-    node.update_cmdb
+    node.update_jig
 
     # We need a real process runner here.
     # Blocking Puma to wait on these state transitions is bad, mmkay?
