@@ -201,7 +201,7 @@ hwupdate () {
 }
 
 case $DHCP_STATE in
-    discovery) discover && hardware_install;;
+    reset|discovery) discover && hardware_install;;
     hwinstall) hardware_install;;
     update) hwupdate;;
 esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
