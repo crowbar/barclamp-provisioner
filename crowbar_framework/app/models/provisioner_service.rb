@@ -97,7 +97,7 @@ class ProvisionerService < ServiceObject
       node = NodeObject.find_node_by_name(name)
       # clean up state capturing attributes on the node that are not likely to be the same
       # after a reset.
-      ["boot_device", "boot_ip_hex"].each { |key | 
+      ["boot_device"].each { |key | 
         node["crowbar_wall"][key] = nil if (node["crowbar_wall"][key] rescue nil)
       }
       node.save
