@@ -25,7 +25,8 @@ if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
     next if mnode[:state].nil?
     new_group = states[mnode[:state]]
-    Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group}")
+    boot_ip_hex = mnode["crowbar"]["boot_ip_hex"] rescue nil
+    Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group} boot file: #{boot_ip_hex}")
 
     mac_list = []
     next if mnode["network"].nil? or mnode["network"]["interfaces"].nil?
@@ -39,12 +40,10 @@ if not nodes.nil? and not nodes.empty?
       end
     end
     mac_list.sort!
-    admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
-    boot_ip_hex = mnode["crowbar_wall"]["boot_ip_hex"] rescue nil
-    if boot_ip_hex.nil? and !(admin_data_net.nil? or admin_data_net.address.nil?)
-      boot_ip_hex  = sprintf("%08X",admin_data_net.address.split('.').inject(0){|acc,i|(acc << 8)+i.to_i})
-      node["crowbar_wall"]["boot_ip_hex"] = boot_ip_hex
-    end
+    
+    #no boot_ip means that no admin network address has been assigned to node, and
+    # it will boot into the default discovery image.
+    next unless boot_ip_hex
     pxefile="#{pxecfg_dir}/#{boot_ip_hex}"
     uefifile="#{uefi_dir}/#{boot_ip_hex}.conf"
 
