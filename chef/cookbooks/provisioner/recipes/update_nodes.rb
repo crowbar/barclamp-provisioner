@@ -46,7 +46,8 @@ if not nodes.nil? and not nodes.empty?
     next unless boot_ip_hex
     pxefile="#{pxecfg_dir}/#{boot_ip_hex}"
     uefifile="#{uefi_dir}/#{boot_ip_hex}.conf"
-
+    # needed for dhcp
+    admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
     case
     when  new_group.nil? || new_group == "noop"
       Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
