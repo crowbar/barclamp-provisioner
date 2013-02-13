@@ -20,6 +20,10 @@ barclamp:
   display: Provisioner
   description: The roles and recipes to set up the provisioning server and a base environment for all nodes
   version: 0
+  license: "apache2"
+  copyright: "Dell, Inc 2013"
+  api_version: "v2"
+  api_version_accepts: "v2"
   member:
     - crowbar
 
