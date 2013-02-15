@@ -16,8 +16,8 @@
             "upstream_proxy": { "type": "str", "required": false },
             "default_user": { "type": "str", "required": true },
             "default_password": { "type": "str" },
+            "default_os": { "type": "str", "required": false },
             "default_password_hash": { "type": "str" },
-	    "default_os": { "type": "str", "required": true },
             "web_port": { "type": "int", "required": true },
 	    "root": { "type": "str", "required": true },
 	    "supported_oses": {
