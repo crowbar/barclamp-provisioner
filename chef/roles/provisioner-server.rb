@@ -11,7 +11,7 @@ run_list(
 )
 default_attributes "provisioner" => {
   "online" => false,
-  "upstread_proxy" => "",
+  "upstream_proxy" => "",
   "default_user" => "crowbar",
   "default_password_hash" => "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
   "supported_oses" => {
@@ -37,30 +37,30 @@ default_attributes "provisioner" => {
       "initrd" => "boot/x86_64/loader/initrd",
       "kernel" => "boot/x86_64/loader/linux",
       "append" => "install=%os_install_site%"
-    },
-    "root" => "/tftpboot",
-    "web_port" => 8091,
-    "use_local_security" => true,
-    "use_serial_console" => false,
-    "dhcp" => {
-      "lease-time" => 60,
-      "state_machine" => {
-        "debug" => "debug",
-        "delete" => "delete",
-        "discovered" => "discovery",
-        "discovering" => "discovery",
-        "hardware-installed" => "os_install",
-        "hardware-installing" => "hwinstall",
-        "hardware-updated" => "execute",
-        "hardware-updating" => "update",
-        "installed" => "execute",
-        "installing" => "os_install",
-        "ready" => "execute",
-        "readying" => "execute",
-        "reinstall" => "os_install",
-        "reset" => "reset",
-        "update" => "update"
-      }
+    }
+  },
+  "root" => "/tftpboot",
+  "web_port" => 8091,
+  "use_local_security" => true,
+  "use_serial_console" => false,
+  "dhcp" => {
+    "lease_time" => 60,
+    "state_machine" => {
+      "debug" => "debug",
+      "delete" => "delete",
+      "discovered" => "discovery",
+      "discovering" => "discovery",
+      "hardware-installed" => "os_install",
+      "hardware-installing" => "hwinstall",
+      "hardware-updated" => "execute",
+      "hardware-updating" => "update",
+      "installed" => "execute",
+      "installing" => "os_install",
+      "ready" => "execute",
+      "readying" => "execute",
+      "reinstall" => "os_install",
+      "reset" => "reset",
+      "update" => "update"
     }
   },
   "config" => { "environment" => "provisioner-base-config" }

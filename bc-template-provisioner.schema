@@ -43,7 +43,7 @@
               "type": "map",
               "required": true,
               "mapping": {
-                "lease-time": { "type": "int", "required": true },
+                "lease_time": { "type": "int", "required": true },
                 "state_machine": {
                   "type": "map",
                   "required": true,
