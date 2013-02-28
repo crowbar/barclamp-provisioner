@@ -15,7 +15,14 @@
 
 action :add do
   Chef::Log.debug "Adding #{new_resource.name}.conf to /etc/dhcp3/hosts.d"
+
   filename = "/etc/dhcp3/hosts.d/#{new_resource.name}.conf"
+
+  directory filename.split('/')[0..-2].join('/') do
+    action :create
+    recursive true
+  end
+
   template filename do 
     cookbook "dhcp"
     source "host.conf.erb"

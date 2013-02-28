@@ -75,7 +75,7 @@
       "use_local_security": true,
       "use_serial_console": false,
       "dhcp": {
-        "lease-time": 60,
+        "lease_time": 60,
         "state_machine": {
           "web_app_state":  "dhcp_state",
           "debug": "debug",

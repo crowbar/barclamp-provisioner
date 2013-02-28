@@ -14,11 +14,19 @@
 #
 
 action :add do
+
   filename = "/etc/dhcp3/subnets.d/#{new_resource.subnet}.conf"
+
+  directory filename.split('/')[0..-2].join('/') do
+    action :create
+    recursive true
+  end
+
   template filename do 
     cookbook "dhcp"
     source "subnet.conf.erb"
     variables(
+      :addr => ::IP.coerce(new_resource.subnet),
       :network => new_resource.network,
       :options => new_resource.options,
       :pools => new_resource.pools,
