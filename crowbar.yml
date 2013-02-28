@@ -24,6 +24,10 @@ barclamp:
   copyright: "Dell, Inc 2013"
   api_version: "v2"
   api_version_accepts: "v2"
+  requires:
+    - chef
+    - dns
+    - network
   member:
     - crowbar
 

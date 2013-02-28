@@ -1,9 +1,7 @@
-
-
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 admin_ip = node.address.addr
-admin_net = node[:network][:networks]["admin"]
-lease_time = node[:provisioner][:dhcp]["lease-time"]
+admin_net = node[:network][:networks][:admin]
+lease_time = node[:provisioner][:dhcp][:lease_time]
 pool_opts = {
   "dhcp" => ['allow unknown-clients',
              '      if option arch = 00:06 {
