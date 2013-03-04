@@ -98,6 +98,10 @@ end
 if node[:platform] == "suse"
 
   include_recipe "apache2"
+  include_recipe "apache2::mod_proxy"
+  include_recipe "apache2::mod_proxy_http"
+  apache_module "cache"
+  apache_module "disk_cache"
 
   template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
     source "base-apache.conf.erb"
@@ -106,6 +110,18 @@ if node[:platform] == "suse"
               :port => 8091,
               :logfile => "/var/log/apache2/provisioner-access_log",
               :errorlog => "/var/log/apache2/provisioner-error_log")
+    notifies :reload, resources(:service => "apache2")
+  end
+  template "#{node[:apache][:dir]}/vhosts.d/proxy.conf" do
+    source "proxy-apache.conf.erb"
+    mode 0644
+    variables(:port => 8123,
+              :logfile => "/var/log/apache2/proxy-access_log",
+              :errorlog => "/var/log/apache2/proxy-error_log",
+              :allowed_clients => ["127.0.0.1"] + node.all_addresses.map{|a|a.network.to_s}.sort,
+              :upstream_proxy => (node[:provisioner][:upstream_proxy] || "" rescue ""),
+              :no_cache => "http://#{admin_ip}"
+              )
     notifies :reload, resources(:service => "apache2")
   end
 
@@ -151,27 +167,29 @@ else
 
 end # !suse
 
-# Set up our cluster HTTP proxy for package installs
-package "polipo"
-service "polipo" do
-  action :enable
-  supports :stop => true, :start => true, :restart => true
-end
+unless node[:platform] == "suse"
+    # Set up our cluster HTTP proxy for package installs
+    package "polipo"
+    service "polipo" do
+      action :enable
+      supports :stop => true, :start => true, :restart => true
+    end
 
-template "/etc/polipo/config" do
-  source "polipo-conf.erb"
-  mode 0644
-  variables(:allowed_clients => "127.0.0.1, #{node.all_addresses.map{|a|a.network.to_s}.sort.join(", ")}",
-            :upstream_proxy => (node[:provisioner][:upstream_proxy] || "" rescue "")
-            )
-  notifies :restart, resources(:service => "polipo"), :immediately
-end
+    template "/etc/polipo/config" do
+      source "polipo-conf.erb"
+      mode 0644
+      variables(:allowed_clients => "127.0.0.1, #{node.all_addresses.map{|a|a.network.to_s}.sort.join(", ")}",
+                :upstream_proxy => (node[:provisioner][:upstream_proxy] || "" rescue "")
+                )
+      notifies :restart, resources(:service => "polipo"), :immediately
+    end
 
-template "/etc/polipo/uncachable" do
-  source "polipo-uncachable.erb"
-  mode 0644
-  variables(:provisioner_web => ::Regexp.escape("#{admin_ip}"))
-  notifies :restart, resources(:service => "polipo"), :immediately
+    template "/etc/polipo/uncachable" do
+      source "polipo-uncachable.erb"
+      mode 0644
+      variables(:provisioner_web => ::Regexp.escape("#{admin_ip}"))
+      notifies :restart, resources(:service => "polipo"), :immediately
+    end
 end
 
 # Set up the TFTP server as well.
