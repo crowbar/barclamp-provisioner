@@ -37,6 +37,11 @@ default_attributes "provisioner" => {
       "initrd" => "boot/x86_64/loader/initrd",
       "kernel" => "boot/x86_64/loader/linux",
       "append" => "install=%os_install_site%"
+    },
+    "suse-12.2" => {
+      "initrd" => "boot/x86_64/loader/initrd",
+      "kernel" => "boot/x86_64/loader/linux",
+      "append" => "install=%os_install_site%"
     }
   },
   "root" => "/tftpboot",
