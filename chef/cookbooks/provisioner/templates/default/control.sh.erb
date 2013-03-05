@@ -18,6 +18,23 @@
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
 [[ $DEBUG ]] && set -x
+# Get our passed-in hostname
+HOSTNAME=$(grep -o -E 'crowbar\.fqdn=[^ ]+' /proc/cmdline)
+if [[ ! $HOSTNAME ]]; then
+    # We did not get handed a hostname.
+    # Create one based on the MAC we booted from, and
+    # create a new host entry based off it.
+    HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+    curl --digest -u "$CROWBAR_KEY" -X POST \
+        -d "name=$HOSTNAME" \
+        http://192.168.124.10:3000/api/v2/nodes/
+fi
+sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+if [[ -f /etc/sysconfig/network ]]; then
+    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+fi
+echo "${HOSTNAME#*.}" >/etc/domainname
+hostname "$HOSTNAME"
 
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
@@ -182,9 +199,9 @@ walk_node_through () {
     . "/updates/$HOSTNAME/control.sh"
 
 discover() {
-    echo "Discovering with: $HOSTNAME_MAC"
-    walk_node_through $HOSTNAME_MAC discovering
-    post_state $HOSTNAME_MAC discovered
+    echo "Discovering with: $HOSTNAME"
+    walk_node_through $HOSTNAME discovering
+    post_state $HOSTNAME discovered
     run_chef_client "http://$ADMIN_IP:4000/" "$HOSTNAME" discovered
 }
 

@@ -74,7 +74,6 @@ template "/etc/exports" do
   group "root"
   owner "root"
   mode 0644
-  variables(:admin_subnet => node["network"]["networks"]["admin"]["subnet"],
-            :admin_netmask => node["network"]["networks"]["admin"]["netmask"])
+  variables(:admin_subnet => node["network"]["networks"]["admin"]["subnet"])
   notifies :run, "execute[nfs-export]", :delayed
 end
