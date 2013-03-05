@@ -103,6 +103,7 @@ if not nodes.nil? and not nodes.empty?
       case
       when ["discovery","update","hwinstall","debug"].member?(new_group)
         append_line = node[:provisioner][:sledgehammer_kernel_params]
+        append_line << " crowbar.fqdn=#{mnode.fqdn}"
         # Generate the appropriate pxe config file for discovery and execute.
         template pxefile do
           mode 0644
@@ -132,9 +133,9 @@ if not nodes.nil? and not nodes.empty?
         os_dir="#{tftproot}/#{os}"
         os_codename=node[:lsb][:codename]
         params = node[:provisioner][:boot_specs][os]
-        append_line = ""
+        append_line = "crowbar.fqdn=#{mnode.fqdn}"
         if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
-          append_line = "BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':','-')}"
+          append_line << " BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':','-')}"
         end
         # These should really be made libraries or something.
         case
