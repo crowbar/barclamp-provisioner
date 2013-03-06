@@ -95,6 +95,7 @@ end
 #  end
 #end
 
+node[:apache][:listen_ports] = [ web_port, 8123 ]
 include_recipe "apache2"
 include_recipe "apache2::mod_proxy"
 include_recipe "apache2::mod_proxy_http"
@@ -106,7 +107,7 @@ template "#{node[:apache][:dir]}/sites-available/provisioner.conf" do
   source "base-apache.conf.erb"
   mode 0644
   variables(:docroot => "#{tftproot}",
-            :port => 8091,
+            :port => web_port,
             :logfile => "/var/log/apache2/provisioner-access_log",
             :errorlog => "/var/log/apache2/provisioner-error_log")
   notifies :reload, resources(:service => "apache2")
