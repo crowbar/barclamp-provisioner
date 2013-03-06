@@ -45,6 +45,7 @@ BMC_NETMASK=""
 BMC_ROUTER=""
 ALLOCATED=false
 ADMIN_IP=<%=@provisioner_ip%>
+CHEF_SERVER="http://$ADMIN_IP:4000"
 http_proxy="<%=@proxy%>"
 https_proxy="$http_proxy"
 export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
@@ -108,9 +109,6 @@ curl -L -o /etc/chef/validation.pem \
 
 . "/updates/control_lib.sh"
 
-# This is as far as we expect to get for now.
-exit 0
-
 nuke_everything() {
     # Make sure that the kernel knows about all the partitions
     for bd in /sys/block/sd*; do
@@ -172,9 +170,7 @@ run_chef_client() {
     # $2 = name of client
     # $3 = Crowbar state client is in.
     rm -f /etc/chef/client.pem
-    chef-client -S "$1" -N "$2" && return
-    cp /var/chef/cache/chef-stacktrace.out "/install-logs/$2-$3-chef-stacktrace.out"
-    cp /var/chef/cache/failed-run-data.json "/install-logs/$2-$3-failed-run-data.json"
+    chef-client -S "$CHEF_SERVER" && return
     post_state "$2" debug
     exit
 }
@@ -191,7 +187,7 @@ walk_node_through () {
             post_state "$name" "$1"
         fi
         run_hooks "$HOSTNAME" "$1" pre
-        run_chef_client "http://$ADMIN_IP:4000/" "$name" "$1"
+        run_chef_client
         run_hooks "$HOSTNAME" "$1" post
         shift
     done
@@ -205,7 +201,7 @@ discover() {
     echo "Discovering with: $HOSTNAME"
     walk_node_through $HOSTNAME discovering
     post_state $HOSTNAME discovered
-    run_chef_client "http://$ADMIN_IP:4000/" "$HOSTNAME" discovered
+    run_chef_client
 }
 
 hardware_install () {
@@ -220,6 +216,12 @@ hardware_install () {
 hwupdate () {
     walk_node_through $HOSTNAME hardware-updating hardware-updated
 }
+
+run_chef_client
+
+# This is as far as we expect to get for now.
+exit 0
+
 
 case $DHCP_STATE in
     discovery) discover && hardware_install;;
