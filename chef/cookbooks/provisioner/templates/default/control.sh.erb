@@ -108,6 +108,9 @@ curl -L -o /etc/chef/validation.pem \
 
 . "/updates/control_lib.sh"
 
+# This is as far as we expect to get for now.
+exit 0
+
 nuke_everything() {
     # Make sure that the kernel knows about all the partitions
     for bd in /sys/block/sd*; do
