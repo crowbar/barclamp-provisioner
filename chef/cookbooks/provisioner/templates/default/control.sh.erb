@@ -18,6 +18,23 @@
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
 [[ $DEBUG ]] && set -x
+# Get our passed-in hostname
+HOSTNAME=$(grep -o -E 'crowbar\.fqdn=[^ ]+' /proc/cmdline)
+if [[ ! $HOSTNAME ]]; then
+    # We did not get handed a hostname.
+    # Create one based on the MAC we booted from, and
+    # create a new host entry based off it.
+    HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+    curl --digest -u "$CROWBAR_KEY" -X POST \
+        -d "name=$HOSTNAME" \
+        http://192.168.124.10:3000/api/v2/nodes/
+fi
+sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+if [[ -f /etc/sysconfig/network ]]; then
+    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+fi
+echo "${HOSTNAME#*.}" >/etc/domainname
+hostname "$HOSTNAME"
 
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
@@ -28,6 +45,7 @@ BMC_NETMASK=""
 BMC_ROUTER=""
 ALLOCATED=false
 ADMIN_IP=<%=@provisioner_ip%>
+CHEF_SERVER="http://$ADMIN_IP:4000"
 http_proxy="<%=@proxy%>"
 https_proxy="$http_proxy"
 export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
@@ -152,9 +170,7 @@ run_chef_client() {
     # $2 = name of client
     # $3 = Crowbar state client is in.
     rm -f /etc/chef/client.pem
-    chef-client -S "$1" -N "$2" && return
-    cp /var/chef/cache/chef-stacktrace.out "/install-logs/$2-$3-chef-stacktrace.out"
-    cp /var/chef/cache/failed-run-data.json "/install-logs/$2-$3-failed-run-data.json"
+    chef-client -S "$CHEF_SERVER" && return
     post_state "$2" debug
     exit
 }
@@ -171,7 +187,7 @@ walk_node_through () {
             post_state "$name" "$1"
         fi
         run_hooks "$HOSTNAME" "$1" pre
-        run_chef_client "http://$ADMIN_IP:4000/" "$name" "$1"
+        run_chef_client
         run_hooks "$HOSTNAME" "$1" post
         shift
     done
@@ -182,10 +198,10 @@ walk_node_through () {
     . "/updates/$HOSTNAME/control.sh"
 
 discover() {
-    echo "Discovering with: $HOSTNAME_MAC"
-    walk_node_through $HOSTNAME_MAC discovering
-    post_state $HOSTNAME_MAC discovered
-    run_chef_client "http://$ADMIN_IP:4000/" "$HOSTNAME" discovered
+    echo "Discovering with: $HOSTNAME"
+    walk_node_through $HOSTNAME discovering
+    post_state $HOSTNAME discovered
+    run_chef_client
 }
 
 hardware_install () {
@@ -200,6 +216,12 @@ hardware_install () {
 hwupdate () {
     walk_node_through $HOSTNAME hardware-updating hardware-updated
 }
+
+run_chef_client
+
+# This is as far as we expect to get for now.
+exit 0
+
 
 case $DHCP_STATE in
     discovery) discover && hardware_install;;
