@@ -105,7 +105,7 @@ template "#{node[:apache][:dir]}/sites-available/provisioner.conf" do
   path "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" if node[:platform] == "suse"
   source "base-apache.conf.erb"
   mode 0644
-  variables(:docroot => "/srv/tftpboot",
+  variables(:docroot => "#{tftproot}",
             :port => 8091,
             :logfile => "/var/log/apache2/provisioner-access_log",
             :errorlog => "/var/log/apache2/provisioner-error_log")
