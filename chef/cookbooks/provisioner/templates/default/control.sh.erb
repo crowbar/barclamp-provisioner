@@ -18,23 +18,29 @@
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
 [[ $DEBUG ]] && set -x
-# Get our passed-in hostname
-HOSTNAME=$(grep -o -E 'crowbar\.fqdn=[^ ]+' /proc/cmdline)
-if [[ ! $HOSTNAME ]]; then
-    # We did not get handed a hostname.
-    # Create one based on the MAC we booted from, and
-    # create a new host entry based off it.
-    HOSTNAME="d${MAC//:/-}.${DOMAIN}"
-    curl --digest -u "$CROWBAR_KEY" -X POST \
-        -d "name=$HOSTNAME" \
-        http://192.168.124.10:3000/api/v2/nodes/
+if [[ ! $IN_CONTROL_SH ]]; then
+    # Get our passed-in hostname
+    HOSTNAME=$(grep -o -E 'crowbar\.fqdn=[^ ]+' /proc/cmdline)
+    if [[ ! $HOSTNAME ]]; then
+        # We did not get handed a hostname.
+        # Create one based on the MAC we booted from, and
+        # create a new host entry based off it.
+        HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+        curl --digest -u "$CROWBAR_KEY" -X POST \
+            -d "name=$HOSTNAME" \
+            http://192.168.124.10:3000/api/v2/nodes/
+    fi
+    sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+    if [[ -f /etc/sysconfig/network ]]; then
+        sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+    fi
+    echo "${HOSTNAME#*.}" >/etc/domainname
+    hostname "$HOSTNAME"
+
+    IN_CONTROL_SH=true
+    export HOSTNAME IN_CONTROL_SH
+    exec script -a -f -c "$0 $@" /install-logs/$HOSTNAME-control.log
 fi
-sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
-if [[ -f /etc/sysconfig/network ]]; then
-    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
-fi
-echo "${HOSTNAME#*.}" >/etc/domainname
-hostname "$HOSTNAME"
 
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
