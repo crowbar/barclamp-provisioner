@@ -17,6 +17,7 @@
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
+ADMIN_IP=<%=@provisioner_ip%>
 [[ $DEBUG ]] && set -x
 if [[ ! $IN_CONTROL_SH ]]; then
     # Get our passed-in hostname
@@ -28,7 +29,7 @@ if [[ ! $IN_CONTROL_SH ]]; then
         HOSTNAME="d${MAC//:/-}.${DOMAIN}"
         curl --digest -u "$CROWBAR_KEY" -X POST \
             -d "name=$HOSTNAME" \
-            http://192.168.124.10:3000/api/v2/nodes/
+            http://$ADMIN_IP:3000/api/v2/nodes/
     fi
     sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
     if [[ -f /etc/sysconfig/network ]]; then
@@ -50,7 +51,6 @@ BMC_ADDRESS=""
 BMC_NETMASK=""
 BMC_ROUTER=""
 ALLOCATED=false
-ADMIN_IP=<%=@provisioner_ip%>
 CHEF_SERVER="http://$ADMIN_IP:4000"
 http_proxy="<%=@proxy%>"
 https_proxy="$http_proxy"
@@ -141,16 +141,15 @@ nuke_everything() {
 # If there are pre/post transition hooks for this state (per system or not),
 # handle them.
 run_hooks() {
-    # $1 = hostname
-    # $2 = state
-    # $3 = pre or post
+    # $1 = state
+    # $2 = pre or post
     local hookdirs=() hookdir='' hook=''
     # We only handle pre and post hooks.  Anything else is a bug in
     # control.sh that we should debug.
     case $3 in
-        pre) hookdirs=("/updates/$1/$2-$3" "/updates/$2-$3");;
-        post) hookdirs=("/updates/$2-$3" "/updates/$1/$2-$3");;
-        *) post_state "$1" debug; reboot_system;;
+        pre) hookdirs=("/updates/$HOSTNAME/$1-$2" "/updates/$1-$2");;
+        post) hookdirs=("/updates/$1-$2" "/updates/$HOSTNAME/$1-$2");;
+        *) post_state debug; reboot_system;;
     esac
     for hookdir in "${hookdirs[@]}"; do
         [[ -d $hookdir ]] || continue
@@ -158,13 +157,13 @@ run_hooks() {
             [[ -x $hook ]] || continue
             # If a hook fails, then Something Weird happened, and it
             # needs to be debugged.
-            export HOOKSTATE="$2-$3" HOOKNAME="${hook##*/}"
+            export HOOKSTATE="$1-$2" HOOKNAME="${hook##*/}"
             if "$hook"; then
                 unset HOOKSTATE HOOKNAME
-                get_state "$1"
+                get_state
                 continue
             else
-                post_state "$1" debug
+                post_state debug
                 reboot_system
             fi
         done
@@ -177,24 +176,23 @@ run_chef_client() {
     # $3 = Crowbar state client is in.
     rm -f /etc/chef/client.pem
     chef-client -S "$CHEF_SERVER" && return
-    post_state "$2" debug
+    post_state debug
     exit
 }
 
 walk_node_through () {
     # $1 = hostname for chef-client run
     # $@ = states to walk through
-    local name="$1" f='' state=''
-    shift
+    local f='' state=''
     while (( $# > 0)); do
         if (( $# == 1)); then
-            report_state "$name" "$1"
+            report_state "$1"
         else
-            post_state "$name" "$1"
+            post_state "$1"
         fi
-        run_hooks "$HOSTNAME" "$1" pre
+        run_hooks "$1" pre
         run_chef_client
-        run_hooks "$HOSTNAME" "$1" post
+        run_hooks "$1" post
         shift
     done
 }
@@ -205,8 +203,8 @@ walk_node_through () {
 
 discover() {
     echo "Discovering with: $HOSTNAME"
-    walk_node_through $HOSTNAME discovering
-    post_state $HOSTNAME discovered
+    walk_node_through discovering
+    post_state discovered
     run_chef_client
 }
 
@@ -214,20 +212,16 @@ hardware_install () {
     wait_for_allocated "$HOSTNAME"
     echo "Hardware installing with: $HOSTNAME"
     nuke_everything
-    walk_node_through $HOSTNAME hardware-installing hardware-installed
+    walk_node_through hardware-installing hardware-installed
     nuke_everything
-    post_state "$HOSTNAME" installing
+    post_state installing
 }
 
 hwupdate () {
-    walk_node_through $HOSTNAME hardware-updating hardware-updated
+    walk_node_through hardware-updating hardware-updated
 }
 
 run_chef_client
-
-# This is as far as we expect to get for now.
-exit 0
-
 
 case $DHCP_STATE in
     discovery) discover && hardware_install;;

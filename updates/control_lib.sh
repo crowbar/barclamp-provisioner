@@ -2,43 +2,6 @@
 
 [[ $MAXTRIES ]] || export MAXTRIES=5
 
-# Code library for control.sh and the state transition hooks.
-parse_node_data() {
-    local res=0
-    if node_data=$(/tmp/parse_node_data -a name \
-        -a crowbar.network.bmc.netmask \
-        -a crowbar.network.bmc.address \
-        -a crowbar.network.bmc.router \
-        -a state \
-        -a crowbar.allocated)
-    then
-        for s in ${node_data} ; do
-            VAL=${s#*=}
-            case ${s%%=*} in
-                name) export HOSTNAME=$VAL;;
-                state) export CROWBAR_STATE=$VAL;;
-                crowbar.allocated) export ALLOCATED=$VAL;;
-                crowbar.network.bmc.router) export BMC_ROUTER=$VAL;;
-                crowbar.network.bmc.address) export BMC_ADDRESS=$VAL;;
-                crowbar.network.bmc.netmask) export BMC_NETMASK=$VAL;;
-            esac
-        done
-        echo "BMC_ROUTER=${BMC_ROUTER}"
-        echo "BMC_ADDRESS=${BMC_ADDRESS}"
-        echo "BMC_NETMASK=${BMC_NETMASK}"
-        echo "CROWBAR_STATE=${CROWBAR_STATE}"
-        echo "HOSTNAME=${HOSTNAME}"
-        echo "ALLOCATED=${ALLOCATED}"
-    else
-        res=$?
-        echo "Error code: $res"
-        echo ${node_data}
-    fi
-    echo "Local IP addresses:"
-    ifconfig | awk ' /127.0.0.1/ { next; } /inet addr:/ { print } '
-    return $res
-}
-
 try_to() {
     # $1 = max times to try a command.
     # $2 = times to wait in between tries
@@ -57,21 +20,19 @@ try_to() {
 }
 
 __post_state() {
-  local curlargs=(--connect-timeout 60 -s -L -X POST \
-      --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
+  local curlargs=(--connect-timeout 60 -s -L -X PUT -d "state=$1" \
       -H "Accept: application/json" -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-  parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default")
+  (unset http_proxy; curl "${curlargs[@]}" \
+      "http://$ADMIN_IP:3000/api/v2/nodes/$HOSTNAME/transition")
 }
 
 __get_state() {
-    # $1 = hostname
     local curlargs=(--connect-timeout 60 -s -L -H "Accept: application/json" \
         -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest)
-  parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/machines/1.0/show?name=$1")
+  curl "${curlargs[@]}" \
+      "http://$ADMIN_IP:3000/api/v2/nodes/$HOSTNAME"
 }
 
 post_state() { try_to "$MAXTRIES" 15 __post_state "$@"; }
@@ -121,9 +82,9 @@ wait_for_crowbar_state() {
 
 report_state () {
     if [ -a /var/log/chef/hw-problem.log ]; then
-	"cp /var/log/chef/hw-problem.log /install-logs/$1-hw-problem.log"
-        post_state "$1" problem
+	"cp /var/log/chef/hw-problem.log /install-logs/$HOSTNAME-hw-problem.log"
+        post_state problem
     else
-        post_state "$1" "$2"
+        post_state "$2"
     fi
 }
