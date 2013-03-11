@@ -18,6 +18,37 @@
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
 ADMIN_IP=<%=@provisioner_ip%>
+http_proxy="<%=@proxy%>"
+https_proxy="$http_proxy"
+
+if [ ! -f /etc/SuSE-release ]
+then
+  # HACK fix for chef-client
+  if [ -e /root/rest-client*gem ]
+  then
+    pushd /root
+    gem install --local rest-client
+    popd
+  fi
+
+  # Other gem dependency installs.
+  cat > /etc/gemrc <<EOF
+:sources:
+<% if @online -%>
+- http://rubygems.org/
+<% end -%>
+- http://$ADMIN_IP:8091/gemsite/
+gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
+EOF
+  gem install rest-client
+  gem install xml-simple
+  gem install libxml-ruby
+  gem install net-http-digest_auth
+  gem install json
+  gem install wsman
+  gem install cstruct
+fi
+
 [[ $DEBUG ]] && set -x
 if [[ ! $IN_CONTROL_SH ]]; then
     # Get our passed-in hostname
@@ -52,8 +83,6 @@ BMC_NETMASK=""
 BMC_ROUTER=""
 ALLOCATED=false
 CHEF_SERVER="http://$ADMIN_IP:4000"
-http_proxy="<%=@proxy%>"
-https_proxy="$http_proxy"
 export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE http_proxy https_proxy
 
@@ -72,33 +101,6 @@ done
 #
 killall dhclient
 killall dhclient3
-
-
-if [ ! -f /etc/SuSE-release ]
-then
-  # HACK fix for chef-client
-  if [ -e /root/rest-client*gem ]
-  then
-    pushd /root
-    gem install --local rest-client
-    popd
-  fi
-
-  # Other gem dependency installs.
-  cat > /etc/gemrc <<EOF
-:sources:
-<% if @online -%>
-- http://rubygems.org/
-<% end -%>
-- http://$ADMIN_IP:8091/gemsite/
-gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
-EOF
-  gem install rest-client
-  gem install xml-simple
-  gem install libxml-ruby
-  gem install wsman
-  gem install cstruct
-fi
 
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then
