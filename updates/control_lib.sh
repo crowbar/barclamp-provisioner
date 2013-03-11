@@ -20,7 +20,7 @@ try_to() {
 }
 
 __post_state() {
-  local curlargs=(--connect-timeout 60 -s -L -X PUT -d "state=$1" \
+  local curlargs=(--connect-timeout 60 -s -L -X PUT -d "{ \"state\": \"$1\" }" \
       -H "Accept: application/json" -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
   (unset http_proxy; curl "${curlargs[@]}" \
