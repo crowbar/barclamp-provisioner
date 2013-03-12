@@ -9,3 +9,4 @@ recipe "provisioner::dhcp_update", "Handles updating DHCP information to drive i
 recipe "provisioner::setup_base_images", "Handles setting up the proper directory structure for DHCP and TFTP on the admin node"
 recipe "provisioner::update_nodes", "Handles updating the Chef database for new or removed systems"
 depends "bluepill", ">= 0.2.2"
+depends "apache2"
