@@ -107,6 +107,12 @@ rpms:
       - ipmitool
     build_pkgs:
       - tar
+  fedora-18:
+    pkgs:
+      - rpcbind
+      - ipmitool
+    build_pkgs:
+      - tar
   pkgs:
     - dhcp
     - polipo
