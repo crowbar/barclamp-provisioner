@@ -1,15 +1,3 @@
-# Strictly, Listen and NameVirtualHost should be set by modifying the
-# [:apache][:listen_ports] attribute in the setup_base_images recipe, but that
-# would somehow require rewriting ports.conf (listen.conf on SUSE), so we'd
-# need to either set that attribute *before* including the apache2 recipe
-# (in which case the provisioner port will be the *only* port apache listens
-# on, preventing using apache for any other purpose), or we need to rewrite
-# ports.conf to include whatever's already there *plus* the provisioner
-# port.  The latter is the best behaved, but frankly strikes me as messy.
-# So until I come up with something better, here we go:
-Listen <%=@port%>
-NameVirtualHost *:<%=@port%>
-
 <VirtualHost *:<%=@port%>>
 
     DocumentRoot <%= @docroot %>
