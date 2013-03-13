@@ -1,0 +1,39 @@
+<VirtualHost *:<%=@port%>>
+    <IfModule mod_cache.c>
+           CacheDefaultExpire 86400
+           CacheIgnoreNoLastMod On
+           CacheMaxExpire 604800
+           CacheStoreNoStore On
+
+           <IfModule mod_disk_cache.c>
+                   CacheRoot /var/cache/apache2/
+                   CacheEnable disk http://
+                   CacheDirLevels 3
+                   CacheDirLength 2
+                   CacheMinFileSize 512
+           </IfModule>
+           CacheDisable <%= @no_cache %>
+    </IfModule>
+
+    ErrorLog <%= @errorlog %>
+    CustomLog <%= @logfile %> combined
+
+    HostnameLookups Off
+    UseCanonicalName Off
+
+    ProxyRequests On
+    ProxyVia On
+    <% if @upstream_proxy != "" -%>
+    ProxyRemote http "<%= @upstream_proxy %>"
+    <% end -%>
+    <Proxy *>
+            AddDefaultCharset off
+            Order deny,allow
+            Deny from all
+            <% @allowed_clients.each do |client| -%>
+            Allow from <%= client %>
+            <% end -%>
+    </Proxy>
+
+</VirtualHost>
+

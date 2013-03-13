@@ -95,84 +95,38 @@ end
 #  end
 #end
 
-if node[:platform] == "suse"
+node[:apache][:listen_ports] = [ web_port, 8123 ]
+include_recipe "apache2"
+include_recipe "apache2::mod_proxy"
+include_recipe "apache2::mod_proxy_http"
+apache_module "cache"
+apache_module "disk_cache"
 
-  include_recipe "apache2"
-
-  template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
-    source "base-apache.conf.erb"
-    mode 0644
-    variables(:docroot => "/srv/tftpboot",
-              :port => 8091,
-              :logfile => "/var/log/apache2/provisioner-access_log",
-              :errorlog => "/var/log/apache2/provisioner-error_log")
-    notifies :reload, resources(:service => "apache2")
-  end
-
-else
-
-  include_recipe "bluepill"
-
-  package "nginx"
-
-  service "nginx" do
-    action :disable
-  end
-
-  link "/etc/nginx/sites-enabled/default" do
-    action :delete
-  end
-
-  # Set up our the webserver for the provisioner.
-  file "/var/log/provisioner-webserver.log" do
-    owner "nobody"
-    action :create
-  end
-
-  template "/etc/nginx/provisioner.conf" do
-    source "base-nginx.conf.erb"
-    variables(:docroot => "/tftpboot",
-              :port => 8091,
-              :logfile => "/var/log/provisioner-webserver.log",
-              :pidfile => "/var/run/provisioner-webserver.pid")
-  end
-
-  bluepill_service "provisioner-webserver" do
-    variables(:processes => [ {
-                                "daemonize" => false,
-                                "pid_file" => "/var/run/provisioner-webserver.pid",
-                                "start_command" => "nginx -c /etc/nginx/provisioner.conf",
-                                "stderr" => "/var/log/provisioner-webserver.log",
-                                "stdout" => "/var/log/provisioner-webserver.log",
-                                "name" => "provisioner-webserver"
-                              } ] )
-    action [:create, :load]
-  end
-
-end # !suse
-
-# Set up our cluster HTTP proxy for package installs
-package "polipo"
-service "polipo" do
-  action :enable
-  supports :stop => true, :start => true, :restart => true
-end
-
-template "/etc/polipo/config" do
-  source "polipo-conf.erb"
+template "#{node[:apache][:dir]}/sites-available/provisioner.conf" do
+  path "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" if node[:platform] == "suse"
+  source "base-apache.conf.erb"
   mode 0644
-  variables(:allowed_clients => "127.0.0.1, #{node.all_addresses.map{|a|a.network.to_s}.sort.join(", ")}",
-            :upstream_proxy => (node[:provisioner][:upstream_proxy] || "" rescue "")
+  variables(:docroot => "#{tftproot}",
+            :port => web_port,
+            :logfile => "/var/log/apache2/provisioner-access_log",
+            :errorlog => "/var/log/apache2/provisioner-error_log")
+  notifies :reload, resources(:service => "apache2")
+end
+template "#{node[:apache][:dir]}/sites-available/proxy.conf" do
+  path "#{node[:apache][:dir]}/vhosts.d/proxy.conf" if node[:platform] == "suse"
+  source "proxy-apache.conf.erb"
+  mode 0644
+  variables(:port => 8123,
+            :logfile => "/var/log/apache2/proxy-access_log",
+            :errorlog => "/var/log/apache2/proxy-error_log",
+            :allowed_clients => ["127.0.0.1"] + node.all_addresses.map{|a|a.network.to_s}.sort,
+            :upstream_proxy => (node[:provisioner][:upstream_proxy] || "" rescue ""),
+            :no_cache => "http://#{admin_ip}"
             )
-  notifies :restart, resources(:service => "polipo"), :immediately
+  notifies :reload, resources(:service => "apache2")
 end
-
-template "/etc/polipo/uncachable" do
-  source "polipo-uncachable.erb"
-  mode 0644
-  variables(:provisioner_web => ::Regexp.escape("#{admin_ip}"))
-  notifies :restart, resources(:service => "polipo"), :immediately
-end
+apache_site "provisioner.conf"
+apache_site "proxy.conf"
 
 # Set up the TFTP server as well.
 case node[:platform]
