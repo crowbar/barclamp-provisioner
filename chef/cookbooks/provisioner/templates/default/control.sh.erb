@@ -58,9 +58,11 @@ if [[ ! $IN_CONTROL_SH ]]; then
         # Create one based on the MAC we booted from, and
         # create a new host entry based off it.
         HOSTNAME="d${MAC//:/-}.${DOMAIN}"
-        curl --digest -u "$CROWBAR_KEY" -X POST \
-            -d "name=$HOSTNAME" \
-            http://$ADMIN_IP:3000/api/v2/nodes/
+        if [[ ! -d /updates/$HOSTNAME ]]; then
+            curl --digest -u "$CROWBAR_KEY" -X POST \
+                -d "name=$HOSTNAME" \
+                http://$ADMIN_IP:3000/api/v2/nodes/
+        fi
     fi
     sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
     if [[ -f /etc/sysconfig/network ]]; then
@@ -111,9 +113,8 @@ fi
 # Get stuff out of nfs.
 cp /updates/parse_node_data /tmp
 
-# get validation cert
-curl -L -o /etc/chef/validation.pem \
-    --connect-timeout 60 -s "<%=@provisioner_web%>/validation.pem"
+mkdir -p /etc/chef
+cp "/updates/$HOSTNAME/client.pem" /etc/chef
 
 . "/updates/control_lib.sh"
 
@@ -176,7 +177,6 @@ run_chef_client() {
     # $1 = URL of server
     # $2 = name of client
     # $3 = Crowbar state client is in.
-    rm -f /etc/chef/client.pem
     chef-client -S "$CHEF_SERVER" && return
     post_state debug
     exit
