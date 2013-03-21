@@ -225,6 +225,9 @@ hwupdate () {
 
 run_chef_client
 
+__post_state discovered
+exit 0
+
 case $DHCP_STATE in
     discovery) discover && hardware_install;;
     hwinstall) hardware_install;;
