@@ -90,7 +90,10 @@ export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE http_proxy https_proxy
 
 # Make sure date is up-to-date
 NTPDATE=/usr/sbin/ntpdate
-[ -f /etc/SuSE-release ] && NTPDATE="sntp -P no -r"
+
+# SLES doesn't have ntpdate use sntp there. On openSUSE 12.2 and newer
+# ntpdate is present again
+[ -f /etc/SuSE-release ] && grep "Enterprise" /etc/SuSE-release && NTPDATE="sntp -P no -r"
 until $NTPDATE $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
 do
   echo "Waiting for NTP server"
