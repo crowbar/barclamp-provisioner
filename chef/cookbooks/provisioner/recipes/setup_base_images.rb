@@ -144,15 +144,21 @@ end
 
 if node[:platform] == "suse"
   service "tftp" do
-    # just enable, don't start (xinetd takes care of it)
     enabled true
-    action [ :enable ]
+    if node[:platform_version].to_f >= 12.3
+      provider Chef::Provider::Service::Systemd
+      service_name "tftp.socket"
+      action [ :enable, :start ]
+    else
+      # on older releases just enable, don't start (xinetd takes care of it)
+      action [ :enable ]
+    end
   end
   service "xinetd" do
     running true
     enabled true
     action [ :enable, :start ]
-  end
+  end unless node[:platform_version].to_f >= 12.3
 else
   bluepill_service "tftpd" do
     variables(:processes => [ {
