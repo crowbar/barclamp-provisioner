@@ -102,6 +102,10 @@
       }
     }
   },
+    "roles": {
+        "provisioner-server": { "jig": "chef", "admin_implicit": true },
+        "provisioner-base": { "jig": "chef", "implicit": true }
+    },
   "deployment": {
     "provisioner": {
       "crowbar-revision": 0,
