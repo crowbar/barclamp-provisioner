@@ -32,17 +32,36 @@
 #
 hostname_re='crowbar\.hostname=([^ ]+)'
 [[ $(cat /proc/cmdline) =~ $hostname_re ]] && \
-  export NEW_HOSTNAME="${BASH_REMATCH[1]}"
-if [[ "$NEW_HOSTNAME" != "" ]] ; then
-  HOSTNAME=$NEW_HOSTNAME
-  sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
-  if [ -f /etc/sysconfig/network ] ; then
+    HOSTNAME="${BASH_REMATCH[1]}" || \
+    HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+if [ -f /etc/sysconfig/network ] ; then
     sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
-  fi
-  echo "${HOSTNAME#*.}" >/etc/domainname
-  hostname "$HOSTNAME"
-  HOSTNAME_MAC="$HOSTNAME"
-  export HOSTNAME HOSTNAME_MAC
+fi
+echo "${HOSTNAME#*.}" >/etc/domainname
+hostname "$HOSTNAME"
+HOSTNAME_MAC="$HOSTNAME"
+export HOSTNAME HOSTNAME_MAC
+
+ip_re='inet ([0-9.]+)/([0-9]+)'
+ik_re='crowbar\.install\.key=([^ ]+)'
+
+[[ $(cat /proc/cmdline) =~ $ik_re ]] && \
+    export CROWBAR_KEY="${BASH_REMATCH[1]}"
+
+DHCPDIR=/var/lib/dhclient
+RSYSLOGSERVICE=rsyslog
+
+[[ -e /etc/SuSE-release ]] && {
+ DHCPDIR=/var/lib/dhcp
+ RSYSLOGSERVICE=syslog
+}
+
+# enable remote logging to our admin node.
+if ! grep -q "${ADMIN_IP}" /etc/rsyslog.conf; then
+    echo "# Sledgehammer added to log to the admin node" >> /etc/rsyslog.conf
+    echo "*.* @@${ADMIN_IP}" >> /etc/rsyslog.conf
+    service $RSYSLOGSERVICE restart
 fi
 
 MYINDEX=${MYIP##*.}
