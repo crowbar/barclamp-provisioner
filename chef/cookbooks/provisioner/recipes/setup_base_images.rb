@@ -96,7 +96,7 @@ end
 
 include_recipe "bluepill"
 
-package "nginx"
+package "nginx-light"
 
 service "nginx" do
   action :disable

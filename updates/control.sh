@@ -17,7 +17,12 @@
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
-[[ $DEBUG ]] && set -x
+if [[ ! $IN_SCRIPT ]]; then
+    export IN_SCRIPT=true
+    script -a -f -c "$0" "/install-logs/$HOSTNAME_MAC.transcript"
+fi
+set -x
+export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 
 #
 # Override HOSTNAME if it is specified.  In kernel,
