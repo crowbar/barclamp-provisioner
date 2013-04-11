@@ -96,7 +96,13 @@ end
 
 include_recipe "bluepill"
 
-package "nginx-light"
+
+case node.platform
+when "ubuntu","debian"
+  package "nginx-light"
+else
+  package "nginx"
+end
 
 service "nginx" do
   action :disable
@@ -114,22 +120,23 @@ end
 
 template "/etc/nginx/provisioner.conf" do
   source "base-nginx.conf.erb"
-  variables(:docroot => "/tftpboot",
+  variables(:docroot => tftproot,
             :port => 8091,
             :logfile => "/var/log/provisioner-webserver.log",
             :pidfile => "/var/run/provisioner-webserver.pid")
 end
 
+file "/var/run/provisioner-webserver.pid" do
+  mode "0644"
+  action :create
+end
+
+template "/etc/bluepill/provisioner-webserver.pill" do
+  source "provisioner-webserver.pill.erb"
+end
+
 bluepill_service "provisioner-webserver" do
-  variables(:processes => [ {
-                              "daemonize" => false,
-                              "pid_file" => "/var/run/provisioner-webserver.pid",
-                              "start_command" => "nginx -c /etc/nginx/provisioner.conf",
-                              "stderr" => "/var/log/provisioner-webserver.log",
-                              "stdout" => "/var/log/provisioner-webserver.log",
-                              "name" => "provisioner-webserver"
-                            } ] )
-  action [:create, :load]
+  action [:load, :start]
 end
 
 # Set up the TFTP server as well.
@@ -144,15 +151,13 @@ when "redhat","centos"
   package "tftp-server"
 end
 
+template "/etc/bluepill/tftpd.pill" do
+  source "tftpd.pill.erb"
+  variables( :tftproot => tftproot )
+end
+
 bluepill_service "tftpd" do
-  variables(:processes => [ {
-                              "daemonize" => true,
-                              "start_command" => "in.tftpd -4 -L -a 0.0.0.0:69 -s #{tftproot}",
-                              "stderr" => "/dev/null",
-                              "stdout" => "/dev/null",
-                              "name" => "tftpd"
-                            } ] )
-  action [:create, :load]
+  action [:load, :start]
 end
 
 bash "copy validation pem" do
@@ -237,7 +242,7 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
-    if ::File.exists? "/tftpboot/#{os}/install/repodata"
+    if ::File.exists? "#{tftproot}/#{os}/install/repodata"
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     else
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }

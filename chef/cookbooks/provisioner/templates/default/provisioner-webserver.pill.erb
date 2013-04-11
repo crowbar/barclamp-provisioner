@@ -1,11 +1,9 @@
-Bluepill.application("<%= @appname %>") do |app|
-  app.process("<%= @appname %>") do |process|
-    process.start_command = '/usr/bin/ruby -rwebrick -e WEBrick::HTTPServer.new(:Port=><%= @port %>,:DocumentRoot=>\".\").start'
-    process.stop_signals = [:kill]
-    process.stop_grace_time = 5.seconds
-    process.uid = "nobody"
-    process.working_dir = "<%= @docroot %>"
-    process.stdout = process.stderr = "<%= @logfile %>"
-    process.daemonize = true
+Bluepill.application("provisioner-webserver") do |app|
+  app.process("provisioner-webserver") do |p|
+    p.name = "provisioner-webserver"
+    p.start_command = "nginx -c /etc/nginx/provisioner.conf"
+    p.stdout = p.stderr = "/var/log/provisioner-webserver.log"
+    p.pid_file = "/var/run/provisioner-webserver.pid"
+    p.daemonize = false
   end
 end
