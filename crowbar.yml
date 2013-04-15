@@ -130,4 +130,4 @@ rpms:
     - glibc-devel
 
 extra_files:
-  - http://downloads.sourceforge.net/project/elilo/elilo/elilo-3.14/elilo-3.14-all.tar.gz
+  - http://sourceforge.net/project/elilo/elilo/elilo-3.14/elilo-3.14-all.tar.gz

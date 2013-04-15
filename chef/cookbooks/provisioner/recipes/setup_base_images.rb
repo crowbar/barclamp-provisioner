@@ -362,7 +362,7 @@ bash "Fetch elilo 3.14" do
 export http_proxy=http://#{admin_ip}:8123
 mkdir -p #{tftproot}/files
 cd #{tftproot}/files
-curl -LO 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
+curl -J -O 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
 EOC
   not_if "test -f '#{tftproot}/files/elilo-3.14-all.tar.gz'"
 end if node[:provisioner][:online]
