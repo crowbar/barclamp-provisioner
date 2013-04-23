@@ -24,7 +24,6 @@ web_port = node[:provisioner][:web_port]
 use_local_security = node[:provisioner][:use_local_security]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
-os_token="#{node[:platform]}-#{node[:platform_version]}"
 
 tftproot = node[:provisioner][:root]
 
