@@ -141,7 +141,7 @@ if not nodes.nil? and not nodes.empty?
                       :install_path => "#{os}/install")
           end
         when os =~ /^(redhat|centos)/
-          append << "ks=#{node_url}/compute.ks method=#{install_url}"
+          append << "ks=#{node_url}/compute.ks method=#{install_url} ksdevice=link"
           template "#{node_cfg_dir}/compute.ks" do
             mode 0644
             source "compute.ks.erb"
