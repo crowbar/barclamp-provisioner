@@ -93,7 +93,7 @@ template "#{uefi_dir}/elilo.conf" do
             :kernel => "vmlinuz0")
 end
 
-include_recipe "bluepill"
+include_recipe "bluepill" if node[:platform] != "suse"
 
 
 case node.platform
@@ -125,6 +125,16 @@ template "/etc/nginx/provisioner.conf" do
             :pidfile => "/var/run/provisioner-webserver.pid")
 end
 
+if node[:platform] == "suse"
+  bash "Clobber /etc/nginx/nginx.conf" do
+    code "cp /etc/nginx/provisioner.conf /etc/nginx/nginx.conf"
+  end
+  service "nginx" do
+    running true
+    enabled true
+    action [ :enable, :start ]
+  end
+else
 file "/var/run/provisioner-webserver.pid" do
   mode "0644"
   action :create
@@ -137,6 +147,7 @@ end
 bluepill_service "provisioner-webserver" do
   action [:load, :start]
 end
+end # !suse
 
 # Set up the TFTP server as well.
 case node[:platform]
@@ -148,8 +159,22 @@ when "ubuntu", "debian"
   end
 when "redhat","centos"
   package "tftp-server"
+when "suse"
+  package "tftp"
 end
 
+if node[:platform] == "suse"
+  service "tftp" do
+    # just enable, don't start (xinetd takes care of it)
+    enabled true
+    action [ :enable ]
+  end
+  service "xinetd" do
+    running true
+    enabled true
+    action [ :enable, :start ]
+  end
+else
 template "/etc/bluepill/tftpd.pill" do
   source "tftpd.pill.erb"
   variables( :tftproot => tftproot )
@@ -157,6 +182,7 @@ end
 
 bluepill_service "tftpd" do
   action [:load, :start]
+end
 end
 
 bash "copy validation pem" do

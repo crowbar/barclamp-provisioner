@@ -23,6 +23,9 @@ when "ubuntu","debian"
 when "redhat","centos"
   pkg = "dhcp"
   package "dhcp"
+when "suse"
+  pkg = "dhcp-server"
+  package "dhcp-server"
 end
 
 directory "/etc/dhcp3"
@@ -133,11 +136,32 @@ when "redhat","centos"
     variables(:interfaces => intfs)
     notifies :restart, "service[dhcp3-server]"
   end
+
+when "suse"
+  template "/etc/dhcpd.conf" do
+    owner "root"
+    group "root"
+    mode 0644
+    source "dhcpd.conf.erb"
+    variables(:options => d_opts,
+              :provisioner_ip => address,
+              :provisioner_port => 8091)
+    notifies :restart, "service[dhcp3-server]"
+  end
+
+  template "/etc/sysconfig/dhcpd" do
+    owner "root"
+    group "root"
+    mode 0644
+    source "suse-sysconfig-dhcpd.erb"
+    variables(:interfaces => intfs)
+    notifies :restart, "service[dhcp3-server]"
+  end
 end
 
 service "dhcp3-server" do
   case node[:platform]
-  when "redhat", "centos"
+  when "redhat", "centos", "suse"
     service_name "dhcpd" 
   when "ubuntu"
     case node[:lsb][:codename]
