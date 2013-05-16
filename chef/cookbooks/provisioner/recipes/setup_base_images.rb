@@ -53,10 +53,16 @@ EOC
 end
 
 
+# FIXME: What is the purpose of this, really? If pxecfg_default does not exist
+# the root= parameters will not get appended to the kernel commandline. (Luckily
+# we don't need those with the SLES base sledgehammer)
+# Later on pxecfg_default will even be replace with a link to "discovery"
+# Probably this pxecfg_default check can go a way and we can just unconditionally
+# append the root= parameters?
 if File.exists? pxecfg_default
   append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
   if append_line
-    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'')
+    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|console=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'').strip
   else
     append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
   end
