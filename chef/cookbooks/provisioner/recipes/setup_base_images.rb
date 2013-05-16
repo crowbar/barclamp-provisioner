@@ -27,10 +27,6 @@ append_line = ''
 
 tftproot = node[:provisioner][:root]
 
-if node[:provisioner][:use_serial_console]
-  append_line += " console=tty0 console=ttyS1,115200n8"
-end
-
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 uefi_dir="#{tftproot}/discovery"
@@ -57,13 +53,23 @@ EOC
 end
 
 
+# FIXME: What is the purpose of this, really? If pxecfg_default does not exist
+# the root= parameters will not get appended to the kernel commandline. (Luckily
+# we don't need those with the SLES base sledgehammer)
+# Later on pxecfg_default will even be replace with a link to "discovery"
+# Probably this pxecfg_default check can go a way and we can just unconditionally
+# append the root= parameters?
 if File.exists? pxecfg_default
   append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
   if append_line
-    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'')
-  else
+    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|console=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'').strip
+  elsif node[:platform] != "suse"
     append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
   end
+end
+
+if node[:provisioner][:use_serial_console]
+  append_line += " console=tty0 console=ttyS1,115200n8"
 end
 
 if ::File.exists?("/etc/crowbar.install.key")
@@ -93,37 +99,53 @@ template "#{uefi_dir}/elilo.conf" do
             :kernel => "vmlinuz0")
 end
 
-include_recipe "bluepill"
+if node[:platform] == "suse"
 
+  include_recipe "apache2"
 
-case node.platform
-when "ubuntu","debian"
-  package "nginx-light"
+  template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
+    source "base-apache.conf.erb"
+    mode 0644
+    variables(:docroot => "/tftpboot",
+              :port => 8091,
+              :logfile => "/var/log/apache2/provisioner-access_log",
+              :errorlog => "/var/log/apache2/provisioner-error_log")
+    notifies :reload, resources(:service => "apache2")
+  end
+
 else
-  package "nginx"
-end
 
-service "nginx" do
-  action :disable
-end
+  include_recipe "bluepill"
 
-link "/etc/nginx/sites-enabled/default" do
-  action :delete
-end
 
-# Set up our the webserver for the provisioner.
-file "/var/log/provisioner-webserver.log" do
-  owner "nobody"
-  action :create
-end
+  case node.platform
+  when "ubuntu","debian"
+    package "nginx-light"
+  else
+    package "nginx"
+  end
 
-template "/etc/nginx/provisioner.conf" do
-  source "base-nginx.conf.erb"
-  variables(:docroot => tftproot,
-            :port => 8091,
-            :logfile => "/var/log/provisioner-webserver.log",
-            :pidfile => "/var/run/provisioner-webserver.pid")
-end
+  service "nginx" do
+    action :disable
+  end
+
+  link "/etc/nginx/sites-enabled/default" do
+    action :delete
+  end
+
+  # Set up our the webserver for the provisioner.
+  file "/var/log/provisioner-webserver.log" do
+    owner "nobody"
+    action :create
+  end
+
+  template "/etc/nginx/provisioner.conf" do
+    source "base-nginx.conf.erb"
+    variables(:docroot => tftproot,
+              :port => 8091,
+              :logfile => "/var/log/provisioner-webserver.log",
+              :pidfile => "/var/run/provisioner-webserver.pid")
+  end
 
 file "/var/run/provisioner-webserver.pid" do
   mode "0644"
@@ -134,9 +156,11 @@ template "/etc/bluepill/provisioner-webserver.pill" do
   source "provisioner-webserver.pill.erb"
 end
 
-bluepill_service "provisioner-webserver" do
-  action [:load, :start]
-end
+  bluepill_service "provisioner-webserver" do
+    action [:load, :start]
+  end
+
+end # !suse
 
 # Set up the TFTP server as well.
 case node[:platform]
@@ -148,8 +172,22 @@ when "ubuntu", "debian"
   end
 when "redhat","centos"
   package "tftp-server"
+when "suse"
+  package "tftp"
 end
 
+if node[:platform] == "suse"
+  service "tftp" do
+    # just enable, don't start (xinetd takes care of it)
+    enabled true
+    action [ :enable ]
+  end
+  service "xinetd" do
+    running true
+    enabled true
+    action [ :enable, :start ]
+  end
+else
 template "/etc/bluepill/tftpd.pill" do
   source "tftpd.pill.erb"
   variables( :tftproot => tftproot )
@@ -157,6 +195,7 @@ end
 
 bluepill_service "tftpd" do
   action [:load, :start]
+end
 end
 
 bash "copy validation pem" do
