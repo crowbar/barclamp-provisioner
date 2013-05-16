@@ -27,10 +27,6 @@ append_line = ''
 
 tftproot = node[:provisioner][:root]
 
-if node[:provisioner][:use_serial_console]
-  append_line += " console=tty0 console=ttyS1,115200n8"
-end
-
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 uefi_dir="#{tftproot}/discovery"
@@ -64,6 +60,10 @@ if File.exists? pxecfg_default
   else
     append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
   end
+end
+
+if node[:provisioner][:use_serial_console]
+  append_line += " console=tty0 console=ttyS1,115200n8"
 end
 
 if ::File.exists?("/etc/crowbar.install.key")
