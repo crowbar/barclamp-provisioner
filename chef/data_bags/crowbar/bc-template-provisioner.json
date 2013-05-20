@@ -39,6 +39,7 @@
         }
       },
       "root": "/tftpboot",
+      "timezone": "UTC",
       "web_port": 8091,
       "use_local_security": true,
       "use_serial_console": false,
