@@ -132,7 +132,8 @@ export CROWBAR_KEY="$(cat /mnt/etc/crowbar.install.key)"
 fi
 
 post_state() {
-local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
+mkdir -p /var/log/crowbar
+local curlargs=(-o "/mnt/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
   -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
   -H "Accept: application/json" -H "Content-Type: application/json" \
   --max-time 240)
@@ -152,6 +153,8 @@ else
     rm -f /mnt/root/.ssh/authorized_keys.wget
 fi
 
+
+mkdir -p /mnt/var/log/crowbar
 post_state $HOSTNAME "installed"
 
 # Wait for DHCP to update - this is mainly for virtual environments or really large deploys
