@@ -76,8 +76,10 @@
   <users config:type="list">
       <user>
          <username>root</username>
-         <user_password>root</user_password>
-         <encrypted config:type="boolean">false</encrypted>
+<% if @rootpw_hash != "" %>
+         <user_password><%= @rootpw_hash %></user_password>
+         <encrypted config:type="boolean">true</encrypted>
+<% end %>
          <forename/>
          <surname/>
       </user>
