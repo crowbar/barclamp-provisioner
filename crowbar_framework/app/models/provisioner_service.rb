@@ -36,14 +36,14 @@ class ProvisionerService < ServiceObject
     # If the node is discovered, add the provisioner base to the node
     #
     if state == "discovered"
-      @logger.debug("Provisioner transaction: discovered state for #{name} for #{state}")
+      @logger.debug("Provisioner transition: discovered state for #{name} for #{state}")
       db = ProposalObject.find_proposal "provisioner", inst
 
       #
       # Add the first node as the provisioner server
       #
       if role.override_attributes["provisioner"]["elements"]["provisioner-server"].nil?
-        @logger.debug("Provisioner transaction: if we have no provisioner add one: #{name} for #{state}")
+        @logger.debug("Provisioner transition: if we have no provisioner add one: #{name} for #{state}")
         add_role_to_instance_and_node("provisioner", inst, name, db, role, "provisioner-server")
 
         # Reload the roles
@@ -51,11 +51,11 @@ class ProvisionerService < ServiceObject
         role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
       end
 
-      @logger.debug("Provisioner transaction: Make sure that base is on everything: #{name} for #{state}")
+      @logger.debug("Provisioner transition: Make sure that base is on everything: #{name} for #{state}")
       result = add_role_to_instance_and_node("provisioner", inst, name, db, role, "provisioner-base")
 
       if !result
-        @logger.error("Provisioner transaction: existing discovered state for #{name} for #{state}: Failed")
+        @logger.error("Provisioner transition: existing discovered state for #{name} for #{state}: Failed")
         return [400, "Failed to add role to node"]
       else
         # Set up the client url
@@ -114,12 +114,16 @@ class ProvisionerService < ServiceObject
     # test state machine and call chef-client if state changes
     #
     node = NodeObject.find_node_by_name(name)
+    if ! node
+      @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
+      return [404, "Failed to find node"]
+    end
     unless node.admin? or role.default_attributes["provisioner"]["dhcp"]["state_machine"][state].nil? 
       # All non-admin nodes call single_chef_client if the state machine says to.
-      @logger.info("Provisioner transaction: Run the chef-client locally")
+      @logger.info("Provisioner transition: Run the chef-client locally")
       system("sudo -i /opt/dell/bin/single_chef_client.sh")
     end
-    @logger.debug("Provisioner transaction: exiting for #{name} for #{state}")
+    @logger.debug("Provisioner transition: exiting for #{name} for #{state}")
     [200, node.to_hash ]
   end
 
