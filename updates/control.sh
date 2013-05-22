@@ -80,9 +80,14 @@ ALLOCATED=false
 export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
+if [ -f /etc/SuSE-release ]; then
+    ntp="sntp -P no -r $ADMIN_IP"
+else
+    ntp="/usr/sbin/ntpdate $ADMIN_IP"
+fi
+
 # Make sure date is up-to-date
-until /usr/sbin/ntpdate $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
-do
+until $ntp || [[ $DHCP_STATE = 'debug' ]]; do
   echo "Waiting for NTP server"
   sleep 1
 done
