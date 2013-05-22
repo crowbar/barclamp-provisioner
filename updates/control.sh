@@ -54,11 +54,8 @@ ik_re='crowbar\.install\.key=([^ ]+)'
 [[ $(cat /proc/cmdline) =~ $ik_re ]] && \
     export CROWBAR_KEY="${BASH_REMATCH[1]}"
 
-DHCPDIR=/var/lib/dhclient
 RSYSLOGSERVICE=rsyslog
-
 [[ -e /etc/SuSE-release ]] && {
- DHCPDIR=/var/lib/dhcp
  RSYSLOGSERVICE=syslog
 }
 
