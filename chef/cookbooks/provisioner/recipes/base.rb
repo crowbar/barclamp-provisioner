@@ -48,6 +48,14 @@ node["crowbar"]["ssh"]["root_pub_key"] = str
 node["crowbar"]["ssh"]["access_keys"][node.name] = str
 node_modified = true
 
+# Add additional keys
+node["provisioner"]["access_keys"].strip.split("\n").each do |key|
+  key.strip!
+  nodename = key.split(" ")[2]
+  nodename = key.split("@")[1] if key.include?("@")
+  node["crowbar"]["ssh"]["access_keys"][nodename] = key
+end
+
 # Find provisioner servers and include them.
 search(:node, "roles:provisioner-server AND provisioner_config_environment:#{node[:provisioner][:config][:environment]}") do |n|
   pkey = n["crowbar"]["ssh"]["root_pub_key"] rescue nil
@@ -58,6 +66,9 @@ search(:node, "roles:provisioner-server AND provisioner_config_environment:#{nod
 end
 node.save if node_modified
 
+file "/root/.ssh/authorized_keys" do
+  action :delete
+end
 template "/root/.ssh/authorized_keys" do
   owner "root"
   group "root"
