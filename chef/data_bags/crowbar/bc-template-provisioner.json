@@ -32,7 +32,7 @@
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "ksdevice=bootif"
 	},
-        "suse-11.2": {
+        "suse-11.3": {
          "initrd": "boot/x86_64/loader/initrd",
          "kernel": "boot/x86_64/loader/linux",
          "append": " "
