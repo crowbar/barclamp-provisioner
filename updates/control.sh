@@ -24,6 +24,10 @@ fi
 set -x
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 
+function is_suse {
+    [ -f /etc/SuSE-release ]
+}
+
 #
 # Override HOSTNAME if it is specified.  In kernel,
 # This handles changing boot IFs in the middle of
@@ -40,10 +44,14 @@ hostname_re='crowbar\.hostname=([^ ]+)'
     HOSTNAME="${BASH_REMATCH[1]}" || \
     HOSTNAME="d${MAC//:/-}.${DOMAIN}"
 sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
-if [ -f /etc/sysconfig/network ] ; then
-    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+if is_suse; then
+    echo "$HOSTNAME" > /etc/HOSTNAME
+else
+    if [ -f /etc/sysconfig/network ] ; then
+        sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+    fi
+    echo "${HOSTNAME#*.}" >/etc/domainname
 fi
-echo "${HOSTNAME#*.}" >/etc/domainname
 hostname "$HOSTNAME"
 HOSTNAME_MAC="$HOSTNAME"
 export HOSTNAME HOSTNAME_MAC
@@ -55,7 +63,7 @@ ik_re='crowbar\.install\.key=([^ ]+)'
     export CROWBAR_KEY="${BASH_REMATCH[1]}"
 
 RSYSLOGSERVICE=rsyslog
-[[ -e /etc/SuSE-release ]] && {
+is_suse && {
  RSYSLOGSERVICE=syslog
 }
 
@@ -78,7 +86,7 @@ ALLOCATED=false
 export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
-if [ -f /etc/SuSE-release ]; then
+if is_suse; then
     ntp="sntp -P no -r $ADMIN_IP"
 else
     ntp="/usr/sbin/ntpdate $ADMIN_IP"
@@ -98,7 +106,7 @@ killall dhclient
 killall dhclient3
 
 
-if [ ! -f /etc/SuSE-release ]
+if ! is_suse
 then
   # HACK fix for chef-client
   if [ -e /root/rest-client*gem ]
