@@ -106,7 +106,7 @@ if node[:platform] == "suse"
   template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
     source "base-apache.conf.erb"
     mode 0644
-    variables(:docroot => "/tftpboot",
+    variables(:docroot => "/srv/tftpboot",
               :port => 8091,
               :logfile => "/var/log/apache2/provisioner-access_log",
               :errorlog => "/var/log/apache2/provisioner-error_log")
@@ -186,6 +186,8 @@ if node[:platform] == "suse"
     running true
     enabled true
     action [ :enable, :start ]
+    supports :reload => true
+    subscribes :reload, resources(:service => "tftp"), :immediately
   end
 else
 template "/etc/bluepill/tftpd.pill" do

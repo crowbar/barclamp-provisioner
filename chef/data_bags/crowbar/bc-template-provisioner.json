@@ -5,6 +5,7 @@
     "provisioner": {
       "default_user": "crowbar",
       "default_password_hash": "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
+      "access_keys": "",
       "supported_oses": {
 	"ubuntu-12.04": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
@@ -31,7 +32,7 @@
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "ksdevice=bootif"
 	},
-        "suse-11.2": {
+        "suse-11.3": {
          "initrd": "boot/x86_64/loader/initrd",
          "kernel": "boot/x86_64/loader/linux",
          "append": " "
