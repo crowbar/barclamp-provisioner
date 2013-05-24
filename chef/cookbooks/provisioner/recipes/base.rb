@@ -35,7 +35,12 @@ if node["platform"] != "suse"
 end
 
 node["crowbar"]["ssh"] = {} if node["crowbar"]["ssh"].nil?
-node["crowbar"]["ssh"]["access_keys"] = {} if node["crowbar"]["ssh"]["access_keys"].nil?
+
+# Start with a blank slate, to ensure that any keys removed from a
+# previously applied proposal will be removed.  It also means that any
+# keys manually added to authorized_keys will be automatically removed
+# by Chef.
+node["crowbar"]["ssh"]["access_keys"] = {}
 
 # Build my key
 node_modified = false
@@ -47,6 +52,14 @@ str = %x{cat /root/.ssh/id_rsa.pub}.chomp
 node["crowbar"]["ssh"]["root_pub_key"] = str
 node["crowbar"]["ssh"]["access_keys"][node.name] = str
 node_modified = true
+
+# Add additional keys
+node["provisioner"]["access_keys"].strip.split("\n").each do |key|
+  key.strip!
+  nodename = key.split(" ")[2]
+  nodename = key.split("@")[1] if key.include?("@")
+  node["crowbar"]["ssh"]["access_keys"][nodename] = key
+end
 
 # Find provisioner servers and include them.
 search(:node, "roles:provisioner-server AND provisioner_config_environment:#{node[:provisioner][:config][:environment]}") do |n|

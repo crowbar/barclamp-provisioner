@@ -81,7 +81,7 @@ reboot_system() {
   sync
   sleep 30
   umount -l /updates /install-logs
-  reboot
+  reboot -f
 }
 
 wait_for_allocated() {
