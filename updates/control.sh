@@ -20,6 +20,7 @@
 if [[ ! $IN_SCRIPT ]]; then
     export IN_SCRIPT=true
     script -a -f -c "$0" "/install-logs/$HOSTNAME_MAC.transcript"
+    exit $?
 fi
 set -x
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
