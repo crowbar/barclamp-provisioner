@@ -86,10 +86,9 @@ reboot_system() {
 
 wait_for_allocated() {
     # $1 = hostname
-    while [[ $ALLOCATED = false ]]; do
-        get_state "$1"
-        [[ $ALLOCATED = true ]] && return
+    while [[ $ALLOCATED != true ]]; do
         sleep 15
+        get_state "$1"
     done
 }
 
