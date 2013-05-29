@@ -6,6 +6,7 @@
   $(document).ready(function(){
     var constraints = { 
         "provisioner-server": { "unique": false, "count": 1, "admin":true }, 
+        "provisioner-bootdisk-finder": { "unique": false, "count": -1, "admin":true }, 
         "provisioner-base": { "unique": false, "count": -1, "admin":true } };
     node_selector($('#drag_drop'), constraints);
   });
