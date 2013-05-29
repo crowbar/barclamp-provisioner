@@ -80,7 +80,7 @@ get_state() { try_to "$MAXTRIES" 15 __get_state "$@"; }
 reboot_system() {
   sync
   sleep 30
-  umount -l /updates /install-logs
+  umount -l /updates /var/log/crowbar/sledgehammer
   reboot -f
 }
 
@@ -93,7 +93,7 @@ wait_for_allocated() {
 }
 
 hook_has_run() {
-    local statefile="/install-logs/$HOSTNAME-$HOOKNAME-$HOOKSTATE"
+    local statefile="/var/log/crowbar/sledgehammer/$HOSTNAME-$HOOKNAME-$HOOKSTATE"
     if [[ -f $statefile ]]; then
         return 0
     else
@@ -120,7 +120,7 @@ wait_for_crowbar_state() {
 
 report_state () {
     if [ -a /var/log/chef/hw-problem.log ]; then
-	"cp /var/log/chef/hw-problem.log /install-logs/$1-hw-problem.log"
+	"cp /var/log/chef/hw-problem.log /var/log/crowbar/sledgehammer/$1-hw-problem.log"
         post_state "$1" problem
     else
         post_state "$1" "$2"
