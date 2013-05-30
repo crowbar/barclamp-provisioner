@@ -56,7 +56,7 @@ service rpcService do
   action [ :enable, :start ]
 end
 
-directory "/var/log/crowbar/sledgehammer" do
+directory "/install-logs" do
   owner "root"
   group "root"
   mode 0755
