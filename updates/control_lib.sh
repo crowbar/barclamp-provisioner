@@ -81,15 +81,14 @@ reboot_system() {
   sync
   sleep 30
   umount -l /updates /install-logs
-  reboot
+  reboot -f
 }
 
 wait_for_allocated() {
     # $1 = hostname
-    while [[ $ALLOCATED = false ]]; do
-        get_state "$1"
-        [[ $ALLOCATED = true ]] && return
+    while [[ $ALLOCATED != true ]]; do
         sleep 15
+        get_state "$1"
     done
 }
 

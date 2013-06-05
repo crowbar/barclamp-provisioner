@@ -5,53 +5,34 @@
     "provisioner": {
       "default_user": "crowbar",
       "default_password_hash": "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
+      "access_keys": "",
       "supported_oses": {
-        "ubuntu-10.10": {
-	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
-	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto root=/dev/ram rw quiet"
-	},
-	"ubuntu-11.04": {
-	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
-	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "auto=true priority=critical vga=788 debian-installer/locale=en_US.utf8 keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto root=/dev/ram rw quiet"
-	},
-	"ubuntu-11.10": {
-	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
-	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto root=/dev/ram rw quiet"
-	},
 	"ubuntu-12.04": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
 	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
 	   "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=root=/dev/ram rw quiet"
-	},
-        "redhat-5.6": {
-     	  "initrd": "images/pxeboot/initrd.img",
-	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "ksdevice=bootif"
-	},
-	"redhat-5.7": {
-     	  "initrd": "images/pxeboot/initrd.img",
-	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "ksdevice=bootif"
 	},
 	"redhat-6.2": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "ksdevice=bootif"
 	},
-	"centos-5.7": {
-     	  "initrd": "images/pxeboot/initrd.img",
+        "redhat-6.4": {
+          "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "ksdevice=bootif"
+          "append": "ksdevice=bootif"
 	},
         "centos-6.2": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "ksdevice=bootif"
 	},
-        "suse-11.2": {
+        "centos-6.4": {
+     	  "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+	  "append": "ksdevice=bootif"
+	},
+        "suse-11.3": {
          "initrd": "boot/x86_64/loader/initrd",
          "kernel": "boot/x86_64/loader/linux",
          "append": " "

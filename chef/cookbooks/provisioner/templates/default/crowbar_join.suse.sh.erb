@@ -15,10 +15,20 @@
 # limitations under the License.
 #
 
+# This is required if the autoyast.xml had any <media_url> elements
+# containing credentials; if so, they get cached in
+# /root/.zypp/credentials.cat and so subsequent zypper runs need HOME
+# set in order to reuse them.
+export HOME=/root
+
 HTTP_SERVER="<%= @admin_ip %>:8091"
 IP=${HTTP_SERVER%:*}
 
-exec 2>>/var/log/crowbar-join.errlog
+if [[ ! -d /var/log/crowbar/crowbar_join ]] ; then
+  mkdir -p /var/log/crowbar/crowbar_join/
+fi
+
+exec 2>>/var/log/crowbar/crowbar_join/errlog
 
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 set -x
@@ -35,7 +45,7 @@ fi
 log_to() {
     # $1 = install log to log to
     # $@ = rest of args
-    local __log="/var/log/crowbar-join-$1"
+    local __log="/var/log/crowbar/crowbar_join/$1"
     local __timestamp="$(date '+%F %T %z')"
     shift
     printf "\n%s\n" "$__timestamp: Running $*" | \
@@ -54,7 +64,7 @@ log_to() {
 }
 
 post_state() {
-  local curlargs=(-o "/var/log/$1-$2.json" --connect-timeout 60 -s \
+  local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
       -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
       -H "Accept: application/json" -H "Content-Type: application/json" \
       --max-time 240)
@@ -70,6 +80,30 @@ echo "Waiting on our network interface to come up..."
 while ! ip addr | grep -v " lo" | grep -q "inet "
 do
   sleep 1
+done
+
+# wait for hostname to become available
+tries_left=120
+while ! hostname -f > /dev/null; do
+  HOSTNAME=$(hostname -f)
+  exit_code=$?
+
+  echo $HOSTNAME
+  echo $exit_code
+  if [ $exit_code -eq 0 ]; then
+    break
+  fi
+
+  echo "sleeping 5 seconds"
+  sleep 5
+
+  tries_left=$(($tries_left-1))
+  if [ $tries_left -eq 0 ]; then
+    echo "giving up... reboot"
+    reboot
+    exit 1
+  fi
+
 done
 
 # Get our hostname
@@ -96,20 +130,50 @@ mkdir -p /etc/chef
 curl -o /etc/chef/validation.pem \
     "http://$HTTP_SERVER/validation.pem"
 
-if [[ ! -x /etc/init.d/bluepill ]]; then 
-    # Make sure that the client knows how to talk to the server
+# Make sure that the client knows how to talk to the server.
+# "http://chef.example.com:4000" is part of the default config; if it's there,
+# we can overwrite it
+grep -q '^\s*chef_server_url\s*"http://chef.example.com:4000"' /etc/chef/client.rb 2> /dev/null
+if [[ $? -eq 0 || ! -f /etc/chef/chef.rb ]]; then
+    test -f /etc/chef/chef.rb && mv /etc/chef/chef.rb /etc/chef/chef.rb.bak
     echo "chef_server_url \"http://$IP:4000\"" >/etc/chef/client.rb
 
+    # add reboot handler to chef-client
+    # FIXME: there is a cleaner way of adding handlers:
+    # http://wiki.opscode.com/display/chef/Opscode+LWRP+Resources#OpscodeLWRPResources-chefhandler
+    
+    cat >> /etc/chef/client.rb <<EOF
+require "/var/chef/handlers/reboot_handler"
+reboot_handler = RebootHandler.new
+report_handlers << reboot_handler # these fire at the end of a successful run
+EOF
+
+    # create reboot handler
+    mkdir -p /var/chef/handlers
+    cat > /var/chef/handlers/reboot_handler.rb <<EOF
+class RebootHandler < Chef::Handler
+  def report
+    if node.run_state[:reboot]
+      Chef::Log.info("Reboot requested through node.run_state[:reboot]")
+      system("/sbin/reboot")
+    end
+  end  
+end    
+EOF
+
+fi
+
+if [[ ! -x /etc/init.d/chef-client ]]; then
     # Install Chef
     echo "Installing Chef..."
 
     while ! log_to zypper zypper -n refresh ; do
 	echo "Failed to do zypper refresh, wait and try again"
-	sleep 1
+	sleep 10
     done
     while ! log_to zypper zypper -n install rubygem-chef ; do
 	echo "Failed to do zypper install, wait and try again"
-	sleep 1
+	sleep 10
     done
 
     log_to chef chkconfig -a chef-client
@@ -151,7 +215,7 @@ if ! log_to chef chef-client -l debug; then
         rm -rf /var/cache/chef/*
         echo "Checking Keys"
         rm -f /etc/chef/client.pem
-        post_state $HOSTNAME "hardware-updated"
+        post_state $HOSTNAME "installed"
         echo "Running Chef Client (pass 4) - password cleanup"
         if ! log_to chef chef-client -l debug; then 
             log_to ifup /sbin/service network restart
@@ -159,6 +223,9 @@ if ! log_to chef chef-client -l debug; then
             echo "Failed"
             printf "Our IP address is: %s\n" "$(ip addr show)"
             final_state="problem"
+        else
+            post_state "$HOSTNAME" "$final_state"
+            log_to chef chef-client -l debug
         fi
     fi
 fi
@@ -166,8 +233,10 @@ fi
 # Transition to our final state
 post_state $HOSTNAME "$final_state"
 
+# make sure to keep hostname
+echo $HOSTNAME > /etc/HOSTNAME
+
 log_to time service ntp start
-# Fire up bluepill, and let it keep chef-client up.
 service chef-client start
 
 echo "Done"

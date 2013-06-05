@@ -41,9 +41,9 @@ when "ubuntu","debian"
     end
   end
 
-when "centos","redhat"
+when "centos","redhat","suse"
   package "nfs-utils"
-  if node[:platform_version].to_f >= 6
+  if node[:platform_version].to_f >= 6 || node[:platform] == "suse"
     rpcService="rpcbind"
   end
 end
@@ -64,6 +64,7 @@ end
 
 service "nfs-kernel-server" do
   service_name "nfs" if node[:platform] =~ /^(redhat|centos)$/
+  service_name "nfsserver" if node[:platform] == "suse"
   supports :restart => true, :status => true, :reload => true
   running true
   enabled true

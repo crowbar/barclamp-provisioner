@@ -167,6 +167,7 @@ if not nodes.nil? and not nodes.empty?
             variables(
                       :admin_node_ip => admin_ip,
                       :web_port => web_port,
+                      :rootpw_hash => node[:provisioner][:root_password_hash] || "",
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :node_name => mnode[:fqdn],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")

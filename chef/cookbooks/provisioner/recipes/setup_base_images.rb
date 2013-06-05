@@ -24,13 +24,8 @@ web_port = node[:provisioner][:web_port]
 use_local_security = node[:provisioner][:use_local_security]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
-os_token="#{node[:platform]}-#{node[:platform_version]}"
 
 tftproot = node[:provisioner][:root]
-
-if node[:provisioner][:use_serial_console]
-  append_line += " console=tty0 console=ttyS1,115200n8"
-end
 
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
@@ -58,13 +53,23 @@ EOC
 end
 
 
+# FIXME: What is the purpose of this, really? If pxecfg_default does not exist
+# the root= parameters will not get appended to the kernel commandline. (Luckily
+# we don't need those with the SLES base sledgehammer)
+# Later on pxecfg_default will even be replace with a link to "discovery"
+# Probably this pxecfg_default check can go a way and we can just unconditionally
+# append the root= parameters?
 if File.exists? pxecfg_default
   append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
   if append_line
-    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'')
-  else
+    append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|console=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'').strip
+  elsif node[:platform] != "suse"
     append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
   end
+end
+
+if node[:provisioner][:use_serial_console]
+  append_line += " console=tty0 console=ttyS1,115200n8"
 end
 
 if ::File.exists?("/etc/crowbar.install.key")
@@ -94,43 +99,68 @@ template "#{uefi_dir}/elilo.conf" do
             :kernel => "vmlinuz0")
 end
 
-include_recipe "bluepill"
+if node[:platform] == "suse"
 
-package "nginx-light"
+  include_recipe "apache2"
 
-service "nginx" do
-  action :disable
-end
+  template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
+    source "base-apache.conf.erb"
+    mode 0644
+    variables(:docroot => "/srv/tftpboot",
+              :port => 8091,
+              :logfile => "/var/log/apache2/provisioner-access_log",
+              :errorlog => "/var/log/apache2/provisioner-error_log")
+    notifies :reload, resources(:service => "apache2")
+  end
 
-link "/etc/nginx/sites-enabled/default" do
-  action :delete
-end
+else
 
-# Set up our the webserver for the provisioner.
-file "/var/log/provisioner-webserver.log" do
-  owner "nobody"
+  include_recipe "bluepill"
+
+
+  case node.platform
+  when "ubuntu","debian"
+    package "nginx-light"
+  else
+    package "nginx"
+  end
+
+  service "nginx" do
+    action :disable
+  end
+
+  link "/etc/nginx/sites-enabled/default" do
+    action :delete
+  end
+
+  # Set up our the webserver for the provisioner.
+  file "/var/log/provisioner-webserver.log" do
+    owner "nobody"
+    action :create
+  end
+
+  template "/etc/nginx/provisioner.conf" do
+    source "base-nginx.conf.erb"
+    variables(:docroot => tftproot,
+              :port => 8091,
+              :logfile => "/var/log/provisioner-webserver.log",
+              :pidfile => "/var/run/provisioner-webserver.pid")
+  end
+
+file "/var/run/provisioner-webserver.pid" do
+  mode "0644"
   action :create
 end
 
-template "/etc/nginx/provisioner.conf" do
-  source "base-nginx.conf.erb"
-  variables(:docroot => "/tftpboot",
-            :port => 8091,
-            :logfile => "/var/log/provisioner-webserver.log",
-            :pidfile => "/var/run/provisioner-webserver.pid")
+template "/etc/bluepill/provisioner-webserver.pill" do
+  source "provisioner-webserver.pill.erb"
 end
 
-bluepill_service "provisioner-webserver" do
-  variables(:processes => [ {
-                              "daemonize" => false,
-                              "pid_file" => "/var/run/provisioner-webserver.pid",
-                              "start_command" => "nginx -c /etc/nginx/provisioner.conf",
-                              "stderr" => "/var/log/provisioner-webserver.log",
-                              "stdout" => "/var/log/provisioner-webserver.log",
-                              "name" => "provisioner-webserver"
-                            } ] )
-  action [:create, :load]
-end
+  bluepill_service "provisioner-webserver" do
+    action [:load, :start]
+  end
+
+end # !suse
 
 # Set up the TFTP server as well.
 case node[:platform]
@@ -142,17 +172,32 @@ when "ubuntu", "debian"
   end
 when "redhat","centos"
   package "tftp-server"
+when "suse"
+  package "tftp"
+end
+
+if node[:platform] == "suse"
+  service "tftp" do
+    # just enable, don't start (xinetd takes care of it)
+    enabled true
+    action [ :enable ]
+  end
+  service "xinetd" do
+    running true
+    enabled true
+    action [ :enable, :start ]
+    supports :reload => true
+    subscribes :reload, resources(:service => "tftp"), :immediately
+  end
+else
+template "/etc/bluepill/tftpd.pill" do
+  source "tftpd.pill.erb"
+  variables( :tftproot => tftproot )
 end
 
 bluepill_service "tftpd" do
-  variables(:processes => [ {
-                              "daemonize" => true,
-                              "start_command" => "in.tftpd -4 -L -a 0.0.0.0:69 -s #{tftproot}",
-                              "stderr" => "/dev/null",
-                              "stdout" => "/dev/null",
-                              "name" => "tftpd"
-                            } ] )
-  action [:create, :load]
+  action [:load, :start]
+end
 end
 
 bash "copy validation pem" do
@@ -237,7 +282,7 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
-    if ::File.exists? "/tftpboot/#{os}/install/repodata"
+    if ::File.exists? "#{tftproot}/#{os}/install/repodata"
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     else
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }

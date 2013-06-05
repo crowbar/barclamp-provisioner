@@ -20,9 +20,14 @@
 if [[ ! $IN_SCRIPT ]]; then
     export IN_SCRIPT=true
     script -a -f -c "$0" "/install-logs/$HOSTNAME_MAC.transcript"
+    exit $?
 fi
 set -x
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
+
+function is_suse {
+    [ -f /etc/SuSE-release ]
+}
 
 #
 # Override HOSTNAME if it is specified.  In kernel,
@@ -40,10 +45,14 @@ hostname_re='crowbar\.hostname=([^ ]+)'
     HOSTNAME="${BASH_REMATCH[1]}" || \
     HOSTNAME="d${MAC//:/-}.${DOMAIN}"
 sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
-if [ -f /etc/sysconfig/network ] ; then
-    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+if is_suse; then
+    echo "$HOSTNAME" > /etc/HOSTNAME
+else
+    if [ -f /etc/sysconfig/network ] ; then
+        sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+    fi
+    echo "${HOSTNAME#*.}" >/etc/domainname
 fi
-echo "${HOSTNAME#*.}" >/etc/domainname
 hostname "$HOSTNAME"
 HOSTNAME_MAC="$HOSTNAME"
 export HOSTNAME HOSTNAME_MAC
@@ -54,11 +63,8 @@ ik_re='crowbar\.install\.key=([^ ]+)'
 [[ $(cat /proc/cmdline) =~ $ik_re ]] && \
     export CROWBAR_KEY="${BASH_REMATCH[1]}"
 
-DHCPDIR=/var/lib/dhclient
 RSYSLOGSERVICE=rsyslog
-
-[[ -e /etc/SuSE-release ]] && {
- DHCPDIR=/var/lib/dhcp
+is_suse && {
  RSYSLOGSERVICE=syslog
 }
 
@@ -72,6 +78,7 @@ fi
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 DHCP_STATE=${DHCP_STATE#*=}
+echo "DHCP_STATE=$DHCP_STATE"
 MAXTRIES=5
 BMC_ADDRESS=""
 BMC_NETMASK=""
@@ -80,9 +87,14 @@ ALLOCATED=false
 export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
+if is_suse; then
+    ntp="sntp -P no -r $ADMIN_IP"
+else
+    ntp="/usr/sbin/ntpdate $ADMIN_IP"
+fi
+
 # Make sure date is up-to-date
-until /usr/sbin/ntpdate $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
-do
+until $ntp || [[ $DHCP_STATE = 'debug' ]]; do
   echo "Waiting for NTP server"
   sleep 1
 done
@@ -94,21 +106,29 @@ done
 killall dhclient
 killall dhclient3
 
-# HACK fix for chef-client
-cd /root
-gem install --local rest-client
-cd -
 
-# Other gem dependency installs.
-cat > /etc/gemrc <<EOF
+if ! is_suse
+then
+  # HACK fix for chef-client
+  if [ -e /root/rest-client*gem ]
+  then
+    pushd /root
+    gem install --local rest-client
+    popd
+  fi
+
+  # Other gem dependency installs.
+  cat > /etc/gemrc <<EOF
 :sources:
 - http://$ADMIN_IP:8091/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin
 EOF
-gem install xml-simple
-gem install libxml-ruby
-gem install wsman
-gem install cstruct
+  gem install rest-client
+  gem install xml-simple
+  gem install libxml-ruby
+  gem install wsman
+  gem install cstruct
+fi
 
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then
@@ -143,6 +163,7 @@ nuke_everything() {
         else
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=$blocks"
         fi
+        echo w | fdisk /dev/$name # write new unique MBR signature
     done < <(tac /proc/partitions)
 
     ## for good measure, nuke partition tables on disks (nothing should remain bootable)
@@ -202,6 +223,7 @@ walk_node_through () {
 }
 
 # If there is a custom control.sh for this system, source it.
+[[ -n "$HOSTNAME" ]] && \
 [[ -x /updates/$HOSTNAME/control.sh ]] && \
     . "/updates/$HOSTNAME/control.sh"
 
