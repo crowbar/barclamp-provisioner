@@ -23,7 +23,7 @@ ruby_block "Find the fallback boot device" do
     raise "Cannot find a hard disk!" unless dev
     node[:crowbar_wall][:boot_device] = disk_by_path
     # Turn the found device into its corresponding /dev/disk/by-id link.
-    # This name should be more stable than the /dev/disk/by-path one.
+    # This name shoule be more stable than the /dev/disk/by-path one.
     basedir="/dev/disk/by-id"
     if File.exists? basedir
       bootdisks=::Dir.entries(basedir).select do |m|
@@ -37,6 +37,8 @@ ruby_block "Find the fallback boot device" do
         node[:crowbar_wall][:boot_device] = "disk/by-id/#{bootdisk}"
       end
     end
+    disk = BarclampLibrary::Barclamp::Inventory::Disk.new(node,dev)
+    disk.claim("Boot")
     node.save
   end
   not_if do node[:crowbar_wall][:boot_device] end
