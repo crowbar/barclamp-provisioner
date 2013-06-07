@@ -24,6 +24,7 @@ ruby_block "Find the fallback boot device" do
     node[:crowbar_wall][:boot_device] = disk_by_path
     # Turn the found device into its corresponding /dev/disk/by-id link.
     # This name shoule be more stable than the /dev/disk/by-path one.
+    
     basedir="/dev/disk/by-id"
     if File.exists? basedir
       bootdisks=::Dir.entries(basedir).select do |m|
