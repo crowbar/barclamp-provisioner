@@ -74,10 +74,30 @@ node.save if node_modified
 template "/root/.ssh/authorized_keys" do
   owner "root"
   group "root"
-  mode "0700"
+  mode "0644"
   action :create
   source "authorized_keys.erb"
   variables(:keys => node["crowbar"]["ssh"]["access_keys"])
+end
+
+# Also put authorized_keys in tftpboot path on the admin node so that discovered
+# nodes can use the same.
+if node.roles.include? "crowbar"
+  case node[:platform]
+  when "suse"
+    tftpboot_path = "/srv/tftpboot"
+  else
+    tftpboot_path = "/tftpboot"
+  end
+
+  template "#{tftpboot_path}/authorized_keys" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "authorized_keys.erb"
+    variables(:keys => node["crowbar"]["ssh"]["access_keys"])
+  end
 end
 
 bash "Disable Strict Host Key checking" do
