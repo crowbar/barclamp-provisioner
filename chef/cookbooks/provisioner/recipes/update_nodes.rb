@@ -56,10 +56,8 @@ if not nodes.nil? and not nodes.empty?
     when (new_group == "delete") 
       Chef::Log.info("Deleting #{mnode[:fqdn]}")
       # Delete the node
-      if new_group == "delete"
-        system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
-        system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
-      end
+      system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
+      system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
       mac_list.each_index do |i|
         dhcp_host "#{mnode.name}-#{i}" do
           hostname mnode.name
