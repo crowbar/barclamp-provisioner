@@ -48,11 +48,14 @@ ruby_block "Find the fallback boot device" do
       Chef::Log.info("Will consider #{path} as the boot device.")
       candidates << Bootdev.new(dev,pci_address,scsi_id,path)
     end
-    # Find the first thing that looks like a hard drive based on
-    # PCI bus enumeration and SCSI quad, and use it as the target disk.
-    # Unless some other barclamp has set it, that is.
+    # Find the first thing that looks like a hard drive based on:
+    # 1: How many PCI bridges the controller is from the PCI root bridge.
+    #    The closest one wins.
+    # 2: The address on the PCI bus of the device.  The lowest address wins.
+    # 3: The host:bus:target:lun of the SCSI device.  The lowest one wins.
     candidate = candidates.sort do |a,b|
-      res = a.pci_address <=> b.pci_address
+      res = a.pci_address.length <=> b.pci_address.length
+      res = a.pci_address <=> b.pci_address if res == 0
       res = a.scsi_id <=> b.scsi_id if res == 0
       res = a.device <=> b.device if res == 0
       res
