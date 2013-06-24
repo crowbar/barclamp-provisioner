@@ -56,9 +56,11 @@ node_modified = true
 # Add additional keys
 node["provisioner"]["access_keys"].strip.split("\n").each do |key|
   key.strip!
-  nodename = key.split(" ")[2]
-  nodename = key.split("@")[1] if key.include?("@")
-  node.set["crowbar"]["ssh"]["access_keys"][nodename] = key
+  if !key.empty?
+    nodename = key.split(" ")[2]
+    nodename = key.split("@")[1] if key.include?("@")
+    node.set["crowbar"]["ssh"]["access_keys"][nodename] = key
+  end
 end
 
 # Find provisioner servers and include them.
