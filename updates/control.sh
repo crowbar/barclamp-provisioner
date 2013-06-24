@@ -22,7 +22,7 @@ if [[ ! $IN_SCRIPT ]]; then
     script -a -f -c "$0" "/install-logs/$HOSTNAME_MAC.transcript"
     exit $?
 fi
-set -x
+#set -x
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 
 function is_suse {
