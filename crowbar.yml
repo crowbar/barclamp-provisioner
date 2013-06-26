@@ -24,18 +24,20 @@ barclamp:
   copyright: "Dell, Inc 2013"
   api_version: "v2"
   api_version_accepts: "v2"
-  requires:
-    - chef
-    - dns
-    - network
-  member:
-    - crowbar
 
 crowbar:
-  layout: 1.9
+  layout: 2.0
   order: 10
-  run_order: 1060
-  chef_order: 1060
+
+jigs:
+  script:
+    roles:
+      - provisioner-base
+      - provisioner-server
+  chef:
+    roles:
+      - provisioner-base
+      - provisioner-server
 
 debs:
   ubuntu-10.10:

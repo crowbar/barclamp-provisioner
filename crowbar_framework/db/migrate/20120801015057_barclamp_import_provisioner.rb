@@ -14,7 +14,7 @@
 #
 class BarclampImportProvisioner < ActiveRecord::Migration
   def up
-    Barclamp.import_1x 'provisioner'
+    Barclamp.import 'provisioner'
   end
 
   def down
