@@ -22,7 +22,7 @@ if [[ ! $IN_SCRIPT ]]; then
     script -a -f -c "$0" "/install-logs/$HOSTNAME_MAC.transcript"
     exit $?
 fi
-set -x
+#set -x
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 
 function is_suse {
@@ -74,6 +74,12 @@ if ! grep -q "${ADMIN_IP}" /etc/rsyslog.conf; then
     echo "*.* @@${ADMIN_IP}" >> /etc/rsyslog.conf
     service $RSYSLOGSERVICE restart
 fi
+
+# enable SSH access from admin node (same keys).
+(umask 077 ; mkdir -p /root/.ssh)
+curl -L -o /root/.ssh/authorized_keys \
+     --connect-timeout 60 -s \
+     "http://$ADMIN_IP:8091/authorized_keys"
 
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)

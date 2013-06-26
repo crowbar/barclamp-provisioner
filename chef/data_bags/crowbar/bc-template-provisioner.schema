@@ -18,7 +18,7 @@
             "root_password_hash": { "type": "str" },
             "access_keys": { "type": "str", "required": true },
             "web_port": { "type": "int", "required": true },
-	    "root": { "type": "str", "required": true },
+            "timezone": { "type": "str", "required": true },
 	    "default_os": { "type": "str", "required": false },
 	    "supported_oses": {
 	      "type": "map",
