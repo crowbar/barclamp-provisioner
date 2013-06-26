@@ -14,12 +14,7 @@
 #
 
 states = node["provisioner"]["dhcp"]["state_machine"]
-case node[:platform]
-when "suse"
-  tftproot = "/srv/tftpboot"
-else
-  tftproot = "/tftpboot"
-end
+tftproot=node["provisioner"]["root"]
 timezone = (node["provisioner"]["timezone"] rescue "UTC") || "UTC"
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 uefi_dir="#{tftproot}/discovery"
