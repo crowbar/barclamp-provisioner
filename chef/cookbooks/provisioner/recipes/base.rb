@@ -107,6 +107,11 @@ bash "Disable Strict Host Key checking" do
   not_if "grep -q 'StrictHostKeyChecking no' /etc/ssh/ssh_config"
 end
 
+bash "Set EDITOR=vi environment variable" do
+  code "echo \"EDITOR=vi\" > /etc/profile.d/editor.sh"
+  not_if "export | grep -q EDITOR= ; echo $?"
+end
+
 config_file = "/etc/default/chef-client"
 config_file = "/etc/sysconfig/chef-client" if node[:platform] =~ /^(redhat|centos)$/
 
