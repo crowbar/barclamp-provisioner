@@ -15,7 +15,4 @@
 en:
   barclamp:
     provisioner:
-      edit_attributes: 
-        attributes: Attributes
-      edit_deployment: 
-        deployment: Deployment
+

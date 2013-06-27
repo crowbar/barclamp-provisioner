@@ -1,4 +1,4 @@
-# Copyright 2011, Dell
+# Copyright 2013, Dell
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Author: RobHirschfeld
-#
 
 barclamp:
   name: provisioner
@@ -24,7 +22,13 @@ barclamp:
   copyright: "Dell, Inc 2013"
   api_version: "v2"
   api_version_accepts: "v2"
-
+  requires:
+    - chef
+    - dns
+    - network
+  member:
+    - crowbar
+    
 crowbar:
   layout: 2.0
   order: 10
@@ -40,21 +44,6 @@ jigs:
       - provisioner-server
 
 debs:
-  ubuntu-10.10:
-    repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu maverick main
-    pkgs:
-      - portmap
-  ubuntu-11.04:
-    repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu natty main
-    pkgs:
-      - portmap
-  ubuntu-11.10:
-    repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
-    pkgs:
-      - rpcbind
   ubuntu-12.04:
     repos: 
       - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
