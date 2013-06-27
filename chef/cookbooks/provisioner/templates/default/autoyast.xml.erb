@@ -108,7 +108,7 @@
   </partitioning>
   <timezone>
     <hwclock>UTC</hwclock>
-    <timezone>UTC</timezone>
+    <timezone><%=@timezone%></timezone>
   </timezone>
   <scripts>
     <chroot-scripts config:type="list">
@@ -153,6 +153,8 @@ else
     rm -f /mnt/root/.ssh/authorized_keys.wget
 fi
 
+curl -s -o /mnt/etc/init.d/crowbar_join.sh <%= @crowbar_join %>
+chmod +x /mnt/etc/init.d/crowbar_join.sh
 
 mkdir -p /mnt/var/log/crowbar
 post_state $HOSTNAME "installed"
@@ -167,7 +169,7 @@ sync
     <init-scripts config:type="list">
       <script>
         <filename>crowbar_join</filename>
-        <location><%=@crowbar_join%></location>
+        <location>file:///etc/init.d/crowbar_join.sh</location>
       </script>
     </init-scripts>
   </scripts>

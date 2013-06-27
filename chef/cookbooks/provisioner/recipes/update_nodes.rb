@@ -15,6 +15,7 @@
 
 states = node["provisioner"]["dhcp"]["state_machine"]
 tftproot=node["provisioner"]["root"]
+timezone = (node["provisioner"]["timezone"] rescue "UTC") || "UTC"
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 uefi_dir="#{tftproot}/discovery"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
@@ -55,10 +56,8 @@ if not nodes.nil? and not nodes.empty?
     when (new_group == "delete") 
       Chef::Log.info("Deleting #{mnode[:fqdn]}")
       # Delete the node
-      if new_group == "delete"
-        system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
-        system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
-      end
+      system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
+      system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
       mac_list.each_index do |i|
         dhcp_host "#{mnode.name}-#{i}" do
           hostname mnode.name
@@ -137,6 +136,7 @@ if not nodes.nil? and not nodes.empty?
                       :cc_install_web_port => web_port,
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :cc_built_admin_node_ip => admin_ip,
+                      :timezone => timezone,
                       :node_name => mnode[:fqdn],
                       :install_path => "#{os}/install")
           end
@@ -155,6 +155,7 @@ if not nodes.nil? and not nodes.empty?
                       :repos => node[:provisioner][:repositories][os],
                       :uefi => (mnode[:crowbar_wall][:uefi] rescue nil),
                       :admin_web => install_url,
+                      :timezone => timezone,
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
         when os =~ /^(open)?suse/
@@ -168,6 +169,7 @@ if not nodes.nil? and not nodes.empty?
                       :admin_node_ip => admin_ip,
                       :web_port => web_port,
                       :rootpw_hash => node[:provisioner][:root_password_hash] || "",
+                      :timezone => timezone,
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :node_name => mnode[:fqdn],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
