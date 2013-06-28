@@ -17,6 +17,8 @@ ruby_block "Find the fallback boot device" do
       dev = File.readlink("#{basedir}/#{path}").split('/')[-1]
       disk_by_path = "disk/by-path/#{path}"
       break if dev =~ /^[hsv]d[a-z]+$/
+      # pci-0000:0b:08.0-cciss-disk0 -> ../../cciss/c0d0
+      break if dev =~ /^c[0-9]+d[0-9]+$/
       dev = nil
       disk_by_path = nil
     end
@@ -35,6 +37,7 @@ ruby_block "Find the fallback boot device" do
         bootdisk = bootdisks.find{|b|b =~ /^scsi-[a-zA-Z]/} ||
           bootdisks.find{|b|b =~ /^scsi-/} ||
           bootdisks.find{|b|b =~ /^ata-/} ||
+          bootdisks.find{|b|b =~ /^cciss-/} ||
           bootdisks.first
         node[:crowbar_wall][:boot_device] = "disk/by-id/#{bootdisk}"
       end
