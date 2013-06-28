@@ -1,10 +1,12 @@
-
 %input#proposal_attributes{:type => "hidden", :name => "proposal_attributes", :value => @proposal.raw_data['attributes'][@proposal.barclamp].to_json}
+
+%h3.page-header
+  = t('.attributes')
+  = link_to t('raw'), proposal_barclamp_path(:id => @proposal.name, :controller => @proposal.barclamp, :dep_raw => @dep_raw, :attr_raw => true), :class => "pull-right"
+.page-header-bottom
+
 %p
-  %label{:for => "proposal_attributes"}= t('.attributes')
-  = link_to t('raw'), proposal_barclamp_path(:id => @proposal.name, :controller => @proposal.barclamp, :dep_raw => @dep_raw, :attr_raw => true), :style => "float: right;"
-  %div.container
-    %p
-      %label{ :for => :access_keys }= t('.access_keys')
-      = text_area_tag :access_keys, @proposal.raw_data['attributes'][@proposal.barclamp]["access_keys"], :size => "80x5", :onchange => "update_value('access_keys', 'access_keys', 'string')"
-      %em= t('.access_keys_hint')
+  %div{ :for => :access_keys }
+    = t('.access_keys')
+    %small= t('.access_keys_hint')
+  = text_area_tag :access_keys, @proposal.raw_data['attributes'][@proposal.barclamp]["access_keys"], :style => "width: 90%; height: 150px", :onchange => "update_value('access_keys', 'access_keys', 'string')"
