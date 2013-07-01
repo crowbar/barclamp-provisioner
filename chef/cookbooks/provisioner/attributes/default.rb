@@ -4,3 +4,5 @@ when "suse"
 else
   default[:provisioner][:root] = "/tftpboot"
 end
+
+default[:provisioner][:coredump] = false

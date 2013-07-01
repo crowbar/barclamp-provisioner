@@ -112,6 +112,39 @@ bash "Set EDITOR=vi environment variable" do
   not_if "export | grep -q EDITOR= ; echo $?"
 end
 
+if node[:provisioner][:coredump]
+  bash "Set core dump pattern to /tmp/cores/core.%e.%p.%h.%t" do
+    code "echo 'kernel.core_pattern = /tmp/cores/core.%e.%p.%h.%t' >> /etc/sysctl.conf"
+    not_if "grep -q 'kernel.core_pattern' /etc/sysctl.conf"
+  end
+  bash "Enable core dumps" do
+    code "ulimit -c unlimited"
+  end
+  # Permanent core dumping (needs reboot)
+  bash "Enable permanent core dumps (/etc/security/limits)" do
+    code "echo '* soft core unlimited' >> /etc/security/limits"
+    not_if "grep -q 'soft core unlimited' /etc/security/limits"
+  end
+  if node[:platform] == "suse"
+    # Permanent core dumping (no reboot needed)
+    bash "Enable permanent core dumps (/etc/sysconfig/ulimit)" do
+      code 'sed -i s/SOFTCORELIMIT.*/SOFTCORELIMIT="unlimited"/ /etc/sysconfig/ulimit'
+      not_if "grep -q 'SOFTCORELIMIT=\"unlimited\"' /etc/sysconfig/ulimit"
+    end
+  end
+else
+  bash "Disable permanent core dumps (/etc/security/limits)" do
+    code 'sed -is "/\* soft core unlimited/d" /etc/security/limits.conf'
+    only_if "grep -q '* soft core unlimited' /etc/security/limits.conf"
+  end
+  if node[:platform] == "suse"
+    bash "Disable permanent core dumps (/etc/sysconfig/ulimit)" do
+      code 'sed -i s/SOFTCORELIMIT.*/SOFTCORELIMIT="1"/ /etc/sysconfig/ulimit'
+      not_if "grep -q 'SOFTCORELIMIT=\"1\"' /etc/sysconfig/ulimit"
+    end
+  end
+end
+
 config_file = "/etc/default/chef-client"
 config_file = "/etc/sysconfig/chef-client" if node[:platform] =~ /^(redhat|centos)$/
 
