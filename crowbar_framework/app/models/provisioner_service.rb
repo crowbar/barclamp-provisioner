@@ -97,7 +97,14 @@ class ProvisionerService < ServiceObject
       node = NodeObject.find_node_by_name(name)
       # clean up state capturing attributes on the node that are not likely to be the same
       # after a reset.
-      ["boot_device"].each { |key | 
+      if node["crowbar_wall"]["claimed_disks"]
+        @logger.debug("Provisioner transition: clearing claimed disks for reset")
+        node["crowbar_wall"]["claimed_disks"] = Mash.new
+      else
+        @logger.debug("Provisioner transition: claimed disks for reset node is empty")
+      end
+
+      ["boot_device"].each { |key |
         node["crowbar_wall"][key] = nil if (node["crowbar_wall"][key] rescue nil)
       }
       node.save
