@@ -109,7 +109,7 @@ end
 
 bash "Set EDITOR=vi environment variable" do
   code "echo \"EDITOR=vi\" > /etc/profile.d/editor.sh"
-  not_if "export | grep -q EDITOR= ; echo $?"
+  not_if "export | grep -q EDITOR="
 end
 
 config_file = "/etc/default/chef-client"
