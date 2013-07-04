@@ -112,10 +112,23 @@ bash "Set EDITOR=vi environment variable" do
   not_if "export | grep -q EDITOR="
 end
 
+sysctl_core_dump_file = "/etc/sysctl.d/core-dump.conf"
 if node[:provisioner][:coredump]
-  bash "Set core dump pattern to /tmp/cores/core.%e.%p.%h.%t" do
-    code "echo 'kernel.core_pattern = /tmp/cores/core.%e.%p.%h.%t' >> /etc/sysctl.conf"
-    not_if "grep -q 'kernel.core_pattern' /etc/sysctl.conf"
+  directory "create /etc/sysctl.d for core-dump" do
+    path "/etc/sysctl.d"
+    mode "755"
+  end
+  cookbook_file sysctl_core_dump_file do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "core-dump.conf"
+  end
+  bash "reload core-dump-sysctl" do
+    code "/sbin/sysctl -e -q -p #{sysctl_core_dump_file}"
+    action :nothing
+    subscribes :run, resources(:cookbook_file=> sysctl_core_dump_file), :delayed
   end
   bash "Enable core dumps" do
     code "ulimit -c unlimited"
@@ -133,6 +146,9 @@ if node[:provisioner][:coredump]
     end
   end
 else
+  file sysctl_core_dump_file do
+    action :delete
+  end
   bash "Disable permanent core dumps (/etc/security/limits)" do
     code 'sed -is "/\* soft core unlimited/d" /etc/security/limits.conf'
     only_if "grep -q '* soft core unlimited' /etc/security/limits.conf"
