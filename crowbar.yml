@@ -34,18 +34,17 @@ crowbar:
   order: 10
 
 jigs:
-  script:
+  - name: script
     roles:
-      - provisioner-base
-      - provisioner-server
-  chef:
-    roles:
-      - provisioner-base
-      - provisioner-server
-
+      - name: provisioner-base
+        requires:
+          - crowbar
+      - name: provisioner-server
+        requires:
+          - provisioner-base
 debs:
   ubuntu-12.04:
-    repos: 
+    repos:
       - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
     pkgs:
       - rpcbind
