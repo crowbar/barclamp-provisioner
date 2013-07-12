@@ -35,7 +35,7 @@ uefi_dir="#{tftproot}/discovery"
   next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
   bash "Install pxelinux.0" do
     code "cp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery"
-    not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
+    not_if "cmp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery/pxelinux.0"
   end
   break
 end
