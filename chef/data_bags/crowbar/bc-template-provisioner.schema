@@ -35,6 +35,7 @@
                 }
               }
             },
+            "coredump": { "type": "bool", "required": true },
             "use_local_security": { "type": "bool", "required": true },
             "use_serial_console": { "type": "bool", "required": true },
             "dhcp": {
