@@ -83,7 +83,7 @@ if ::File.exists?("/etc/crowbar.install.key")
   append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
 append_line = append_line.split.join(' ')
-node[:provisioner][:sledgehammer_append_line] = append_line
+node.set[:provisioner][:sledgehammer_append_line] = append_line
 
 template "#{pxecfg_dir}/default" do
   mode 0644
@@ -220,7 +220,7 @@ end
 # Otherwise use the OS the provisioner node is using.
 
 unless default_os = node[:provisioner][:default_os]
-  node[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
+  node.set[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
   node.save
 end
 
@@ -250,13 +250,13 @@ node[:provisioner][:supported_oses].each do |os,params|
       when os =~ /(ubuntu|debian)/
         bin="deb http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
         src="deb-src http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
-        node[:provisioner][:repositories][os][f][bin] = true if
+        node.set[:provisioner][:repositories][os][f][bin] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Packages.gz"
-        node[:provisioner][:repositories][os][f][src] = true if
+        node.set[:provisioner][:repositories][os][f][src] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Sources.gz"
       when os =~ /(redhat|centos|suse)/
         bin="baseurl=http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f}"
-        node[:provisioner][:repositories][os][f][bin] = true
+        node.set[:provisioner][:repositories][os][f][bin] = true
         else
           raise ::RangeError.new("Cannot handle repos for #{os}")
         end
@@ -277,7 +277,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   case
   when /^(suse)/ =~ os
     # Add base OS install repo for suse
-    node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+    node.set[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
 
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
@@ -290,9 +290,9 @@ node[:provisioner][:supported_oses].each do |os,params|
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     if ::File.exists? "#{tftproot}/#{os}/install/repodata"
-      node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+      node.set[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     else
-      node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
+      node.set[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
     end
     # Default kickstarts and crowbar_join scripts for redhat.
     
@@ -310,7 +310,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
   when /^ubuntu/ =~ os
-    node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+    node.set[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     # Default files needed for Ubuntu.
     
 
@@ -340,13 +340,13 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
   end
 
-  node[:provisioner][:available_oses] ||= Mash.new
-  node[:provisioner][:available_oses][os] ||= Mash.new
-  node[:provisioner][:available_oses][os][:append_line] = append
-  node[:provisioner][:available_oses][os][:webserver] = admin_web
-  node[:provisioner][:available_oses][os][:install_name] = role
-  node[:provisioner][:available_oses][os][:initrd] = "../#{os}/install/#{initrd}"
-  node[:provisioner][:available_oses][os][:kernel] = "../#{os}/install/#{kernel}"
+  node.set[:provisioner][:available_oses] ||= Mash.new
+  node.set[:provisioner][:available_oses][os] ||= Mash.new
+  node.set[:provisioner][:available_oses][os][:append_line] = append
+  node.set[:provisioner][:available_oses][os][:webserver] = admin_web
+  node.set[:provisioner][:available_oses][os][:install_name] = role
+  node.set[:provisioner][:available_oses][os][:initrd] = "../#{os}/install/#{initrd}"
+  node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/install/#{kernel}"
 end
 # Save this node config.
 node.save
