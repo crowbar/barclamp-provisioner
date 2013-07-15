@@ -40,6 +40,7 @@
       },
       "timezone": "UTC",
       "web_port": 8091,
+      "coredump": false,
       "use_local_security": true,
       "use_serial_console": false,
       "dhcp": {
