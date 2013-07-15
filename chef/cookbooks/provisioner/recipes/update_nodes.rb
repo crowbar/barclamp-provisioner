@@ -107,7 +107,15 @@ if not nodes.nil? and not nodes.empty?
       end
       if new_group == "os_install"
         # This eventaully needs to be conifgurable on a per-node basis
-        os=node[:provisioner][:default_os]
+        # We select the os based on the target platform specified.
+        os=mnode[:target_platform]
+        if os.nil? or os.empty?
+          os = node[:provisioner][:default_os]
+        end
+
+        unless defined?(append) and append.include? node[:provisioner][:available_oses][os][:append_line]
+          append << node[:provisioner][:available_oses][os][:append_line]
+        end
         append << node[:provisioner][:available_oses][os][:append_line]
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
         node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
@@ -173,6 +181,22 @@ if not nodes.nil? and not nodes.empty?
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :node_name => mnode[:fqdn],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
+          end
+        when os =~ /^(hyperv|windows)/
+          os_dir_win = "/tftpboot/#{os}/"
+          crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
+          template "#{os_dir_win}/unattend/unattended.xml" do
+            mode 0644
+            owner "root"
+            group "root"
+            source "unattended.xml.erb"
+            variables(:license_key => mnode[:license_key],
+                      :os_name => os,
+                      :admin_ip => admin_ip,
+                      :admin_name => node[:hostname],
+                      :crowbar_key => crowbar_key,
+                      :admin_pass => "Passw0rd",
+                      :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]))
           end
         else
           raise RangeError.new("Do not know how to handle #{os} in update_nodes.rb!")
