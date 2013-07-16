@@ -28,20 +28,21 @@ barclamp:
     - network
   member:
     - crowbar
-    
+
 crowbar:
   layout: 2.0
   order: 10
 
-jigs:
-  - name: script
-    roles:
-      - name: provisioner-base
-        requires:
-          - crowbar
-      - name: provisioner-server
-        requires:
-          - provisioner-base
+roles:
+  - name: provisioner-base
+    jig: script
+    requires:
+      - crowbar
+  - name: provisioner-server
+    jig: script
+    requires:
+      - provisioner-base
+
 debs:
   ubuntu-12.04:
     repos:
