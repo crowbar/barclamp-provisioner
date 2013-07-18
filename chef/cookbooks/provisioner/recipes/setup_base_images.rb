@@ -229,29 +229,8 @@ end
 # Otherwise use the OS the provisioner node is using.
 
 # Identify which is the node in state os_install and get the node[:target_platform] for that node
-target_platform=nil
-license_key=nil
-states = node["provisioner"]["dhcp"]["state_machine"]
-nodes = search(:node, "*:*")
-if not nodes.nil? and not nodes.empty?
-  nodes.map{|n|Node.load(n.name)}.each do |mnode|
-    next if mnode[:state].nil?
-    node_state = states[mnode[:state]]
-    if node_state.to_s.eql? "os_install"
-      if not mnode[:target_platform].nil? and not mnode[:target_platform].empty?
-        target_platform = mnode[:target_platform]
-        license_key  = mnode[:license_key]
-      end
-    end
-  end
-end
-if not target_platform.nil? and not target_platform.empty?
-  default_os=target_platform
-else
-  default_os=node[:provisioner][:default_os]
-end
 
-unless default_os
+unless default_os = node[:provisioner][:default_os]
   node.set[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
   node.save
 end
@@ -370,52 +349,21 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :provisioner_web => provisioner_web,
                 :web_path => web_path)
     end
-  when /^(hyperv|windows)/ =~ os
-    # Default files needed for Windows Server 2012
-    image_name = nil
-    os_dir_win = "/tftpboot/#{os}"
-    case
-    when /^windows/ =~ os
-      image_name = "Windows Server 2012 SERVERSTANDARD"
-    when /^hyperv/ =~ os
-      image_name = "Hyper-V Server 2012 SERVERHYPERCORE"
-    end
-    crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
-    template "#{os_dir_win}/unattend/unattended.xml" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "unattended.xml.erb"
-      variables(:license_key => license_key,
-                :os_name => os,
-                :admin_ip => admin_ip,
-                :admin_name => node[:hostname],
-                :crowbar_key => crowbar_key,
-                :admin_pass => "Passw0rd",
-                :domain_name => domain_name,
-                :image_name => image_name)
-    end
   end
 
   node.set[:provisioner][:available_oses] ||= Mash.new
   node.set[:provisioner][:available_oses][os] ||= Mash.new
   if /^(hyperv|windows)/ =~ os
+    node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/#{kernel}"
+    node.set[:provisioner][:available_oses][os][:initrd] = " "
     node.set[:provisioner][:available_oses][os][:append_line] = " "
   else
+    node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/install/#{kernel}"
+    node.set[:provisioner][:available_oses][os][:initrd] = "../#{os}/install/#{initrd}"
     node.set[:provisioner][:available_oses][os][:append_line] = append
   end
   node.set[:provisioner][:available_oses][os][:webserver] = admin_web
   node.set[:provisioner][:available_oses][os][:install_name] = role
-  if /^(hyperv|windows)/ =~ os
-    node.set[:provisioner][:available_oses][os][:initrd] = " "
-  else
-    node.set[:provisioner][:available_oses][os][:initrd] = "../#{os}/install/#{initrd}"
-  end
-  if /^(hyperv|windows)/ =~ os
-    node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/#{kernel}"
-  else
-    node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/install/#{kernel}"
-  end
 end
 # Save this node config.
 node.save
