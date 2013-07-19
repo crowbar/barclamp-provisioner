@@ -228,8 +228,6 @@ end
 # If the comitted proposal has a default, try it.
 # Otherwise use the OS the provisioner node is using.
 
-# Identify which is the node in state os_install and get the node[:target_platform] for that node
-
 unless default_os = node[:provisioner][:default_os]
   node.set[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
   node.save
