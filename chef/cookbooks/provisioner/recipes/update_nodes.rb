@@ -14,13 +14,13 @@
 #
 
 states = node["provisioner"]["dhcp"]["state_machine"]
-tftproot=node["provisioner"]["root"]
+tftproot = node["provisioner"]["root"]
 timezone = (node["provisioner"]["timezone"] rescue "UTC") || "UTC"
-pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
-uefi_dir="#{tftproot}/discovery"
+pxecfg_dir = "#{tftproot}/discovery/pxelinux.cfg"
+uefi_dir = "#{tftproot}/discovery"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 web_port = node[:provisioner][:web_port]
-provisioner_web="http://#{admin_ip}:#{web_port}"
+provisioner_web = "http://#{admin_ip}:#{web_port}"
 nodes = search(:node, "*:*")
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
@@ -159,7 +159,7 @@ if not nodes.nil? and not nodes.empty?
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
         when os =~ /^(open)?suse/
-          append<< "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
+          append << "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
           template "#{node_cfg_dir}/autoyast.xml" do
             mode 0644
             source "autoyast.xml.erb"
