@@ -57,7 +57,9 @@ class ProvisionerService < ServiceObject
       if !result
         @logger.error("Provisioner transition: existing discovered state for #{name} for #{state}: Failed")
         return [400, "Failed to add role to node"]
-      else
+      end
+
+      if HAVE_CHEF_WEBUI
         # Set up the client url
         role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
 
