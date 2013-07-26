@@ -118,31 +118,6 @@ wait_for_crowbar_state() {
     done
 }
 
-wait_for_pxe_state() {
-    # $1 = pxe state to wait for.
-
-    # If we've transitioned states, there sometimes needs to be a link for
-    # pxe boot for this MAC address.  Without it, we'll just reboot into
-    # discovery again and get "stuck".  This can happen if the admin node is
-    # very slow updating pxe config.  So just in case we'll poll here for up
-    # to five minutes before giving up and just rebooting
-
-    let pc=0
-    pxe_file="01-$(echo $MAC | tr '[:upper:]:' '[:lower:]-')"
-    pxe_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$pxe_file"
-    pxe_state_link="http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$1"
-
-    while ! diff <(curl -s $pxe_state_link) <(curl -s $pxe_link) > /dev/null; do
-      echo "$pxe_link not found or different from $pxe_state_link. waiting..."
-      sleep 10
-      let pc=pc+1
-      [ $pc -gt 30 ] && {
-        echo "$pxe_link still not found or different. giving up"
-        break
-      }
-   done
-}
-
 report_state () {
     if [ -a /var/log/chef/hw-problem.log ]; then
 	"cp /var/log/chef/hw-problem.log /install-logs/$1-hw-problem.log"
