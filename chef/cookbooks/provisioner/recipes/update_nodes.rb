@@ -106,7 +106,7 @@ if not nodes.nil? and not nodes.empty?
         end
       end
       if new_group == "os_install"
-        # This eventaully needs to be conifgurable on a per-node basis
+        # This eventually needs to be configurable on a per-node basis
         os=node[:provisioner][:default_os]
         append << node[:provisioner][:available_oses][os][:append_line]
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
