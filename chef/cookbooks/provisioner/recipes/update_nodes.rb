@@ -185,6 +185,12 @@ if not nodes.nil? and not nodes.empty?
         when os =~ /^(hyperv|windows)/
           os_dir_win = "/tftpboot/#{os}/"
           crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
+          case
+          when /^windows/ =~ os
+            image_name = "Windows Server 2012 SERVERSTANDARD"
+          when /^hyperv/ =~ os
+            image_name = "Hyper-V Server 2012 SERVERHYPERCORE"
+          end
           template "#{os_dir_win}/unattend/unattended.xml" do
             mode 0644
             owner "root"
@@ -192,6 +198,7 @@ if not nodes.nil? and not nodes.empty?
             source "unattended.xml.erb"
             variables(:license_key => mnode[:license_key],
                       :os_name => os,
+                      :image_name => image_name,
                       :admin_ip => admin_ip,
                       :admin_name => node[:hostname],
                       :crowbar_key => crowbar_key,

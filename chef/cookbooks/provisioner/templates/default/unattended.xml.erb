@@ -126,11 +126,11 @@
                     <Order>11</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /sc ONSTART /D * /M * /TN crowbar_join /TR "powershell -ExecutionPolicy RemoteSigned C:\Crowbar\crowbar_join.ps1"</CommandLine>
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /sc ONSTART /TN crowbar_join /TR "powershell -ExecutionPolicy RemoteSigned C:\Crowbar\crowbar_join.ps1"</CommandLine>
                     <Order>12</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /SC MINUTE /MO 12 /D * /M * /ST 00:00 /TN chef-client /TR "C:\opscode\chef\bin\chef-client.bat"</CommandLine>
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /SC MINUTE /MO 12 /ST 00:00 /TN chef-client /TR "C:\opscode\chef\bin\chef-client.bat"</CommandLine>
                     <Order>13</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
@@ -155,36 +155,6 @@
                 </Password>
                 <Enabled>true</Enabled>
                 <LogonCount>1</LogonCount>
-                <Username>Administrator</Username>
-            </AutoLogon>
-            <ComputerName>*</ComputerName>
-        </component>
-        <component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="x86" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <Identification>
-                <JoinWorkgroup><%=@domain_name%></JoinWorkgroup>
-            </Identification>
-        </component>
-    </settings>
-    <settings pass="specialize">
-        <component name="Microsoft-Windows-TerminalServices-LocalSessionManager" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <fDenyTSConnections>false</fDenyTSConnections>
-        </component>
-        <component name="Microsoft-Windows-TerminalServices-RDP-WinStationExtensions" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <UserAuthentication>0</UserAuthentication>
-        </component>
-        <component name="Microsoft-Windows-IE-InternetExplorer" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <DisableOOBAccelerators>true</DisableOOBAccelerators>
-            <DisableFirstRunWizard>true</DisableFirstRunWizard>
-            <DisableAccelerators>true</DisableAccelerators>
-            <Home_Page>about:blank</Home_Page>
-            <DisableDevTools>true</DisableDevTools>
-            <DisableDataExecutionPrevention>false</DisableDataExecutionPrevention>
-                <Password>
-                    <Value><%=@admin_pass%></Value>
-                    <PlainText>true</PlainText>
-                </Password>
-                <Enabled>true</Enabled>
-                <LogonCount>2</LogonCount>
                 <Username>Administrator</Username>
             </AutoLogon>
             <ComputerName>*</ComputerName>
