@@ -167,6 +167,9 @@ if not nodes.nil? and not nodes.empty?
 
           if node[:provisioner][:suse]
             if node[:provisioner][:suse][:autoyast]
+              ssh_password = node[:provisioner][:suse][:autoyast][:ssh_password]
+              append << "UseSSH=1 SSHPassword=#{ssh_password}" if ssh_password
+
               if node[:provisioner][:suse][:autoyast][:repos]
                 repos = node[:provisioner][:suse][:autoyast][:repos].to_hash
               end
