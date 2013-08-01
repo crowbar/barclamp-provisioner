@@ -118,6 +118,87 @@ wait_for_crowbar_state() {
     done
 }
 
+
+wait_for_pxe_state() {
+    # $1 = <state>
+    state=$1
+
+    # If we've transitioned states, there sometimes needs to be a link for
+    # pxe boot for this MAC address.  Without it, we'll just reboot into
+    # discovery again and get "stuck".  This can happen if the admin node is
+    # very slow updating pxe config.  So just in case we'll poll here for up
+    # to five minutes before giving up and just rebooting
+
+    # convert MYIP from decimal to hex
+    MYHEXIP=`IFS="." ; for i in $MYIP; do printf '%x' $i | tr 'a-f' 'A-F' ; done`
+
+    count=0
+    done=0
+
+    echo -n "waiting for pxe file to contain: $state"
+    until [ 1 = $done ] ; do
+        # Note: [^w-] a.s.o. should distinguish between the state "install" and states that contain the string "install"
+        curl --fail --silent --head --connect-timeout 5 "http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$MYHEXIP" | grep -E "DEFAULT.*[^w-]install($|[^ei])"
+        ret=$?
+
+        if [ 0 = $ret ] ; then
+            echo "pxe file contains now: $state"
+            done=1
+        else
+            echo -n "."
+            let count=count+1
+            [ $count -gt 30 ] && {
+                echo "Warning: pxe file still contains $state. giving up."
+                break
+            }
+            sleep 10
+        fi
+    done
+}
+
+
+wait_for_pxe_file() {
+    # $1 = [present|absent]
+    mode=$1
+
+    # If we've transitioned states, there sometimes needs to be a link for
+    # pxe boot for this MAC address.  Without it, we'll just reboot into
+    # discovery again and get "stuck".  This can happen if the admin node is
+    # very slow updating pxe config.  So just in case we'll poll here for up
+    # to five minutes before giving up and just rebooting
+
+    wantedexit=88
+    [ $mode = "present" ] && wantedexit=0
+    [ $mode = "absent" ] && wantedexit=22
+    # 22 is the curl exit code for HTTP status codes of 400 and above
+
+    # convert MYIP from decimal to hex
+    MYHEXIP=`IFS="." ; for i in $MYIP; do printf '%x' $i | tr 'a-f' 'A-F' ; done`
+
+    count=0
+    done=0
+
+    echo -n "waiting for pxe file to be: $mode"
+    until [ 1 = $done ] ; do
+        curl --fail --silent --head --connect-timeout 5 "http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$MYHEXIP" > /dev/null
+        ret=$?
+
+        if [ $wantedexit = $ret ] ; then
+            echo "pxe file is now: $mode"
+            done=1
+        else
+            echo -n "."
+            let count=count+1
+            [ $count -gt 30 ] && {
+                echo "Warning: pxe file still not $mode. giving up."
+                break
+            }
+            sleep 10
+        fi
+    done
+}
+
+
 report_state () {
     if [ -a /var/log/chef/hw-problem.log ]; then
 	"cp /var/log/chef/hw-problem.log /install-logs/$1-hw-problem.log"
