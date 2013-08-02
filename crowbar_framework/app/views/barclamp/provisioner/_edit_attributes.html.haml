@@ -5,8 +5,8 @@
   = link_to t('raw'), proposal_barclamp_path(:id => @proposal.name, :controller => @proposal.barclamp, :dep_raw => @dep_raw, :attr_raw => true), :class => "pull-right"
 .page-header-bottom
 
-%p
-  %div{ :for => :access_keys }
-    = t('.access_keys')
-    %small= t('.access_keys_hint')
-  = text_area_tag :access_keys, @proposal.raw_data['attributes'][@proposal.barclamp]["access_keys"], :style => "width: 90%; height: 150px", :onchange => "update_value('access_keys', 'access_keys', 'string')"
+
+%div.container{ :for => :access_keys }
+= t('.access_keys')
+%small= t('.access_keys_hint')
+= text_area_tag :access_keys, @proposal.raw_data['attributes'][@proposal.barclamp]["access_keys"], :style => "width: 90%; height: 150px", :onchange => "update_value('access_keys', 'access_keys', 'string')"
