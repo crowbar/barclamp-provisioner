@@ -86,11 +86,14 @@ DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 DHCP_STATE=${DHCP_STATE#*=}
 echo "DHCP_STATE=$DHCP_STATE"
 MAXTRIES=5
+# ADMIN_ADDRESS is the address on the admin network; do not confuse with
+# ADMIN_IP which is the IP of the admin node...
+ADMIN_ADDRESS=""
 BMC_ADDRESS=""
 BMC_NETMASK=""
 BMC_ROUTER=""
 ALLOCATED=false
-export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
+export DHCP_STATE MYINDEX ADMIN_ADDRESS BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
 if is_suse; then
@@ -245,7 +248,10 @@ hardware_install () {
     nuke_everything
     walk_node_through $HOSTNAME hardware-installing hardware-installed
     nuke_everything
-    wait_for_pxe_state "install"
+    # We want the os_install state, but its name changes depending on the OS.
+    # For instance: suse-11.3_install. Since no other state end with
+    # "_install", we're good enough with this regexp.
+    wait_for_pxe_state ".*_install"
     walk_node_through $HOSTNAME installing
 }
 
