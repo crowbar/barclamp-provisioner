@@ -93,7 +93,7 @@ directory pxecfg_dir do
   action :create
 end
 
-template "#{pxecfg_dir}/default" do
+template pxecfg_default do
   mode 0644
   owner "root"
   group "root"
@@ -303,7 +303,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
     end
     # Default kickstarts and crowbar_join scripts for redhat.
-    
+
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
@@ -320,7 +320,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   when /^ubuntu/ =~ os
     node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     # Default files needed for Ubuntu.
-    
+
 
     template "#{os_dir}/net-post-install.sh" do
       mode 0644
