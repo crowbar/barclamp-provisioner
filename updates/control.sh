@@ -19,7 +19,7 @@
 
 if [[ ! $IN_SCRIPT ]]; then
     export IN_SCRIPT=true
-    script -a -f -c "$0" "/install-logs/$HOSTNAME_MAC.transcript"
+    script -a -f -c "$0" "/var/log/crowbar/sledgehammer/$HOSTNAME_MAC.transcript"
     exit $?
 fi
 #set -x
@@ -256,6 +256,6 @@ case $DHCP_STATE in
     reset|discovery) discover && hardware_install;;
     hwinstall) hardware_install;;
     update) hwupdate;;
-esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
+esac 2>&1 | tee -a /var/log/crowbar/sledgehammer/$HOSTNAME.log
 [[ $DHCP_STATE = 'debug' ]] && exit
 reboot_system

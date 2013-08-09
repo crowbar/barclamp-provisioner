@@ -36,6 +36,33 @@
               }
             },
             "coredump": { "type": "bool", "required": true },
+            "suse": {
+              "type": "map",
+              "required": false,
+              "mapping": {
+                "autoyast": {
+                  "type": "map",
+                  "required": false,
+                  "mapping": {
+                    "ssh_password": { "type": "str", "required": false },
+                    "repos": {
+                      "type": "map",
+                      "required": false,
+                      "mapping": {
+                        =: {
+                          "type": "map",
+                          "required": false,
+                          "mapping": {
+                            "url":          { "type": "str", "required": false },
+                            "ask_on_error": { "type": "str", "required": false }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
             "use_local_security": { "type": "bool", "required": true },
             "use_serial_console": { "type": "bool", "required": true },
             "dhcp": {
@@ -69,6 +96,8 @@
           "mapping": {
             "crowbar-revision": { "type": "int", "required": true },
             "crowbar-committing": { "type": "bool" },
+            "crowbar-status": { "type": "str" },
+            "crowbar-failed": { "type": "str" },
             "crowbar-queued": { "type": "bool" },
             "element_states": {
               "type": "map",
