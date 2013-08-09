@@ -29,48 +29,16 @@
   </general>
   <add-on>
     <add_on_products config:type="list">
-       <listentry>
-            <media_url>http://<%= @admin_node_ip %>:8091/repos/Cloud/</media_url>
-            <product>SLE-Cloud</product>
-            <product_dir>/</product_dir>
-            <ask_on_error config:type="boolean">false</ask_on_error> <!-- available since openSUSE 11.0 -->
-            <name>SLE-Cloud</name> <!-- available since openSUSE 11.1/SLES11 (bnc#433981) -->
-        </listentry>
-        <listentry>
-            <media_url>http://<%= @admin_node_ip %>:8091/repos/SUSE-Cloud-2.0-Updates/</media_url>
-            <product>SUSE-Cloud-2.0-Updates</product>
-            <product_dir>/</product_dir>
-            <ask_on_error config:type="boolean">false</ask_on_error>
-            <name>SUSE-Cloud-2.0-Updates</name>
-        </listentry>
-        <listentry>
-            <media_url>http://<%= @admin_node_ip %>:8091/repos/SUSE-Cloud-2.0-Pool/</media_url>
-            <product>SUSE-Cloud-2.0-Pool</product>
-            <product_dir>/</product_dir>
-            <ask_on_error config:type="boolean">false</ask_on_error>
-            <name>SUSE-Cloud-2.0-Pool</name>
-       </listentry>
-       <listentry>
-            <media_url>http://<%= @admin_node_ip %>:8091/repos/Cloud-PTF/</media_url>
-            <product>SLE-Cloud-PTF</product>
-            <product_dir>/</product_dir>
-            <ask_on_error config:type="boolean">false</ask_on_error> <!-- available since openSUSE 11.0 -->
-            <name>SLE-Cloud-PTF</name>
-        </listentry>
-        <listentry>
-            <media_url>http://<%= @admin_node_ip %>:8091/repos/SLES11-SP3-Updates/</media_url>
-            <product>SLES11-SP3-Updates</product>
-            <product_dir>/</product_dir>
-            <ask_on_error config:type="boolean">false</ask_on_error>
-            <name>SLES11-SP3-Updates</name>
-        </listentry>
-        <listentry>
-            <media_url>http://<%= @admin_node_ip %>:8091/repos/SLES11-SP3-Pool/</media_url>
-            <product>SLES11-SP3-Pool</product>
-            <product_dir>/</product_dir>
-            <ask_on_error config:type="boolean">false</ask_on_error>
-            <name>SLES11-SP3-Pool</name>
-        </listentry>
+    <% for name, attrs in @repos %>
+      <listentry>
+        <name><%= name %></name>
+        <product><%= name %></product>
+        <product_dir>/</product_dir>
+        <media_url><%= attrs[:url] %></media_url>
+        <!-- See bnc#787157 for discussion on ask_on_error -->
+        <ask_on_error config:type="boolean"><%= attrs[:ask_on_error] || 'false' %></ask_on_error>
+      </listentry>
+    <% end %>
     </add_on_products>
   </add-on>
   <users config:type="list">
