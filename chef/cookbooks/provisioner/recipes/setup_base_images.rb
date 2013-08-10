@@ -85,7 +85,7 @@ end
 append_line = append_line.split.join(' ')
 node[:provisioner][:sledgehammer_append_line] = append_line
 
-template "#{pxecfg_dir}/default" do
+template pxecfg_default do
   mode 0644
   owner "root"
   group "root"
