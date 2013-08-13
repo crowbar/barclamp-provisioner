@@ -18,6 +18,8 @@ require 'rubygems'
 require 'json'
 require 'getoptlong'
 
+MAGIC_DOT = '@@ESCAPED_DOT@@'
+
 #
 # Parsing options can be added by adding to this list before calling opt_parse
 # 
@@ -78,8 +80,11 @@ def main()
 
     @attributes.each do |attr|
       data = hash
-      fields = attr.split(".") 
-      fields.each { |x| data = data[x] unless data.nil? }
+      # Protect already escaped periods from being interpreted as
+      # element delimiters.  Notice that the 1st parameter to gsub is
+      # a String not a Regexp.
+      fields = attr.gsub('\.', MAGIC_DOT).split('.')
+      fields.each { |x| data = data[x.gsub(MAGIC_DOT, '.')] unless data.nil? }
 
       puts "#{attr}=#{data}"
     end

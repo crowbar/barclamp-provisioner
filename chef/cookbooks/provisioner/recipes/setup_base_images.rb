@@ -35,13 +35,14 @@ uefi_dir="#{tftproot}/discovery"
   next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
   bash "Install pxelinux.0" do
     code "cp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery"
-    not_if do ::File.exists?("#{tftproot}/discovery/pxelinux.0") end
+    not_if "cmp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery/pxelinux.0"
   end
   break
 end
 
-bash "Install elilo as UEFI netboot loader" do
-  code <<EOC
+if node[:platform] != "suse"
+  bash "Install elilo as UEFI netboot loader" do
+    code <<EOC
 cd #{uefi_dir}
 tar xzf '#{tftproot}/files/elilo-3.14-all.tar.gz'
 mv elilo-3.14-x86_64.efi bootx64.efi
@@ -49,7 +50,13 @@ mv elilo-3.14-ia32.efi bootia32.efi
 mv elilo-3.14-ia64.efi bootia64.efi
 rm elilo*.efi elilo*.tar.gz || :
 EOC
-  not_if "test -f '#{uefi_dir}/bootx64.efi'"
+    not_if "test -f '#{uefi_dir}/bootx64.efi'"
+  end
+else
+  bash "Install bootx64.efi" do
+    code "cp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
+    not_if "cmp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
+  end
 end
 
 

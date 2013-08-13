@@ -14,13 +14,15 @@
 #
 
 states = node["provisioner"]["dhcp"]["state_machine"]
-tftproot=node["provisioner"]["root"]
+tftproot = node["provisioner"]["root"]
 timezone = (node["provisioner"]["timezone"] rescue "UTC") || "UTC"
-pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
-uefi_dir="#{tftproot}/discovery"
+pxecfg_dir = "#{tftproot}/discovery/pxelinux.cfg"
+uefi_dir = "#{tftproot}/discovery"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 web_port = node[:provisioner][:web_port]
-provisioner_web="http://#{admin_ip}:#{web_port}"
+provisioner_web = "http://#{admin_ip}:#{web_port}"
+default_repos_url = "#{provisioner_web}/repos"
+
 nodes = search(:node, "*:*")
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
@@ -106,7 +108,7 @@ if not nodes.nil? and not nodes.empty?
         end
       end
       if new_group == "os_install"
-        # This eventaully needs to be conifgurable on a per-node basis
+        # This eventually needs to be configurable on a per-node basis
         os=node[:provisioner][:default_os]
         append << node[:provisioner][:available_oses][os][:append_line]
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
@@ -159,7 +161,39 @@ if not nodes.nil? and not nodes.empty?
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
         when os =~ /^(open)?suse/
-          append<< "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
+          append << "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
+
+          repos = Mash.new
+
+          if node[:provisioner][:suse]
+            if node[:provisioner][:suse][:autoyast]
+              ssh_password = node[:provisioner][:suse][:autoyast][:ssh_password]
+              append << "UseSSH=1 SSHPassword=#{ssh_password}" if ssh_password
+
+              if node[:provisioner][:suse][:autoyast][:repos]
+                repos = node[:provisioner][:suse][:autoyast][:repos].to_hash
+              end
+            end
+          end
+
+          Chef::Log.info("repos: #{repos.inspect}")
+
+          # This needs to be done here rather than via deep-merge with static
+          # JSON due to the dynamic nature of the default value.
+          %w(
+            SLE-Cloud
+            SLE-Cloud-PTF
+            SUSE-Cloud-2.0-Pool
+            SUSE-Cloud-2.0-Updates
+            SLES11-SP3-Pool
+            SLES11-SP3-Updates
+          ).each do |name|
+            suffix = name.sub(/^SLE-/, '')
+            repos[name] ||= Mash.new
+            repos[name][:url] ||= default_repos_url + '/' + suffix
+          end
+          Chef::Log.info("repos after: #{repos.inspect}")
+
           template "#{node_cfg_dir}/autoyast.xml" do
             mode 0644
             source "autoyast.xml.erb"
@@ -168,6 +202,7 @@ if not nodes.nil? and not nodes.empty?
             variables(
                       :admin_node_ip => admin_ip,
                       :web_port => web_port,
+                      :repos => repos,
                       :rootpw_hash => node[:provisioner][:root_password_hash] || "",
                       :timezone => timezone,
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
