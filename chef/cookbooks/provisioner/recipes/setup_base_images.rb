@@ -85,6 +85,11 @@ end
 append_line = append_line.split.join(' ')
 node[:provisioner][:sledgehammer_append_line] = append_line
 
+directory pxecfg_dir do
+  recursive true
+  action :create
+end
+
 template "#{pxecfg_dir}/default" do
   mode 0644
   owner "root"
