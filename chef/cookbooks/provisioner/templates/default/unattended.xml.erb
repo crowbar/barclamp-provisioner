@@ -106,40 +106,44 @@
                     <Order>6</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c md c:\Crowbar</CommandLine>
+                    <CommandLine>cmd /c reg add "HKLM\SOFTWARE\Crowbar" /v Domain /t REG_SZ /d "<%=@domain_name%>" /f</CommandLine>
                     <Order>7</Order>
                 </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\chef-client-11.4.4-2.windows.msi c:\Crowbar\</CommandLine>
+               <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c md c:\Crowbar</CommandLine>
                     <Order>8</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\crowbar_join.ps1 c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\chef-client-11.4.4-2.windows.msi c:\Crowbar\</CommandLine>
                     <Order>9</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\set_hostname.ps1 c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\crowbar_join.ps1 c:\Crowbar\</CommandLine>
                     <Order>10</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\curl.exe c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\set_hostname.ps1 c:\Crowbar\</CommandLine>
                     <Order>11</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /sc ONSTART /TN crowbar_join /TR "powershell -ExecutionPolicy RemoteSigned C:\Crowbar\crowbar_join.ps1"</CommandLine>
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\curl.exe c:\Crowbar\</CommandLine>
                     <Order>12</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /SC MINUTE /MO 12 /ST 00:00 /TN chef-client /TR "C:\opscode\chef\bin\chef-client.bat"</CommandLine>
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /sc ONSTART /TN crowbar_join /TR "powershell -ExecutionPolicy RemoteSigned C:\Crowbar\crowbar_join.ps1"</CommandLine>
                     <Order>13</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c powershell -ExecutionPolicy RemoteSigned C:\Crowbar\set_hostname.ps1</CommandLine>
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /SC MINUTE /MO 12 /ST 00:00 /TN chef-client /TR "C:\opscode\chef\bin\chef-client.bat"</CommandLine>
                     <Order>14</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>shutdown /r /t 0</CommandLine>
+                    <CommandLine>cmd /c powershell -ExecutionPolicy RemoteSigned C:\Crowbar\set_hostname.ps1</CommandLine>
                     <Order>15</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>shutdown /r /t 0</CommandLine>
+                    <Order>16</Order>
                 </SynchronousCommand>
             </FirstLogonCommands>
             <UserAccounts>
