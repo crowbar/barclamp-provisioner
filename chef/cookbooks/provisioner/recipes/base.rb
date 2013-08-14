@@ -15,6 +15,12 @@
 
 return if node[:platform] == "windows"
 
+###
+# If anything has to be applied to a Windows node, it has to be done
+# before the return above, anything from this point forward being applied
+# to linux nodes only.
+###
+
 package "ipmitool" do
   package_name "OpenIPMI-tools" if node[:platform] =~ /^(redhat|centos)$/
   action :install
