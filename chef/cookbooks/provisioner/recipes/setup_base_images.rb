@@ -87,6 +87,9 @@ node[:provisioner][:sledgehammer_append_line] = append_line
 
 directory pxecfg_dir do
   recursive true
+  mode 0644
+  owner "root"
+  group "root"
   action :create
 end
 
