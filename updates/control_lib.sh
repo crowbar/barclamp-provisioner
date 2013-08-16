@@ -6,6 +6,7 @@
 parse_node_data() {
     local res=0
     if node_data=$(/tmp/parse_node_data -a name \
+        -a crowbar.network.admin.address \
         -a crowbar.network.bmc.netmask \
         -a crowbar.network.bmc.address \
         -a crowbar.network.bmc.router \
@@ -18,6 +19,7 @@ parse_node_data() {
                 name) export HOSTNAME=$VAL;;
                 state) export CROWBAR_STATE=$VAL;;
                 crowbar.allocated) export ALLOCATED=$VAL;;
+                crowbar.network.admin.address) export ADMIN_ADDRESS=$VAL;;
                 crowbar.network.bmc.router) export BMC_ROUTER=$VAL;;
                 crowbar.network.bmc.address) export BMC_ADDRESS=$VAL;;
                 crowbar.network.bmc.netmask) export BMC_NETMASK=$VAL;;
@@ -117,6 +119,83 @@ wait_for_crowbar_state() {
         sleep 15
     done
 }
+
+
+wait_for_pxe() {
+    # $1 = [present|absent]
+    # $2 = <state>
+    mode=$1
+    state=$2
+    [ $mode != "present" ] && state=
+
+    # If we've transitioned states, there sometimes needs to be a link for
+    # pxe boot for this IP address.  Without it, we'll just reboot into
+    # discovery again and get "stuck".  This can happen if the admin node is
+    # very slow updating pxe config.  So just in case we'll poll here for up
+    # to five minutes before giving up and just rebooting
+
+    wantedexit=88
+    [ $mode == "present" ] && wantedexit=0
+    [ $mode == "absent" ] && wantedexit=22
+    # 22 is the curl exit code for HTTP status codes of 400 and above
+
+    # convert ADMIN_ADDRESS from decimal to hex
+    MYHEXIP=`IFS="." ; for i in $ADMIN_ADDRESS; do printf '%X' $i ; done`
+
+    count=0
+    done=0
+
+    if [ -n "$state" ]; then
+        echo -n "waiting for pxe file to contain: $state "
+    else
+        echo -n "waiting for pxe file to be: $mode "
+    fi
+
+    until [ 1 = $done ] ; do
+        if [ -n "$state" ]; then
+            curl --fail --silent --connect-timeout 5 "http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$MYHEXIP" | grep -q "^DEFAULT $state$"
+            ret=$?
+        else
+            curl --fail --silent --head --connect-timeout 5 "http://$ADMIN_IP:8091/discovery/pxelinux.cfg/$MYHEXIP" > /dev/null
+            ret=$?
+        fi
+
+        if [ $wantedexit = $ret ] ; then
+            if [ -n "$state" ]; then
+                echo "pxe file now contains: $state"
+            else
+                echo "pxe file is now: $mode"
+            fi
+            done=1
+            break
+        else
+            echo -n "."
+            let count=count+1
+            [ $count -gt 30 ] && {
+                if [ -n "$state" ]; then
+                    echo "Warning: pxe file still contains $state. giving up."
+                else
+                    echo "Warning: pxe file still not $mode. giving up."
+                fi
+                break
+            }
+            sleep 10
+        fi
+    done
+}
+
+
+wait_for_pxe_state() {
+    # $1 = <state>
+    wait_for_pxe "present" "$1"
+}
+
+
+wait_for_pxe_file() {
+    # $1 = [present|absent]
+    wait_for_pxe "$1" ""
+}
+
 
 report_state () {
     if [ -a /var/log/chef/hw-problem.log ]; then
