@@ -41,6 +41,11 @@
           "initrd": " ",
           "kernel": "boot/pxeboot.0",
           "append": " "
+        },
+        "hyperv-6.2": {
+          "initrd": " ",
+          "kernel": "boot/pxeboot.0",
+          "append": " "
         }
       },
       "timezone": "UTC",
