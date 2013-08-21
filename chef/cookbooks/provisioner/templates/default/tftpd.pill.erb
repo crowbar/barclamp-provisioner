@@ -1,7 +1,7 @@
 Bluepill.application("tftpd") do |app|
   app.process("tftpd") do |p|
     p.name = "tftpd"
-    p.start_command = "in.tftpd -4 -L -a 0.0.0.0:69 -s <%=@tftproot%>"
+    p.start_command = "in.tftpd -4 -L -m /etc/tftpd.conf -a 0.0.0.0:69 -s <%=@tftproot%>"
     p.stdout = p.stderr = "/dev/null"
     p.daemonize = true
   end

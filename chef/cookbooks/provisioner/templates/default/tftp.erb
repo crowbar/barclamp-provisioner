@@ -1,0 +1,15 @@
+# default: off
+# description: tftp service is provided primarily for booting or when a \
+#       router need an upgrade. Most sites run this only on machines
+acting as
+#       "boot servers".
+service tftp
+{
+       socket_type             = dgram
+       protocol                = udp
+       wait                    = yes
+       flags                   = IPv6 IPv4
+       user                    = root
+       server                  = /usr/sbin/in.tftpd
+       server_args             = -m /etc/tftpd.conf -s <%=@tftproot%>
+}

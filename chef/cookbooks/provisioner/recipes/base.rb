@@ -13,6 +13,14 @@
 # limitations under the License.
 #
 
+return if node[:platform] == "windows"
+
+###
+# If anything has to be applied to a Windows node, it has to be done
+# before the return above, anything from this point forward being applied
+# to linux nodes only.
+###
+
 package "ipmitool" do
   package_name "OpenIPMI-tools" if node[:platform] =~ /^(redhat|centos)$/
   action :install
@@ -25,7 +33,7 @@ directory "/root/.ssh" do
   action :create
 end
 
-# We don't want to use bluepill on SUSE
+# We don't want to use bluepill on SUSE and Windows
 if node["platform"] != "suse"
   # Make sure we have Bluepill
   case node["state"]
