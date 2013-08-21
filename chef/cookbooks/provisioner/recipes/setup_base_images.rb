@@ -191,25 +191,6 @@ when "suse"
   package "tftp"
 end
 
-if node[:platform] == "suse"
-  service "tftp" do
-    # just enable, don't start (xinetd takes care of it)
-    enabled true
-    action [ :enable ]
-  end
-  service "xinetd" do
-    running true
-    enabled true
-    action [ :enable, :start ]
-    supports :reload => true
-    subscribes :reload, resources(:service => "tftp"), :immediately
-  end
-else
-template "/etc/bluepill/tftpd.pill" do
-  source "tftpd.pill.erb"
-  variables( :tftproot => tftproot )
-end
-
 cookbook_file "/etc/tftpd.conf" do
   owner "root"
   group "root"
@@ -218,10 +199,35 @@ cookbook_file "/etc/tftpd.conf" do
   source "tftpd.conf"
 end
 
+if node[:platform] == "suse"
+  service "tftp" do
+    # just enable, don't start (xinetd takes care of it)
+    enabled true
+    action [ :enable ]
+  end
 
-bluepill_service "tftpd" do
-  action [:load, :start]
-end
+  template "/etc/xinetd.d/tftp" do
+    source "tftp.erb"
+    variables( :tftproot => tftproot )
+    notifies :reload, resources(:service => "xinetd")
+  end
+
+  service "xinetd" do
+    running true
+    enabled true
+    action [ :enable, :start ]
+    supports :reload => true
+    subscribes :reload, resources(:service => "tftp"), :immediately
+  end
+else
+  template "/etc/bluepill/tftpd.pill" do
+    source "tftpd.pill.erb"
+    variables( :tftproot => tftproot )
+  end
+
+  bluepill_service "tftpd" do
+    action [:load, :start]
+  end
 end
 
 bash "copy validation pem" do
