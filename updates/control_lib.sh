@@ -140,7 +140,7 @@ wait_for_pxe() {
     # 22 is the curl exit code for HTTP status codes of 400 and above
 
     # convert ADMIN_ADDRESS from decimal to hex
-    MYHEXIP=`IFS="." ; for i in $ADMIN_ADDRESS; do printf '%X' $i ; done`
+    MYHEXIP=`IFS="." ; for i in $ADMIN_ADDRESS; do printf '%02X' $i ; done`
 
     count=0
     done=0
