@@ -10,6 +10,8 @@ pool_opts = {
       filename = "discovery/bootia32.efi";
    } else if option arch = 00:07 {
       filename = "discovery/bootx64.efi";
+   } else if option arch = 00:09 {
+      filename = "discovery/bootx64.efi";
    } else {
       filename = "discovery/pxelinux.0";
    }',
