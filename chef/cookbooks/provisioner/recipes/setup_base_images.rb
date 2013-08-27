@@ -79,11 +79,11 @@ if node[:provisioner][:use_serial_console]
   append_line += " console=tty0 console=ttyS1,115200n8"
 end
 
-if ::File.exists?("/etc/crowbar.install.key")
+if ::File.exists?("/etc/crowbar.install.key") 
   append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
 append_line = append_line.split.join(' ')
-node[:provisioner][:sledgehammer_append_line] = append_line
+node.set[:provisioner][:sledgehammer_append_line] = append_line
 
 directory pxecfg_dir do
   recursive true
@@ -191,12 +191,27 @@ when "suse"
   package "tftp"
 end
 
+cookbook_file "/etc/tftpd.conf" do
+  owner "root"
+  group "root"
+  mode "0644"
+  action :create
+  source "tftpd.conf"
+end
+
 if node[:platform] == "suse"
   service "tftp" do
     # just enable, don't start (xinetd takes care of it)
     enabled true
     action [ :enable ]
   end
+
+  template "/etc/xinetd.d/tftp" do
+    source "tftp.erb"
+    variables( :tftproot => tftproot )
+    notifies :reload, resources(:service => "xinetd")
+  end
+
   service "xinetd" do
     running true
     enabled true
@@ -205,14 +220,14 @@ if node[:platform] == "suse"
     subscribes :reload, resources(:service => "tftp"), :immediately
   end
 else
-template "/etc/bluepill/tftpd.pill" do
-  source "tftpd.pill.erb"
-  variables( :tftproot => tftproot )
-end
+  template "/etc/bluepill/tftpd.pill" do
+    source "tftpd.pill.erb"
+    variables( :tftproot => tftproot )
+  end
 
-bluepill_service "tftpd" do
-  action [:load, :start]
-end
+  bluepill_service "tftpd" do
+    action [:load, :start]
+  end
 end
 
 bash "copy validation pem" do
@@ -224,11 +239,11 @@ EOH
 end
 
 # By default, install the same OS that the admin node is running
-# If the comitted proposal has a defualt, try it.
+# If the comitted proposal has a default, try it.
 # Otherwise use the OS the provisioner node is using.
 
 unless default_os = node[:provisioner][:default_os]
-  node[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
+  node.set[:provisioner][:default_os] = default = "#{node[:platform]}-#{node[:platform_version]}"
   node.save
 end
 
@@ -258,13 +273,13 @@ node[:provisioner][:supported_oses].each do |os,params|
       when os =~ /(ubuntu|debian)/
         bin="deb http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
         src="deb-src http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
-        node[:provisioner][:repositories][os][f][bin] = true if
+        node.set[:provisioner][:repositories][os][f][bin] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Packages.gz"
-        node[:provisioner][:repositories][os][f][src] = true if
+        node.set[:provisioner][:repositories][os][f][src] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Sources.gz"
       when os =~ /(redhat|centos|suse)/
         bin="baseurl=http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f}"
-        node[:provisioner][:repositories][os][f][bin] = true
+        node.set[:provisioner][:repositories][os][f][bin] = true
         else
           raise ::RangeError.new("Cannot handle repos for #{os}")
         end
@@ -285,7 +300,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   case
   when /^(suse)/ =~ os
     # Add base OS install repo for suse
-    node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+    node.set[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
 
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
@@ -298,9 +313,9 @@ node[:provisioner][:supported_oses].each do |os,params|
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     if ::File.exists? "#{tftproot}/#{os}/install/repodata"
-      node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+      node.set[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     else
-      node[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
+      node.set[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
     end
     # Default kickstarts and crowbar_join scripts for redhat.
     
@@ -318,7 +333,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
   when /^ubuntu/ =~ os
-    node[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+    node.set[:provisioner][:repositories][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     # Default files needed for Ubuntu.
     
 
@@ -346,15 +361,58 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :provisioner_web => provisioner_web,
                 :web_path => web_path)
     end
+
+  when /^(hyperv|windows)/ =~ os
+
+    # Copy the crowbar_join script
+    cookbook_file "/tftpboot/windows-6.2/extra/crowbar_join.ps1" do
+      owner "root"
+      group "root"
+      mode "0644"
+      action :create
+      source "crowbar_join.ps1"
+    end
+
+    # Copy the script required for setting the hostname
+    cookbook_file "/tftpboot/windows-6.2/extra/set_hostname.ps1" do
+      owner "root"
+      group "root"
+      mode "0644"
+      action :create
+      source "set_hostname.ps1"
+    end
+
+    # Also copy the required files to install chef-client and communicate with Crowbar
+    cookbook_file "/tftpboot/windows-6.2/extra/chef-client-11.4.4-2.windows.msi" do
+      owner "root"
+      group "root"
+      mode "0644"
+      action :create
+      source "chef-client-11.4.4-2.windows.msi"
+    end
+    cookbook_file "/tftpboot/windows-6.2/extra/curl.exe" do
+      owner "root"
+      group "root"
+      mode "0644"
+      action :create
+      source "curl.exe"
+    end
+
   end
 
-  node[:provisioner][:available_oses] ||= Mash.new
-  node[:provisioner][:available_oses][os] ||= Mash.new
-  node[:provisioner][:available_oses][os][:append_line] = append
-  node[:provisioner][:available_oses][os][:webserver] = admin_web
-  node[:provisioner][:available_oses][os][:install_name] = role
-  node[:provisioner][:available_oses][os][:initrd] = "../#{os}/install/#{initrd}"
-  node[:provisioner][:available_oses][os][:kernel] = "../#{os}/install/#{kernel}"
+  node.set[:provisioner][:available_oses] ||= Mash.new
+  node.set[:provisioner][:available_oses][os] ||= Mash.new
+  if /^(hyperv|windows)/ =~ os
+    node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/#{kernel}"
+    node.set[:provisioner][:available_oses][os][:initrd] = " "
+    node.set[:provisioner][:available_oses][os][:append_line] = " "
+  else
+    node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/install/#{kernel}"
+    node.set[:provisioner][:available_oses][os][:initrd] = "../#{os}/install/#{initrd}"
+    node.set[:provisioner][:available_oses][os][:append_line] = append
+  end
+  node.set[:provisioner][:available_oses][os][:webserver] = admin_web
+  node.set[:provisioner][:available_oses][os][:install_name] = role
 end
 # Save this node config.
 node.save

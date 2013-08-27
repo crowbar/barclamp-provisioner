@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+    <settings pass="windowsPE">
+        <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <DiskConfiguration>
+                <WillShowUI>OnError</WillShowUI>
+                <Disk wcm:action="add">
+                    <CreatePartitions>
+                        <CreatePartition wcm:action="add">
+                            <Order>1</Order>
+                            <Size>100</Size>
+                            <Type>Primary</Type>
+                        </CreatePartition>
+                        <CreatePartition wcm:action="add">
+                            <Order>2</Order>
+                            <Extend>true</Extend>
+                            <Type>Primary</Type>
+                        </CreatePartition>
+                    </CreatePartitions>
+                    <ModifyPartitions>
+                        <ModifyPartition wcm:action="add">
+                            <Active>true</Active>
+                            <Label>Boot</Label>
+                            <Format>NTFS</Format>
+                            <Order>1</Order>
+                            <PartitionID>1</PartitionID>
+                        </ModifyPartition>
+                        <ModifyPartition wcm:action="add">
+                            <Format>NTFS</Format>
+                            <Order>2</Order>
+                            <PartitionID>2</PartitionID>
+                            <Label>System</Label>
+                        </ModifyPartition>
+                    </ModifyPartitions>
+                    <DiskID>0</DiskID>
+                    <WillWipeDisk>true</WillWipeDisk>
+                </Disk>
+            </DiskConfiguration>
+            <ImageInstall>
+                <OSImage>
+                    <InstallTo>
+                        <PartitionID>2</PartitionID>
+                        <DiskID>0</DiskID>
+                    </InstallTo>
+                    <InstallToAvailablePartition>false</InstallToAvailablePartition>
+                    <WillShowUI>OnError</WillShowUI>
+                    <InstallFrom>
+                        <MetaData wcm:action="add">
+                            <Key>/IMAGE/NAME</Key>
+                            <Value><%=@image_name%></Value>
+                        </MetaData>
+                    </InstallFrom>
+                </OSImage>
+            </ImageInstall>
+            <UserData>
+<% if os_name =~ /^windows/ -%>
+                <ProductKey>
+                        <Key><%=@license_key%></Key>
+                    <WillShowUI>OnError</WillShowUI>
+                </ProductKey>
+<% end -%>
+                <AcceptEula>true</AcceptEula>
+            </UserData>
+        </component>
+        <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <SetupUILanguage>
+                <UILanguage>en-US</UILanguage>
+            </SetupUILanguage>
+            <InputLocale>en-US</InputLocale>
+            <UILanguage>en-US</UILanguage>
+            <SystemLocale>en-US</SystemLocale>
+            <UserLocale>en-US</UserLocale>
+        </component>
+    </settings>
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <VisualEffects>
+                <FontSmoothing>ClearType</FontSmoothing>
+            </VisualEffects>
+            <OOBE>
+                <HideEULAPage>true</HideEULAPage>
+                <ProtectYourPC>3</ProtectYourPC>
+                <NetworkLocation>Work</NetworkLocation>
+            </OOBE>
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>netsh advfirewall firewall set rule group="Remote Desktop" new enable=yes</CommandLine>
+                    <Order>1</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c reg add "HKLM\SOFTWARE\Crowbar" /v Address /t REG_SZ /d "<%=@admin_ip%>" /f</CommandLine>
+                    <Order>2</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c reg add "HKLM\SOFTWARE\Crowbar" /v Name /t REG_SZ /d "<%=@admin_name%>" /f</CommandLine>
+                    <Order>3</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c reg add "HKLM\SOFTWARE\Crowbar" /v Folder /t REG_SZ /d "<%=@os_name%>" /f</CommandLine>
+                    <Order>4</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c reg add "HKLM\SOFTWARE\Crowbar" /v Share /t REG_SZ /d "reminst" /f</CommandLine>
+                    <Order>5</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c reg add "HKLM\SOFTWARE\Crowbar" /v Key /t REG_SZ /d "<%=@crowbar_key%>" /f</CommandLine>
+                    <Order>6</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c reg add "HKLM\SOFTWARE\Crowbar" /v Domain /t REG_SZ /d "<%=@domain_name%>" /f</CommandLine>
+                    <Order>7</Order>
+                </SynchronousCommand>
+               <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c md c:\Crowbar</CommandLine>
+                    <Order>8</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\chef-client-11.4.4-2.windows.msi c:\Crowbar\</CommandLine>
+                    <Order>9</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\crowbar_join.ps1 c:\Crowbar\</CommandLine>
+                    <Order>10</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\set_hostname.ps1 c:\Crowbar\</CommandLine>
+                    <Order>11</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\curl.exe c:\Crowbar\</CommandLine>
+                    <Order>12</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /sc ONSTART /TN crowbar_join /TR "powershell -ExecutionPolicy RemoteSigned C:\Crowbar\crowbar_join.ps1"</CommandLine>
+                    <Order>13</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /SC MINUTE /MO 12 /ST 00:00 /TN chef-client /TR "C:\opscode\chef\bin\chef-client.bat"</CommandLine>
+                    <Order>14</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>cmd /c powershell -ExecutionPolicy RemoteSigned C:\Crowbar\set_hostname.ps1</CommandLine>
+                    <Order>15</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>shutdown /r /t 0</CommandLine>
+                    <Order>16</Order>
+                </SynchronousCommand>
+            </FirstLogonCommands>
+            <UserAccounts>
+                <AdministratorPassword>
+                    <Value><%=@admin_pass%></Value>
+                    <PlainText>true</PlainText>
+                </AdministratorPassword>
+            </UserAccounts>
+            <AutoLogon>
+                <Password>
+                    <Value><%=@admin_pass%></Value>
+                    <PlainText>true</PlainText>
+                </Password>
+                <Enabled>true</Enabled>
+                <LogonCount>1</LogonCount>
+                <Username>Administrator</Username>
+            </AutoLogon>
+            <ComputerName>*</ComputerName>
+        </component>
+        <component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="x86" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Identification>
+                <JoinWorkgroup><%=@domain_name%></JoinWorkgroup>
+            </Identification>
+        </component>
+    </settings>
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-TerminalServices-LocalSessionManager" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <fDenyTSConnections>false</fDenyTSConnections>
+        </component>
+        <component name="Microsoft-Windows-TerminalServices-RDP-WinStationExtensions" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <UserAuthentication>0</UserAuthentication>
+        </component>
+        <component name="Microsoft-Windows-IE-InternetExplorer" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <DisableOOBAccelerators>true</DisableOOBAccelerators>
+            <DisableFirstRunWizard>true</DisableFirstRunWizard>
+            <DisableAccelerators>true</DisableAccelerators>
+            <Home_Page>about:blank</Home_Page>
+            <DisableDevTools>true</DisableDevTools>
+            <DisableDataExecutionPrevention>false</DisableDataExecutionPrevention>
+            <BlockPopups>no</BlockPopups>
+        </component>
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="NonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <TimeZone>Pacific Standard Time</TimeZone>
+            <ComputerName>*</ComputerName>
+            <ProductKey><%=@license_key%></ProductKey>
+        </component>
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <Path>cmd /c reg add &quot;HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell&quot; /v ExecutionPolicy /t REG_SZ /d RemoteSigned /f</Path>
+                    <Description>Configure Powershell security settings</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>2</Order>
+                    <Path>cmd /c net user administrator /active:yes</Path>
+                    <Description>enable administrator</Description>
+                </RunSynchronousCommand>
+            </RunSynchronous>
+        </component>
+        <component name="Microsoft-Windows-SQMApi" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="NonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <CEIPEnabled>0</CEIPEnabled>
+        </component>
+    </settings>
+</unattend>
+
