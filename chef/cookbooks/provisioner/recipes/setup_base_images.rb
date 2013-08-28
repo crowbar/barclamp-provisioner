@@ -79,7 +79,7 @@ if node[:provisioner][:use_serial_console]
   append_line += " console=tty0 console=ttyS1,115200n8"
 end
 
-if ::File.exists?("/etc/crowbar.install.key") 
+if ::File.exists?("/etc/crowbar.install.key")
   append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
 end
 append_line = append_line.split.join(' ')
@@ -206,18 +206,18 @@ if node[:platform] == "suse"
     action [ :enable ]
   end
 
-  template "/etc/xinetd.d/tftp" do
-    source "tftp.erb"
-    variables( :tftproot => tftproot )
-    notifies :reload, resources(:service => "xinetd")
-  end
-
   service "xinetd" do
     running true
     enabled true
     action [ :enable, :start ]
     supports :reload => true
     subscribes :reload, resources(:service => "tftp"), :immediately
+  end
+
+  template "/etc/xinetd.d/tftp" do
+    source "tftp.erb"
+    variables( :tftproot => tftproot )
+    notifies :reload, resources(:service => "xinetd")
   end
 else
   template "/etc/bluepill/tftpd.pill" do
