@@ -161,6 +161,7 @@ nuke_everything() {
         [[ -b /dev/${bd##*/} ]] || continue
         partprobe "/dev/${bd##*/}"
     done
+
     # and then wipe them all out.
     while read maj min blocks name; do
         [[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
@@ -172,11 +173,11 @@ nuke_everything() {
         else
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=$blocks"
         fi
-        echo w | fdisk /dev/$name # write new unique MBR signature
+        # write new unique MBR signature
+        # This initializes a random 32bit Disk signature used to
+        # distinguish disks, which helps installing boot loader properly
+        echo w | fdisk /dev/$name
     done < <(tac /proc/partitions)
-
-    ## for good measure, nuke partition tables on disks (nothing should remain bootable)
-    for i in `ls /dev/sd?`; do  parted -m -s  $i mklabel bsd ; sleep 1 ; done
 }
 
 # If there are pre/post transition hooks for this state (per system or not),
