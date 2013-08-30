@@ -26,7 +26,6 @@ uefi_dir=discover_dir
 pxecfg_default="#{pxecfg_dir}/default"
 nodes = search(:node, "*:*")
 Chef::Log.info("Node ount = #{nodes.length}")
-admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
     Chef::Log.info("Testing if #{mnode[:fqdn]} needs a state transition")
