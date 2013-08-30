@@ -53,7 +53,7 @@
                 </OSImage>
             </ImageInstall>
             <UserData>
-<% if os_name =~ /^windows/ -%>
+<% if @os_name =~ /^windows/ -%>
                 <ProductKey>
                         <Key><%=@license_key%></Key>
                     <WillShowUI>OnError</WillShowUI>
