@@ -156,12 +156,16 @@ curl -L -o /etc/chef/validation.pem \
 . "/updates/control_lib.sh"
 
 nuke_everything() {
+    local uuid maj min blocks name
     # Make sure that the kernel knows about all the partitions
     for bd in /sys/block/sd*; do
         [[ -b /dev/${bd##*/} ]] || continue
         partprobe "/dev/${bd##*/}"
     done
-
+    vgscan
+    while read uuid; do
+        vgremove -f "$uuid"
+    done < <(vgs --noheading -o vg_name)
     # and then wipe them all out.
     while read maj min blocks name; do
         [[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
