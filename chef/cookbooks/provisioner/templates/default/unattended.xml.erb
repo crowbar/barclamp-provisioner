@@ -116,19 +116,19 @@
                     <Order>8</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\chef-client-11.4.4-2.windows.msi c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\<%=@os_name%>\extra\chef-client-11.4.4-2.windows.msi c:\Crowbar\</CommandLine>
                     <Order>9</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\crowbar_join.ps1 c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\<%=@os_name%>\extra\crowbar_join.ps1 c:\Crowbar\</CommandLine>
                     <Order>10</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\set_hostname.ps1 c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\<%=@os_name%>\extra\set_hostname.ps1 c:\Crowbar\</CommandLine>
                     <Order>11</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\admin\reminst\<%=@os_name%>\extra\curl.exe c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\<%=@os_name%>\extra\curl.exe c:\Crowbar\</CommandLine>
                     <Order>12</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
@@ -188,9 +188,11 @@
             <BlockPopups>no</BlockPopups>
         </component>
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="NonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <TimeZone>Pacific Standard Time</TimeZone>
+            <TimeZone>UTC</TimeZone>
             <ComputerName>*</ComputerName>
+<% unless @license_key.empty? -%>
             <ProductKey><%=@license_key%></ProductKey>
+<% end -%>
         </component>
         <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <RunSynchronous>
