@@ -1,17 +1,17 @@
-# Copyright 2011, Dell 
-# 
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
-# 
-#  http://www.apache.org/licenses/LICENSE-2.0 
-# 
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
-# 
+# Copyright 2011, Dell
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 class ProvisionerService < ServiceObject
 
@@ -98,9 +98,9 @@ class ProvisionerService < ServiceObject
     if state == "installing"
       node = NodeObject.find_node_by_name(name)
       @logger.debug("Node #{name} Removing roles not supported by the target operating system")
-      role = RoleObject.find_role_by_name("crowbar-#{name.gsub(".","_")}")
+      crowbar_role = RoleObject.find_role_by_name("crowbar-#{name.gsub(".","_")}")
       @logger.debug("Node #{name} Main role: crowbar-#{name.gsub(".","_")}")
-      role.run_list.each do |node_role_ext|
+      crowbar_role.run_list.each do |node_role_ext|
         node_role=node_role_ext.to_s[node_role_ext.to_s.index('[')+1,node_role_ext.to_s.index(']')-node_role_ext.to_s.index('[')-1]
         if node_role.include? "-"
           node_barclamp = node_role[0,node_role.index('-')]
@@ -134,7 +134,7 @@ class ProvisionerService < ServiceObject
       node = NodeObject.find_node_by_name(name)
       # clean up state capturing attributes on the node that are not likely to be the same
       # after a reset.
-      ["boot_device"].each { |key | 
+      ["boot_device"].each { |key |
         node["crowbar_wall"][key] = nil if (node["crowbar_wall"][key] rescue nil)
       }
       node.save
@@ -155,7 +155,7 @@ class ProvisionerService < ServiceObject
       @logger.error("Provisioner transition: leaving #{name} for #{state}: Node not found")
       return [404, "Failed to find node"]
     end
-    unless node.admin? or role.default_attributes["provisioner"]["dhcp"]["state_machine"][state].nil? 
+    unless node.admin? or role.default_attributes["provisioner"]["dhcp"]["state_machine"][state].nil?
       # All non-admin nodes call single_chef_client if the state machine says to.
       @logger.info("Provisioner transition: Run the chef-client locally")
       system("sudo -i /opt/dell/bin/single_chef_client.sh")
