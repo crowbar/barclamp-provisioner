@@ -364,6 +364,14 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   when /^(hyperv|windows)/ =~ os
 
+    directory "#{tftproot}/windows-6.2/extra" do
+      recursive true
+      mode 0755
+      owner "root"
+      group "root"
+      action :create
+    end
+
     # Copy the crowbar_join script
     cookbook_file "#{tftproot}/windows-6.2/extra/crowbar_join.ps1" do
       owner "root"
