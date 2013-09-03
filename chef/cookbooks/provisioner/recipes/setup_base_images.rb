@@ -259,9 +259,12 @@ node[:provisioner][:supported_oses].each do |os,params|
   append = params["append"]
   initrd = params["initrd"]
   kernel = params["kernel"]
+  require_install_dir = params["require_install_dir"].nil? ? true : params["require_install_dir"]
 
-  # Don't bother for OSes that are not actually present on the provisioner node.
-  next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+  if require_install_dir
+    # Don't bother for OSes that are not actually present on the provisioner node.
+    next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+  end
 
   # Index known barclamp repositories for this OS
   node[:provisioner][:repositories][os] ||= Mash.new
