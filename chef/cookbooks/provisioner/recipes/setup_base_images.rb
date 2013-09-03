@@ -260,7 +260,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   initrd = params["initrd"]
   kernel = params["kernel"]
 
-  # Don't bother for OSes that are not actaully present on the provisioner node.
+  # Don't bother for OSes that are not actually present on the provisioner node.
   next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
 
   # Index known barclamp repositories for this OS
