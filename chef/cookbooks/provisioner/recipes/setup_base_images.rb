@@ -365,7 +365,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   when /^(hyperv|windows)/ =~ os
 
     # Copy the crowbar_join script
-    cookbook_file "/tftpboot/windows-6.2/extra/crowbar_join.ps1" do
+    cookbook_file "#{tftproot}/windows-6.2/extra/crowbar_join.ps1" do
       owner "root"
       group "root"
       mode "0644"
@@ -374,7 +374,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
     # Copy the script required for setting the hostname
-    cookbook_file "/tftpboot/windows-6.2/extra/set_hostname.ps1" do
+    cookbook_file "#{tftproot}/windows-6.2/extra/set_hostname.ps1" do
       owner "root"
       group "root"
       mode "0644"
@@ -383,14 +383,14 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
     # Also copy the required files to install chef-client and communicate with Crowbar
-    cookbook_file "/tftpboot/windows-6.2/extra/chef-client-11.4.4-2.windows.msi" do
+    cookbook_file "#{tftproot}/windows-6.2/extra/chef-client-11.4.4-2.windows.msi" do
       owner "root"
       group "root"
       mode "0644"
       action :create
       source "chef-client-11.4.4-2.windows.msi"
     end
-    cookbook_file "/tftpboot/windows-6.2/extra/curl.exe" do
+    cookbook_file "#{tftproot}/windows-6.2/extra/curl.exe" do
       owner "root"
       group "root"
       mode "0644"
