@@ -155,7 +155,7 @@ if (-not (Test-Path -Path $ChefServerCertificate))
 Add-Content -Path "$CrowbarLogFile" -Value "$(Get-Date): Checking if chef config file is created"
 if (-not (Test-Path -Path $ChefConfigFile))
 {
-  $hostname = System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().HostName
+  $hostname = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().HostName
   $domain = (Get-ItemProperty "HKLM:\SOFTWARE\Crowbar" -Name Domain).Domain
   Add-Content -Path "$CrowbarLogFile" -Value "$(Get-Date): Creating chef config file"
   Add-Content $ChefConfigFile "log_level :debug"
