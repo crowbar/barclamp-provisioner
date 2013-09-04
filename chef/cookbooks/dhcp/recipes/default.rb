@@ -28,6 +28,8 @@ when "suse"
   package "dhcp-server"
 end
 
+provisioner_port = (node["crowbar"]["provisioner"]["server"]["web_port"] rescue 8091)
+
 directory "/etc/dhcp3"
 directory "/etc/dhcp3/groups.d"
 directory "/etc/dhcp3/subnets.d"
@@ -75,7 +77,7 @@ when "ubuntu","debian"
       source "dhcpd.conf.erb"
       variables(:options => d_opts,
                 :provisioner_ip => address,
-                :provisioner_port => 8091)
+                :provisioner_port => provisioner_port)
       notifies :restart, "service[dhcp3-server]"
     end
     template "/etc/default/isc-dhcp-server" do
@@ -94,7 +96,7 @@ when "ubuntu","debian"
       source "dhcpd.conf.erb"
       variables(:options => d_opts,
                 :provisioner_ip => address,
-                :provisioner_port => 8091)
+                :provisioner_port => provisioner_port)
       notifies :restart, "service[dhcp3-server]"
     end
     template "/etc/default/dhcp3-server" do
@@ -122,7 +124,7 @@ when "redhat","centos"
     source "dhcpd.conf.erb"
     variables(:options => d_opts,
               :provisioner_ip => address,
-              :provisioner_port => 8091)
+              :provisioner_port => provisioner_port)
     notifies :restart, "service[dhcp3-server]"
   end
 
@@ -143,7 +145,7 @@ when "suse"
     source "dhcpd.conf.erb"
     variables(:options => d_opts,
               :provisioner_ip => address,
-              :provisioner_port => 8091)
+              :provisioner_port => provisioner_port)
     notifies :restart, "service[dhcp3-server]"
   end
 
@@ -170,6 +172,5 @@ service "dhcp3-server" do
     end
   end
   supports :restart => true, :status => true, :reload => true
-  action :enable
+  action [ :enable, :start ]
 end
-

@@ -37,7 +37,7 @@ then
 <% if @online -%>
 - http://rubygems.org/
 <% end -%>
-- http://$ADMIN_IP:8091/gemsite/
+- http://$ADMIN_IP:<%=@provisioner_port%>/gemsite/
 gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
 EOF
   gem install rest-client
