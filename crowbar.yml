@@ -50,6 +50,14 @@ roles:
       - ntp-server
     flags:
       - bootstrap
+  - name: provisioner-repos
+    jig: chef
+    requires:
+      - network-admin
+      - provisioner-server
+    flags:
+      - discovery
+      - bootstrap
 
 debs:
   ubuntu-12.04:
