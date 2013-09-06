@@ -13,6 +13,10 @@
 # limitations under the License.
 #
 
+# Update_nodes will need a massive rework to work with CB 2.0
+# For now, it does nothing.
+return
+
 admin_ip = node.address.addr
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 web_port = node[:provisioner][:web_port]
