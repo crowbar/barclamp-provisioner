@@ -35,13 +35,21 @@ crowbar:
 
 roles:
   - name: provisioner-base
-    jig: script
+    jig: chef
     requires:
-      - crowbar
+      - network-admin
+      - provisioner-server
+    flags:
+      - discovery
   - name: provisioner-server
-    jig: script
+    jig: chef
     requires:
-      - provisioner-base
+      - network-admin
+      - dns-client
+      - logging-server
+      - ntp-server
+    flags:
+      - bootstrap
 
 debs:
   ubuntu-12.04:

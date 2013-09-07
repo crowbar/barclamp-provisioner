@@ -21,7 +21,7 @@
 # set in order to reuse them.
 export HOME=/root
 
-HTTP_SERVER="<%= @admin_ip %>:8091"
+HTTP_SERVER="<%= @admin_ip %>:<%=@provisioner_port%>"
 IP=${HTTP_SERVER%:*}
 
 if [[ ! -d /var/log/crowbar-join ]] ; then
