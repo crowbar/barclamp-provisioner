@@ -124,8 +124,6 @@ class ProvisionerService < ServiceObject
               @logger.debug("Node #{name}: barclamp #{node_barclamp} supported on #{node[:target_platform]}")
             end
           end
-        else
-          @logger.debug("aaaa: Node #{name} barclamp #{node_barclamp} databag is nill")
         end
       end
     end
