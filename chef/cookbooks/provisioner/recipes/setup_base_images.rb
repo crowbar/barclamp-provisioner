@@ -367,6 +367,23 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   when /^(hyperv|windows)/ =~ os
 
+    directory "#{tftproot}/adk-tools" do
+      recursive true
+      mode 0755
+      owner "root"
+      group "root"
+      action :create
+    end
+
+    template "#{tftproot}/adk-tools/build_winpe_#{os}.ps1" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "build_winpe_os.ps1.erb"
+      variables(:os => os,
+                :admin_ip => admin_ip)
+    end
+
     directory "#{os_dir}/extra" do
       recursive true
       mode 0755
