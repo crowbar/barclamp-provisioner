@@ -1,5 +1,7 @@
-$CrowbarAdminIP = "<%=@admin_ip%>"
-$CrowbarKey = "<%=@crowbar_key%>"
+Param(
+  [string]$CrowbarAdminIP = "<%= @admin_ip %>",
+  [string]$CrowbarKey = "<%= @crowbar_key %>"
+)
 
 $cards = Get-WmiObject win32_networkadapter
 foreach ($card in $cards)
