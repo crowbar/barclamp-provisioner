@@ -16,21 +16,20 @@
 
 admin_ip = node.address.addr
 domain_name = node["dns"].nil? ? node["domain"] : (node["dns"]["domain"] || node["domain"])
-provisioner = node["crowbar"]["provisioner"]["server"].to_hash
-Chef::Log.info("Provisioner: raw server data #{provisioner}")
-provisioner["address"] = admin_ip
-web_port = provisioner["web_port"]
-use_local_security = provisioner["use_local_security"]
+Chef::Log.info("Provisioner: raw server data #{ node["crowbar"]["provisioner"]["server"]}")
+node.normal["crowbar"]["provisioner"]["server"]["address"] = admin_ip
+web_port =  node.normal["crowbar"]["provisioner"]["server"]["web_port"]
+use_local_security =  node["crowbar"]["provisioner"]["server"]["use_local_security"]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
 os_token="#{node["platform"]}-#{node["platform_version"]}"
-tftproot = provisioner["root"]
+tftproot =  node["crowbar"]["provisioner"]["server"]["root"]
 discover_dir="#{tftproot}/discovery"
 pxecfg_dir="#{discover_dir}/pxelinux.cfg"
 uefi_dir=discover_dir
 pxecfg_default="#{pxecfg_dir}/default"
 
-unless provisioner["sledgehammer_kernel_params"]
+unless  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
   # FIXME: What is the purpose of this, really? If pxecfg_default does not exist
   # the root= parameters will not get appended to the kernel commandline. (Luckily
   # we don't need those with the SLES base sledgehammer)
@@ -47,32 +46,33 @@ unless provisioner["sledgehammer_kernel_params"]
       append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
     end
   end
-
+  
   if ::File.exists?("/etc/crowbar.install.key")
     append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
   end
-
-  if provisioner["use_serial_console"]
+  
+  if  node["crowbar"]["provisioner"]["server"]["use_serial_console"]
     append_line += " console=tty0 console=ttyS1,115200n8"
   end
-
-  provisioner["sledgehammer_kernel_params"] = append_line
+  
+  node.normal["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"] = append_line
 else
-  append_line = provisioner["sledgehammer_kernel_params"]
+  append_line =  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
 end
 
 # By default, install the same OS that the admin node is running
 # If the comitted proposal has a defualt, try it.
 # Otherwise use the OS the provisioner node is using.
 
-unless default_os = provisioner["default_os"]
-  provisioner["default_os"] = default = os_token
+unless default = node["crowbar"]["provisioner"]["server"]["default_os"]
+  node.normal["crowbar"]["provisioner"]["server"]["default_os"] = default = os_token
 end
 
-provisioner["repositories"] ||= Mash.new
-provisioner["available_oses"] = Mash.new
-provisioner["supported_oses"].each do |os,params|
-
+unless node.normal["crowbar"]["provisioner"]["server"]["repositories"]
+  node.normal["crowbar"]["provisioner"]["server"]["repositories"] = Mash.new
+end
+node.normal["crowbar"]["provisioner"]["server"]["available_oses"] = Mash.new
+node["crowbar"]["provisioner"]["server"]["supported_oses"].each do |os,params|
   web_path = "#{provisioner_web}/#{os}"
   admin_web = os_install_site = "#{web_path}/install"
   crowbar_repo_web="#{web_path}/crowbar-extra"
@@ -84,53 +84,65 @@ provisioner["supported_oses"].each do |os,params|
 
   # Don't bother for OSes that are not actaully present on the provisioner node.
   next unless (File.directory? os_dir and File.directory? "#{os_dir}/install") or
-    (provisioner["online"] and params["online_mirror"])
-  provisioner["available_oses"][os] = true
+    ( node["crowbar"]["provisioner"]["server"]["online"] and params["online_mirror"])
+   node.normal["crowbar"]["provisioner"]["server"]["available_oses"][os] = true
 
   # Index known barclamp repositories for this OS
-  provisioner["repositories"][os] ||= Mash.new
+  unless node["crowbar"]["provisioner"]["server"]["repositories"][os]
+    node.normal["crowbar"]["provisioner"]["server"]["repositories"][os] = Mash.new
+  end
   if File.exists? "#{os_dir}/crowbar-extra" and File.directory? "#{os_dir}/crowbar-extra"
     Dir.foreach("#{os_dir}/crowbar-extra") do |f|
       next unless File.symlink? "#{os_dir}/crowbar-extra/#{f}"
-      provisioner["repositories"][os][f] ||= Mash.new
+      unless node["crowbar"]["provisioner"]["server"]["repositories"][os][f]
+        node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f] = Mash.new
+      end
       case
       when os =~ /(ubuntu|debian)/
         bin="deb http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
         src="deb-src http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
-        provisioner["repositories"][os][f][bin] = true if
+         node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f][bin] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Packages.gz"
-        provisioner["repositories"][os][f][src] = true if
+         node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f][src] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Sources.gz"
       when os =~ /(redhat|centos|suse)/
         bin="baseurl=http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f}"
-        provisioner["repositories"][os][f][bin] = true
+         node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f][bin] = true
         else
           raise ::RangeError.new("Cannot handle repos for #{os}")
       end
     end
   end
 
-  if provisioner["online"]
+  if  node["crowbar"]["provisioner"]["server"]["online"]
     data_bag("barclamps").each do |bc_name|
       bc = data_bag_item("barclamps",bc_name)
       if bc["debs"]
         bc["debs"]["repos"].each do |repo|
-          provisioner["repositories"][os]["#{bc_name}_online"] ||= Mash.new
-          provisioner["repositories"][os]["#{bc_name}_online"][repo] = true
+          unless node["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"]
+            node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"] = Mash.new
+          end
+           node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"][repo] = true
         end if bc["debs"]["repos"]
         bc["debs"][os]["repos"].each do |repo|
-          provisioner["repositories"][os]["#{bc_name}_online"] ||= Mash.new
-          provisioner["repositories"][os]["#{bc_name}_online"][repo] = true
+          unless node["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"]
+            node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"] = Mash.new
+          end
+          node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"][repo] = true
         end if (bc["debs"][os]["repos"] rescue nil)
       end if os =~ /(ubuntu|debian)/
       if bc["rpms"]
         bc["rpms"]["repos"].each do |repo|
-          provisioner["repositories"][os]["#{bc_name}_online"] ||= Mash.new
-          provisioner["repositories"][os]["#{bc_name}_online"][repo] = true
+          unless node["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"]
+            node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"] = Mash.new
+          end
+          node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"][repo] = true
         end if bc["rpms"]["repos"]
         bc["rpms"][os]["repos"].each do |repo|
-          provisioner["repositories"][os]["#{bc_name}_online"] ||= Mash.new
-          provisioner["repositories"][os]["#{bc_name}_online"][repo] = true
+          unless node["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"]
+            node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"] = Mash.new
+          end
+          node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["#{bc_name}_online"][repo] = true
         end if (bc["rpms"][os]["repos"] rescue nil)
       end if os =~ /(centos|redhat)/
     end
@@ -182,7 +194,7 @@ EOC
   }
 
   # If we were asked to use a serial console, arrange for it.
-  if provisioner["use_serial_console"]
+  if  node["crowbar"]["provisioner"]["server"]["use_serial_console"]
     append << " console=tty0 console=ttyS1,115200n8"
   end
 
@@ -192,34 +204,36 @@ EOC
   end
 
   # If we were asked to use a serial console, arrange for it.
-  if provisioner["use_serial_console"]
+  if  node["crowbar"]["provisioner"]["server"]["use_serial_console"]
     append << " console=tty0 console=ttyS1,115200n8"
   end
   # Add per-OS base repos that may not have been added above.
 
-  provisioner["boot_specs"] ||= Mash.new
-  provisioner["boot_specs"][os] ||= Mash.new
-  provisioner["boot_specs"][os]["kernel"] = "../#{os}/install/#{kernel}"
-  provisioner["boot_specs"][os]["initrd"] = "../#{os}/install/#{initrd}"
-  provisioner["boot_specs"][os]["os_install_site"] = os_install_site
-  provisioner["boot_specs"][os]["kernel_params"] = append
+  unless node["crowbar"]["provisioner"]["server"]["boot_specs"]
+    node.normal["crowbar"]["provisioner"]["server"]["boot_specs"] = Mash.new
+  end
+  unless node["crowbar"]["provisioner"]["server"]["boot_specs"][os]
+    node.normal["crowbar"]["provisioner"]["server"]["boot_specs"][os] = Mash.new
+  end
+  node.normal["crowbar"]["provisioner"]["server"]["boot_specs"][os]["kernel"] = "../#{os}/install/#{kernel}"
+  node.normal["crowbar"]["provisioner"]["server"]["boot_specs"][os]["initrd"] = "../#{os}/install/#{initrd}"
+  node.normal["crowbar"]["provisioner"]["server"]["boot_specs"][os]["os_install_site"] = os_install_site
+  node.normal["crowbar"]["provisioner"]["server"]["boot_specs"][os]["kernel_params"] = append
 
   case
   when (/^ubuntu/ =~ os and File.exists?("/tftpboot/#{os}/install/dists"))
-    provisioner["repositories"][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+     node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
   when /^(suse)/ =~ os
-    provisioner["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+     node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     if ::File.exists? "/tftpboot/#{os}/install/repodata"
-      provisioner["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+       node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
     elsif ::File.exists? "/tftpboot/#{os}/install/Server/repodata"
-      provisioner["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
+       node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
     end
   end
 end
-
-node.set["crowbar"]["provisioner"]["server"] = provisioner
 
 # Generate the appropriate pxe and uefi config files for discovery
 # These will only be used if we have not already discovered the system.
@@ -271,7 +285,7 @@ template "#{node["apache"]["dir"]}/sites-available/proxy.conf" do
             :logfile => "/var/log/apache2/proxy-access_log",
             :errorlog => "/var/log/apache2/proxy-error_log",
             :allowed_clients => ["127.0.0.1"] + node.all_addresses.map{|a|a.network.to_s}.sort,
-            :upstream_proxy => (provisioner["upstream_proxy"] || "" rescue ""),
+            :upstream_proxy => ( node["crowbar"]["provisioner"]["server"]["upstream_proxy"] || "" rescue ""),
             :no_cache => "http://#{admin_ip}"
             )
   notifies :reload, resources(:service => "apache2")
@@ -345,7 +359,7 @@ cd #{tftproot}/files
 curl -J -O 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
 EOC
   not_if "test -f '#{tftproot}/files/elilo-3.14-all.tar.gz'"
-end if provisioner["online"]
+end if  node["crowbar"]["provisioner"]["server"]["online"]
 
 
 bash "Install elilo as UEFI netboot loader" do
@@ -367,7 +381,7 @@ template "/updates/control.sh" do
   mode "0755"
   variables(
             :provisioner_ip => admin_ip,
-            :online => provisioner["online"],
+            :online =>  node["crowbar"]["provisioner"]["server"]["online"],
             :provisioner_web => provisioner_web,
             :proxy => "http://#{admin_ip}:8123"
             )

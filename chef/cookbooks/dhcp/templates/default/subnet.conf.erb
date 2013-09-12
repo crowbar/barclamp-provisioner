@@ -1,7 +1,7 @@
 # File managed by Crowbar
 subnet <%= @addr.addr -%> netmask <%= @addr.netmask %> {
 <% if @network["router"] -%>
-  option routers <%= @network["router"] %>;
+  option routers <%= @network["router"]["address"].addr %>;
 <% end -%>
   option subnet-mask <%= @addr.netmask %>;
   option broadcast-address <%= @addr.broadcast.addr %>;
@@ -10,10 +10,10 @@ subnet <%= @addr.addr -%> netmask <%= @addr.netmask %> {
 <%   end -%>
 <% @pools.each do |pool| -%>
    pool {
-     range <%=@network["ranges"][pool]["start"]%> <%=@network["ranges"][pool]["end"]%>;
-     <% @pool_options[pool].each do |opt| -%>
+     range <%=IP.coerce(pool["first"]).addr%> <%=IP.coerce(pool["last"]).addr%>;
+     <% @pool_options[pool["name"]].each do |opt| -%>
      <%=opt%><%=if opt[-1,1] != '}' then ';' else '' end%>
-     <% end if @pool_options[pool] -%>
+     <% end if @pool_options[pool["name"]] -%>
    }
 <% end -%>
 }

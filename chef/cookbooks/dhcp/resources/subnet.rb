@@ -17,7 +17,7 @@ actions :add, :remove
 
 attribute :subnet, :kind_of => String, :name_attribute => true
 attribute :network, :kind_of => Mash
-attribute :pools, :kind_of => Array, :default => [ "dhcp" ]
+attribute :pools, :kind_of => Array
 attribute :pool_options, :kind_of => Hash, :default => { "dhcp" => [ "allow unknown-hosts" ] }
 attribute :options, :kind_of => Array, :default => []
 
