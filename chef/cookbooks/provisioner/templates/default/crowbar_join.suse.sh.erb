@@ -28,6 +28,11 @@ set -x
 
 ################## Functions ##################
 
+echo_error() {
+    # Not to fd2 because this would go to the file
+    echo $*
+}
+
 echo_verbose() {
     [ "$VERBOSE" -ne 0 ] && echo $*
 }
@@ -50,8 +55,8 @@ log_to() {
 	_ret=0
     else
 	_ret="$?"
-	echo "$__timestamp: $* failed."
-	echo "See $__log.log and $__log.err for more information."
+	echo_error "$__timestamp: $* failed."
+	echo_error "See $__log.log and $__log.err for more information."
     fi
     printf "\n$s\n--------\n"  "$(date '+%F %T %z'): Done $*" | \
 	tee -a "$__log.err" >> "$__log.log"
@@ -210,9 +215,8 @@ do_chef_client() {
             echo_verbose "Running Chef Client (pass 3) - password cleanup"
             if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
                 log_to ifup /sbin/service network restart
-                echo "chef-client run failed too many times, giving up."
-                echo "Failed"
-                printf "Our IP address is: %s\n" "$(ip addr show)"
+                echo_error "chef-client run failed too many times, giving up."
+                printf "Our IP address is: %s\n" "$(ip addr show)" >&2
                 final_state="problem"
             else
                 post_state "$HOSTNAME" "$final_state"
@@ -257,7 +261,7 @@ while true; do
             ;;
         --setup)
             if test -n "$MODE"; then
-                echo "Error: more than one mode specified."
+                echo_error "Error: more than one mode specified."
                 exit 1
             fi
             MODE="setup"
@@ -265,7 +269,7 @@ while true; do
             ;;
         --start)
             if test -n "$MODE"; then
-                echo "Error: more than one mode specified."
+                echo_error "Error: more than one mode specified."
                 exit 1
             fi
             MODE="start"
@@ -283,7 +287,7 @@ while true; do
 done
 
 if test -z "$MODE"; then
-    echo "Error: no mode specified."
+    echo_error "Error: no mode specified."
     exit 1
 fi
 
@@ -314,7 +318,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
 
     echo_verbose "Getting hostname..."
     if ! wait_for_hostname; then
-        echo "Cannot get hostname..."
+        echo_error "Cannot get hostname..."
         exit 1
     fi
 
