@@ -2,6 +2,8 @@ domain_name = (node[:crowbar][:dns][:domain] || node[:domain] rescue node[:domai
 admin_ip = node.address.addr
 admin_net = node[:crowbar][:network][:admin]
 lease_time = node[:crowbar][:provisioner][:server][:dhcp][:lease_time]
+net_pools = admin_net["ranges"].select{|range|["dhcp","host"].include? range["name"]}
+  
 pool_opts = {
   "dhcp" => ['allow unknown-clients',
              '      if option arch = 00:06 {
@@ -14,10 +16,11 @@ pool_opts = {
              "next-server #{admin_ip}" ],
   "host" => ['deny unknown-clients']
 }
-dhcp_subnet admin_net["subnet"] do
+
+dhcp_subnet IP.coerce(net_pools[0]["first"]).network do
   action :add
   network admin_net
-  pools ["dhcp","host"]
+  pools net_pools
   pool_options pool_opts
   options [ "option domain-name \"#{domain_name}\"",
             "option domain-name-servers #{admin_ip}",
