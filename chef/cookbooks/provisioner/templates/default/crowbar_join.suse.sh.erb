@@ -299,6 +299,10 @@ if test -z "$MODE"; then
     exit 1
 fi
 
+if test "$MODE" != "setup" -a "$MODE" != "start" -a "$MODE" != "stop"; then
+    echo_error "Error: invalide mode $MODE."
+    exit 1
+fi
 
 ################## Core ##################
 
