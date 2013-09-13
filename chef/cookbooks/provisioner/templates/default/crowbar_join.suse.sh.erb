@@ -139,6 +139,56 @@ EOF
     fi # install chef
 }
 
+do_chef_client_after_setup() {
+    # Until we arrange for the network to transisiton from using
+    # DHCP somewhere else, the first run of chef-client will always die due to
+    # the networking barclamp changing the IP address from dhcp to static.
+    # We will try to pick up and run with it.
+    echo "Running Chef Client (after setup)"
+    log_to chef chef-client -l debug
+
+    # Make sure our interfaces are as up as we can get them
+    echo "Ensuring that our network interfaces are up."
+    log_to ifup /sbin/service network restart
+}
+
+do_chef_client() {
+    # Note that we only transition to problem state if the second run fails.
+    echo "Running Chef Client (pass 1)"
+    if ! log_to chef chef-client -l debug; then
+        log_to ifup /sbin/service network restart
+        post_state $HOSTNAME "recovering"
+        echo "Error Path"
+        echo "Syncing Time"
+        sync_time
+        echo "Removing Chef Cache"
+        rm -rf /var/cache/chef/*
+        echo "Running Chef Client (pass 2) - cache cleanup"
+        if ! log_to chef chef-client -l debug; then
+            log_to ifup /sbin/service network restart
+            echo "Error Path"
+            echo "Syncing Time"
+            sync_time
+            echo "Removing Chef Cache"
+            rm -rf /var/cache/chef/*
+            echo "Checking Keys"
+            rm -f /etc/chef/client.pem
+            post_state $HOSTNAME "installed"
+            echo "Running Chef Client (pass 3) - password cleanup"
+            if ! log_to chef chef-client -l debug; then
+                log_to ifup /sbin/service network restart
+                echo "chef-client run failed too many times, giving up."
+                echo "Failed"
+                printf "Our IP address is: %s\n" "$(ip addr show)"
+                final_state="problem"
+            else
+                post_state "$HOSTNAME" "$final_state"
+                log_to chef chef-client -l debug
+            fi
+        fi
+    fi
+}
+
 # Spin while we wait for the interface to come up.
 echo "Waiting on our network interface to come up..."
 while ! ip addr | grep -v " lo" | grep -q "inet "
@@ -186,51 +236,8 @@ do_setup
 echo "Syncing time (pass 2)"
 sync_time
 
-# Until we arrange for the network to transisiton from using
-# DHCP somewhere else, the first run of chef-client will always die due to
-# the networking barclamp changing the IP address from dhcp to static.
-# We will try to pick up and run with it.
-echo "Running Chef Client  (pass 1)"
-log_to chef chef-client -l debug
-
-# Make sure our interfaces are as up as we can get them
-echo "Ensuring that our network interfaces are up."
-log_to ifup /sbin/service network restart
-
-# Only transition to problem state if the second run fails.
-echo "Running Chef Client (pass 2)"
-if ! log_to chef chef-client -l debug; then
-    log_to ifup /sbin/service network restart
-    post_state $HOSTNAME "recovering"
-    echo "Error Path"
-    echo "Syncing Time (pass 3)"
-    sync_time
-    echo "Removing Chef Cache"
-    rm -rf /var/cache/chef/*
-    echo "Running Chef Client (pass 3) - cache cleanup"
-    if ! log_to chef chef-client -l debug; then
-        log_to ifup /sbin/service network restart
-        echo "Error Path"
-        echo "Syncing Time (pass 4)"
-        sync_time
-        echo "Removing Chef Cache"
-        rm -rf /var/cache/chef/*
-        echo "Checking Keys"
-        rm -f /etc/chef/client.pem
-        post_state $HOSTNAME "installed"
-        echo "Running Chef Client (pass 4) - password cleanup"
-        if ! log_to chef chef-client -l debug; then
-            log_to ifup /sbin/service network restart
-            echo "chef-client run failed four times, giving up."
-            echo "Failed"
-            printf "Our IP address is: %s\n" "$(ip addr show)"
-            final_state="problem"
-        else
-            post_state "$HOSTNAME" "$final_state"
-            log_to chef chef-client -l debug
-        fi
-    fi
-fi
+do_chef_client_after_setup
+do_chef_client
 
 # Transition to our final state
 post_state $HOSTNAME "$final_state"
