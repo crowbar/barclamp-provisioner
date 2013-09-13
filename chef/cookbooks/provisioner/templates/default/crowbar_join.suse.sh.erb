@@ -28,6 +28,7 @@ if [[ ! -d /var/log/crowbar/crowbar_join ]] ; then
   mkdir -p /var/log/crowbar/crowbar_join/
 fi
 
+echo "======== Running $0 $* ($(date '+%F %T %z')) ========" >>/var/log/crowbar/crowbar_join/errlog
 exec 2>>/var/log/crowbar/crowbar_join/errlog
 
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
