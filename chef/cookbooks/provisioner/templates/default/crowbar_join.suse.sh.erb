@@ -28,6 +28,14 @@ set -x
 
 ################## Functions ##################
 
+echo_verbose() {
+    [ "$VERBOSE" -ne 0 ] && echo $*
+}
+
+echo_debug() {
+    [ "$DEBUG" -ne 0 ] && echo $*
+}
+
 # Run a command and log its output.
 log_to() {
     # $1 = install log to log to
@@ -64,7 +72,6 @@ post_state() {
 
 wait_for_network() {
     # Spin while we wait for the interface to come up.
-    echo "Waiting on our network interface to come up..."
     while ! ip addr | grep -v " lo" | grep -q "inet "
     do
       sleep 1
@@ -78,13 +85,13 @@ wait_for_hostname() {
       HOSTNAME=$(hostname -f)
       exit_code=$?
 
-      echo $HOSTNAME
-      echo $exit_code
+      echo_debug $HOSTNAME
+      echo_debug $exit_code
       if [ $exit_code -eq 0 ]; then
         break
       fi
 
-      echo "sleeping 5 seconds"
+      echo_debug "sleeping 5 seconds"
       sleep 5
 
       tries_left=$(($tries_left-1))
@@ -103,7 +110,7 @@ sync_time() {
     # Warning! Newer sntp releases use different options (e.g. the one
     # on openSUSE 12.1
     while ! sntp -P no -r $IP; do
-	echo "Waiting for NTP server"
+	echo_verbose "Waiting for NTP server"
 	sleep 1
     done
 }
@@ -150,14 +157,14 @@ EOF
 
     # install Chef
     if [[ ! -x /etc/init.d/chef-client ]]; then
-        echo "Installing Chef..."
+        echo_verbose "Installing Chef..."
 
         while ! log_to zypper zypper -n refresh ; do
-            echo "Failed to do zypper refresh, wait and try again"
+            echo_verbose "Failed to do zypper refresh, wait and try again"
             sleep 10
         done
         while ! log_to zypper zypper -n install rubygem-chef ; do
-            echo "Failed to do zypper install, wait and try again"
+            echo_verbose "Failed to do zypper install, wait and try again"
             sleep 10
         done
 
@@ -170,37 +177,37 @@ do_chef_client_after_setup() {
     # DHCP somewhere else, the first run of chef-client will always die due to
     # the networking barclamp changing the IP address from dhcp to static.
     # We will try to pick up and run with it.
-    echo "Running Chef Client (after setup)"
+    echo_verbose "Running Chef Client (after setup)"
     log_to chef chef-client $CHEF_CLIENT_OPTIONS
 
     # Make sure our interfaces are as up as we can get them
-    echo "Ensuring that our network interfaces are up."
+    echo_verbose "Ensuring that our network interfaces are up."
     log_to ifup /sbin/service network restart
 }
 
 do_chef_client() {
     # Note that we only transition to problem state if the second run fails.
-    echo "Running Chef Client (pass 1)"
+    echo_verbose "Running Chef Client (pass 1)"
     if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
         log_to ifup /sbin/service network restart
         post_state $HOSTNAME "recovering"
-        echo "Error Path"
-        echo "Syncing Time"
+        echo_debug "Error Path"
+        echo_debug "Syncing Time"
         sync_time
-        echo "Removing Chef Cache"
+        echo_debug "Removing Chef Cache"
         rm -rf /var/cache/chef/*
-        echo "Running Chef Client (pass 2) - cache cleanup"
+        echo_verbose "Running Chef Client (pass 2) - cache cleanup"
         if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
             log_to ifup /sbin/service network restart
-            echo "Error Path"
-            echo "Syncing Time"
+            echo_debug "Error Path"
+            echo_debug "Syncing Time"
             sync_time
-            echo "Removing Chef Cache"
+            echo_debug "Removing Chef Cache"
             rm -rf /var/cache/chef/*
-            echo "Checking Keys"
+            echo_debug "Checking Keys"
             rm -f /etc/chef/client.pem
             post_state $HOSTNAME "installed"
-            echo "Running Chef Client (pass 3) - password cleanup"
+            echo_verbose "Running Chef Client (pass 3) - password cleanup"
             if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
                 log_to ifup /sbin/service network restart
                 echo "chef-client run failed too many times, giving up."
@@ -224,10 +231,10 @@ usage() {
     echo "$SCRIPT -- Synchronize with Crowbar administration server"
     echo ""
     echo "Usage:"
-    echo "$SCRIPT [--setup|--start] [--debug]"
+    echo "$SCRIPT [--setup|--start] [--debug] [--verbose]"
 }
 
-ARGS=`getopt -o "hd:" -l "help,setup,start,debug" -n "$SCRIPT" -- "$@"`
+ARGS=`getopt -o "hdv:" -l "help,setup,start,debug,verbose" -n "$SCRIPT" -- "$@"`
 if test $? -ne 0; then
    usage
    exit 1
@@ -237,6 +244,7 @@ eval set -- "$ARGS"
 
 MODE=
 DEBUG=0
+VERBOSE=0
 
 while true; do
     case "$1" in
@@ -265,6 +273,10 @@ while true; do
             ;;
         -d|--debug)
             DEBUG=1
+            shift
+            ;;
+        -v|--verbose)
+            VERBOSE=1
             shift
             ;;
     esac
@@ -297,8 +309,10 @@ if [ "$DEBUG" -ne 0 ]; then
 fi
 
 if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
+    echo_verbose "Waiting on our network interface to come up..."
     wait_for_network
 
+    echo_verbose "Getting hostname..."
     if ! wait_for_hostname; then
         echo "Cannot get hostname..."
         exit 1
@@ -307,7 +321,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     # Get our hostname
     HOSTNAME=$(hostname -f)
 
-    echo "Synchronizing time (pass 1)"
+    echo_verbose "Synchronizing time (pass 1)"
     sync_time
 
     # Mark us as readying, and get our cert.
@@ -317,7 +331,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     [ "$MODE" == "setup" ] && do_setup
 
     # Run Chef
-    echo "Syncing time (pass 2)"
+    echo_verbose "Syncing time (pass 2)"
     sync_time
 
     [ "$MODE" == "setup" ] && do_chef_client_after_setup
@@ -333,4 +347,4 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     [ "$MODE" == "setup" ] && log_to chef service chef-client start
 fi # setup or start
 
-echo "Done"
+echo_verbose "Done"
