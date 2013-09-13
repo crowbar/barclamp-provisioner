@@ -235,10 +235,10 @@ usage() {
     echo "$SCRIPT -- Synchronize with Crowbar administration server"
     echo ""
     echo "Usage:"
-    echo "$SCRIPT [--setup|--start] [--debug] [--verbose]"
+    echo "$SCRIPT [--setup|--start|--stop] [--debug] [--verbose]"
 }
 
-ARGS=`getopt -o "hdv:" -l "help,setup,start,debug,verbose" -n "$SCRIPT" -- "$@"`
+ARGS=`getopt -o "hdv:" -l "help,setup,start,stop,debug,verbose" -n "$SCRIPT" -- "$@"`
 if test $? -ne 0; then
    usage
    exit 1
@@ -273,6 +273,14 @@ while true; do
                 exit 1
             fi
             MODE="start"
+            shift
+            ;;
+        --stop)
+            if test -n "$MODE"; then
+                echo_error "Error: more than one mode specified."
+                exit 1
+            fi
+            MODE="stop"
             shift
             ;;
         -d|--debug)
@@ -353,7 +361,16 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     [ "$MODE" == "setup" ] && log_to chef service chef-client start
 
     [ $final_state == "ready" ] || EXVAL=1
-fi # setup or start
+elif [ "$MODE" == "stop" ]; then
+    RUNLEVEL=$(runlevel | awk '{print $2}')
+    final_state="shutdown"
+    [ "$RUNLEVEL" == "6" ] && final_state="reboot"
+
+    echo_debug "Stopping with state=$final_state (runlevel $RUNLEVEL)"
+
+    HOSTNAME=$(hostname -f)
+    post_state $HOSTNAME "$final_state"
+fi # mode
 
 echo_verbose "Done"
 
