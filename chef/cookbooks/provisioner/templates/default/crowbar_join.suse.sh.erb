@@ -328,6 +328,12 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     echo_verbose "Waiting on our network interface to come up..."
     wait_for_network
 
+    ping -q -c1 $IP > /dev/null
+    if [ $? -ne 0 -a "$MODE" == "start" ]; then
+        echo_error "Cannot ping $IP..."
+        exit 1
+    fi
+
     echo_verbose "Getting hostname..."
     if ! wait_for_hostname; then
         echo_error "Cannot get hostname..."
