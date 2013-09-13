@@ -314,8 +314,8 @@ EXVAL=0
 # set in order to reuse them.
 export HOME=/root
 
+IP="<%= @admin_ip %>"
 HTTP_SERVER="<%= @admin_ip %>:8091"
-IP=${HTTP_SERVER%:*}
 
 if [[ -f /etc/crowbar.install.key ]]; then
     export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
