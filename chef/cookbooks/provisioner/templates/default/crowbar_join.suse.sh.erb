@@ -15,15 +15,6 @@
 # limitations under the License.
 #
 
-# This is required if the autoyast.xml had any <media_url> elements
-# containing credentials; if so, they get cached in
-# /root/.zypp/credentials.cat and so subsequent zypper runs need HOME
-# set in order to reuse them.
-export HOME=/root
-
-HTTP_SERVER="<%= @admin_ip %>:8091"
-IP=${HTTP_SERVER%:*}
-
 if [[ ! -d /var/log/crowbar/crowbar_join ]] ; then
   mkdir -p /var/log/crowbar/crowbar_join/
 fi
@@ -34,9 +25,8 @@ exec 2>>/var/log/crowbar/crowbar_join/errlog
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 set -x
 
-if [[ -f /etc/crowbar.install.key ]]; then
-    export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
-fi
+
+################## Functions ##################
 
 # Run a command and log its output.
 log_to() {
@@ -224,6 +214,22 @@ do_chef_client() {
         fi
     fi
 }
+
+
+################## Core ##################
+
+# This is required if the autoyast.xml had any <media_url> elements
+# containing credentials; if so, they get cached in
+# /root/.zypp/credentials.cat and so subsequent zypper runs need HOME
+# set in order to reuse them.
+export HOME=/root
+
+HTTP_SERVER="<%= @admin_ip %>:8091"
+IP=${HTTP_SERVER%:*}
+
+if [[ -f /etc/crowbar.install.key ]]; then
+    export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
+fi
 
 wait_for_network
 wait_for_hostname
