@@ -110,8 +110,6 @@ wait_for_hostname() {
 }
 
 sync_time() {
-    # stop ntpd before we run ntpdate, and start it again afterwards.
-    service ntp stop
     # Warning! Newer sntp releases use different options (e.g. the one
     # on openSUSE 12.1
     while ! sntp -P no -r $IP; do
@@ -339,6 +337,13 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     # Get our hostname
     HOSTNAME=$(hostname -f)
 
+    # stop ntpd before we run ntpdate, and start it again afterwards.
+    NTP_START=0
+    if service ntp status > /dev/null; then
+        log_to time service ntp stop
+        NTP_START=1
+    fi
+
     echo_verbose "Synchronizing time (pass 1)"
     sync_time
 
@@ -361,7 +366,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     # make sure to keep hostname
     [ "$MODE" == "setup" ] && echo $HOSTNAME > /etc/HOSTNAME
 
-    log_to time service ntp start
+    [ $NTP_START -eq 1 ] && log_to time service ntp start
     [ "$MODE" == "setup" ] && log_to chef service chef-client start
 
     [ $final_state == "ready" ] || EXVAL=1
