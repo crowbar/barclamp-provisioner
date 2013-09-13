@@ -89,12 +89,12 @@ wait_for_hostname() {
 
       tries_left=$(($tries_left-1))
       if [ $tries_left -eq 0 ]; then
-        echo "giving up... reboot"
-        reboot
-        exit 1
+        return 1
       fi
 
     done
+
+    return 0
 }
 
 sync_time() {
@@ -298,7 +298,11 @@ fi
 
 if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     wait_for_network
-    wait_for_hostname
+
+    if ! wait_for_hostname; then
+        echo "Cannot get hostname..."
+        exit 1
+    fi
 
     # Get our hostname
     HOSTNAME=$(hostname -f)
