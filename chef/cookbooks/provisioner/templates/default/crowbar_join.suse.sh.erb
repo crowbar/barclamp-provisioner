@@ -105,7 +105,10 @@ reboot_handler = RebootHandler.new
 report_handlers << reboot_handler # these fire at the end of a successful run
 EOF
 
-        # create reboot handler
+    fi # edit /etc/chef/client.rb
+
+    # create reboot handler
+    if [ ! -f /var/chef/handlers/reboot_handler.rb ]; then
         mkdir -p /var/chef/handlers
         cat > /var/chef/handlers/reboot_handler.rb <<EOF
 class RebootHandler < Chef::Handler
@@ -117,11 +120,10 @@ class RebootHandler < Chef::Handler
   end
 end
 EOF
+    fi # create reboot handler
 
-    fi # if [[ $? -eq 0 || ! -f /etc/chef/client.rb ]]
-
+    # install Chef
     if [[ ! -x /etc/init.d/chef-client ]]; then
-        # Install Chef
         echo "Installing Chef..."
 
         while ! log_to zypper zypper -n refresh ; do
@@ -134,7 +136,7 @@ EOF
         done
 
         log_to chef chkconfig -a chef-client
-    fi # if [[ ! -x /etc/init.d/chef-client ]]
+    fi # install chef
 }
 
 # Spin while we wait for the interface to come up.
