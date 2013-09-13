@@ -91,8 +91,8 @@ do_setup() {
     # "http://chef.example.com:4000" is part of the default config; if it's there,
     # we can overwrite it
     grep -q '^\s*chef_server_url\s*"http://chef.example.com:4000"' /etc/chef/client.rb 2> /dev/null
-    if [[ $? -eq 0 || ! -f /etc/chef/chef.rb ]]; then
-        test -f /etc/chef/chef.rb && mv /etc/chef/chef.rb /etc/chef/chef.rb.bak
+    if [[ $? -eq 0 || ! -f /etc/chef/client.rb ]]; then
+        test -f /etc/chef/client.rb && mv /etc/chef/client.rb /etc/chef/client.rb.bak
         echo "chef_server_url \"http://$IP:4000\"" >/etc/chef/client.rb
 
         # add reboot handler to chef-client
@@ -118,7 +118,7 @@ class RebootHandler < Chef::Handler
 end
 EOF
 
-    fi # if [[ $? -eq 0 || ! -f /etc/chef/chef.rb ]]
+    fi # if [[ $? -eq 0 || ! -f /etc/chef/client.rb ]]
 
     if [[ ! -x /etc/init.d/chef-client ]]; then
         # Install Chef
