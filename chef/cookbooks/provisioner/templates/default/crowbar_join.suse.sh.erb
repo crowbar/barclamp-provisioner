@@ -294,6 +294,8 @@ fi
 
 ################## Core ##################
 
+EXVAL=0
+
 # This is required if the autoyast.xml had any <media_url> elements
 # containing credentials; if so, they get cached in
 # /root/.zypp/credentials.cat and so subsequent zypper runs need HOME
@@ -349,6 +351,10 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
 
     log_to time service ntp start
     [ "$MODE" == "setup" ] && log_to chef service chef-client start
+
+    [ $final_state == "ready" ] || EXVAL=1
 fi # setup or start
 
 echo_verbose "Done"
+
+exit $EXVAL
