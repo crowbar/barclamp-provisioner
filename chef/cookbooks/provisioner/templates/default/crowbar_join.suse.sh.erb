@@ -171,7 +171,7 @@ do_chef_client_after_setup() {
     # the networking barclamp changing the IP address from dhcp to static.
     # We will try to pick up and run with it.
     echo "Running Chef Client (after setup)"
-    log_to chef chef-client -l debug
+    log_to chef chef-client $CHEF_CLIENT_OPTIONS
 
     # Make sure our interfaces are as up as we can get them
     echo "Ensuring that our network interfaces are up."
@@ -181,7 +181,7 @@ do_chef_client_after_setup() {
 do_chef_client() {
     # Note that we only transition to problem state if the second run fails.
     echo "Running Chef Client (pass 1)"
-    if ! log_to chef chef-client -l debug; then
+    if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
         log_to ifup /sbin/service network restart
         post_state $HOSTNAME "recovering"
         echo "Error Path"
@@ -190,7 +190,7 @@ do_chef_client() {
         echo "Removing Chef Cache"
         rm -rf /var/cache/chef/*
         echo "Running Chef Client (pass 2) - cache cleanup"
-        if ! log_to chef chef-client -l debug; then
+        if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
             log_to ifup /sbin/service network restart
             echo "Error Path"
             echo "Syncing Time"
@@ -201,7 +201,7 @@ do_chef_client() {
             rm -f /etc/chef/client.pem
             post_state $HOSTNAME "installed"
             echo "Running Chef Client (pass 3) - password cleanup"
-            if ! log_to chef chef-client -l debug; then
+            if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
                 log_to ifup /sbin/service network restart
                 echo "chef-client run failed too many times, giving up."
                 echo "Failed"
@@ -209,7 +209,7 @@ do_chef_client() {
                 final_state="problem"
             else
                 post_state "$HOSTNAME" "$final_state"
-                log_to chef chef-client -l debug
+                log_to chef chef-client $CHEF_CLIENT_OPTIONS
             fi
         fi
     fi
@@ -230,6 +230,8 @@ IP=${HTTP_SERVER%:*}
 if [[ -f /etc/crowbar.install.key ]]; then
     export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
 fi
+
+CHEF_CLIENT_OPTIONS="-l debug"
 
 wait_for_network
 wait_for_hostname
