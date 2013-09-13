@@ -224,10 +224,10 @@ usage() {
     echo "$SCRIPT -- Synchronize with Crowbar administration server"
     echo ""
     echo "Usage:"
-    echo "$SCRIPT [--setup|--start]"
+    echo "$SCRIPT [--setup|--start] [--debug]"
 }
 
-ARGS=`getopt -o "h:" -l "help,setup,start" -n "$SCRIPT" -- "$@"`
+ARGS=`getopt -o "hd:" -l "help,setup,start,debug" -n "$SCRIPT" -- "$@"`
 if test $? -ne 0; then
    usage
    exit 1
@@ -236,6 +236,7 @@ fi
 eval set -- "$ARGS"
 
 MODE=
+DEBUG=0
 
 while true; do
     case "$1" in
@@ -262,6 +263,10 @@ while true; do
             MODE="start"
             shift
             ;;
+        -d|--debug)
+            DEBUG=1
+            shift
+            ;;
     esac
 done
 
@@ -286,7 +291,10 @@ if [[ -f /etc/crowbar.install.key ]]; then
     export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
 fi
 
-CHEF_CLIENT_OPTIONS="-l debug"
+CHEF_CLIENT_OPTIONS=
+if [ "$DEBUG" -ne 0 ]; then
+    CHEF_CLIENT_OPTIONS="-l debug"
+fi
 
 if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     wait_for_network
