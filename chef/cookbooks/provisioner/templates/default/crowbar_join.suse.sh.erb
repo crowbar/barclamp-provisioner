@@ -71,6 +71,41 @@ post_state() {
   umask $oldumask
 }
 
+wait_for_network() {
+    # Spin while we wait for the interface to come up.
+    echo "Waiting on our network interface to come up..."
+    while ! ip addr | grep -v " lo" | grep -q "inet "
+    do
+      sleep 1
+    done
+}
+
+wait_for_hostname() {
+    # wait for hostname to become available
+    tries_left=120
+    while ! hostname -f > /dev/null; do
+      HOSTNAME=$(hostname -f)
+      exit_code=$?
+
+      echo $HOSTNAME
+      echo $exit_code
+      if [ $exit_code -eq 0 ]; then
+        break
+      fi
+
+      echo "sleeping 5 seconds"
+      sleep 5
+
+      tries_left=$(($tries_left-1))
+      if [ $tries_left -eq 0 ]; then
+        echo "giving up... reboot"
+        reboot
+        exit 1
+      fi
+
+    done
+}
+
 sync_time() {
     # stop ntpd before we run ntpdate, and start it again afterwards.
     service ntp stop
@@ -189,36 +224,8 @@ do_chef_client() {
     fi
 }
 
-# Spin while we wait for the interface to come up.
-echo "Waiting on our network interface to come up..."
-while ! ip addr | grep -v " lo" | grep -q "inet "
-do
-  sleep 1
-done
-
-# wait for hostname to become available
-tries_left=120
-while ! hostname -f > /dev/null; do
-  HOSTNAME=$(hostname -f)
-  exit_code=$?
-
-  echo $HOSTNAME
-  echo $exit_code
-  if [ $exit_code -eq 0 ]; then
-    break
-  fi
-
-  echo "sleeping 5 seconds"
-  sleep 5
-
-  tries_left=$(($tries_left-1))
-  if [ $tries_left -eq 0 ]; then
-    echo "giving up... reboot"
-    reboot
-    exit 1
-  fi
-
-done
+wait_for_network
+wait_for_hostname
 
 # Get our hostname
 HOSTNAME=$(hostname -f)
