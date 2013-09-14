@@ -18,7 +18,7 @@ admin_ip = node.address.addr
 domain_name = node["dns"].nil? ? node["domain"] : (node["dns"]["domain"] || node["domain"])
 Chef::Log.info("Provisioner: raw server data #{ node["crowbar"]["provisioner"]["server"]}")
 node.normal["crowbar"]["provisioner"]["server"]["address"] = admin_ip
-web_port =  node.normal["crowbar"]["provisioner"]["server"]["web_port"]
+web_port =  node["crowbar"]["provisioner"]["server"]["web_port"]
 use_local_security =  node["crowbar"]["provisioner"]["server"]["use_local_security"]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
