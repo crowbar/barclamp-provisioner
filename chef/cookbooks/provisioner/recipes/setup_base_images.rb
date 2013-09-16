@@ -423,7 +423,8 @@ node[:provisioner][:supported_oses].each do |os,params|
       mode "0644"
       source "set_state.ps1.erb"
       variables(:crowbar_key => crowbar_key,
-                :admin_ip => admin_ip)
+                :admin_ip => admin_ip,
+                :os => os)
     end
 
     # Also copy the required files to install chef-client and communicate with Crowbar
