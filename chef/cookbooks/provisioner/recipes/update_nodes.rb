@@ -220,7 +220,7 @@ if not nodes.nil? and not nodes.empty?
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
         when os =~ /^(hyperv|windows)/
-          os_dir_win = "/tftpboot/#{os}/"
+          os_dir_win = "#{tftproot}/#{os}"
           crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
           case
           when /^windows/ =~ os

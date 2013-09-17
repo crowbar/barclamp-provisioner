@@ -40,12 +40,14 @@
         "windows-6.2": {
           "initrd": " ",
           "kernel": "boot/pxeboot.0",
-          "append": " "
+          "append": " ",
+          "require_install_dir": false
         },
         "hyperv-6.2": {
           "initrd": " ",
           "kernel": "boot/pxeboot.0",
-          "append": " "
+          "append": " ",
+          "require_install_dir": false
         }
       },
       "timezone": "UTC",
