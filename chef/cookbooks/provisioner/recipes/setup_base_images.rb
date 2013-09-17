@@ -17,10 +17,13 @@
 admin_ip = node.address.addr
 domain_name = node["dns"].nil? ? node["domain"] : (node["dns"]["domain"] || node["domain"])
 Chef::Log.info("Provisioner: raw server data #{ node["crowbar"]["provisioner"]["server"]}")
-node.normal["crowbar"]["provisioner"]["server"]["address"] = admin_ip
-web_port =  node["crowbar"]["provisioner"]["server"]["web_port"]
+node.normal["crowbar"]["provisioner"]["server"]["name"]=node.name
+
+node.normal["crowbar"]["provisioner"]["server"]["proxy"]="#{node.name}:8123"
+web_port = node["crowbar"]["provisioner"]["server"]["web_port"]
 use_local_security =  node["crowbar"]["provisioner"]["server"]["use_local_security"]
-provisioner_web="http://#{admin_ip}:#{web_port}"
+provisioner_web="http://#{node.name}:#{web_port}"
+node.normal["crowbar"]["provisioner"]["server"]["webserver"]=provisioner_web
 append_line = ''
 os_token="#{node["platform"]}-#{node["platform_version"]}"
 tftproot =  node["crowbar"]["provisioner"]["server"]["root"]
@@ -53,6 +56,10 @@ unless  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
   
   if  node["crowbar"]["provisioner"]["server"]["use_serial_console"]
     append_line += " console=tty0 console=ttyS1,115200n8"
+  end
+
+  if (node["crowbar"]["network"]["admin"]["v6prefix"] rescue nil)
+    append_line += " crowbar.v6prefix=#{node["crowbar"]["network"]["admin"]["v6prefix"]}"
   end
   
   node.normal["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"] = append_line
@@ -88,25 +95,21 @@ node["crowbar"]["provisioner"]["server"]["supported_oses"].each do |os,params|
    node.normal["crowbar"]["provisioner"]["server"]["available_oses"][os] = true
 
   # Index known barclamp repositories for this OS
-  unless node["crowbar"]["provisioner"]["server"]["repositories"][os]
-    node.normal["crowbar"]["provisioner"]["server"]["repositories"][os] = Mash.new
-  end
+  node.normal["crowbar"]["provisioner"]["server"]["repositories"][os] = Mash.new
   if File.exists? "#{os_dir}/crowbar-extra" and File.directory? "#{os_dir}/crowbar-extra"
     Dir.foreach("#{os_dir}/crowbar-extra") do |f|
       next unless File.symlink? "#{os_dir}/crowbar-extra/#{f}"
-      unless node["crowbar"]["provisioner"]["server"]["repositories"][os][f]
-        node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f] = Mash.new
-      end
+      node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f] = Mash.new
       case
       when os =~ /(ubuntu|debian)/
-        bin="deb http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
-        src="deb-src http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f} /"
+        bin="deb #{provisioner_web}/#{os}/crowbar-extra/#{f} /"
+        src="deb-src #{provisioner_web}/#{os}/crowbar-extra/#{f} /"
          node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f][bin] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Packages.gz"
          node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f][src] = true if
           File.exists? "#{os_dir}/crowbar-extra/#{f}/Sources.gz"
       when os =~ /(redhat|centos|suse)/
-        bin="baseurl=http://#{admin_ip}:#{web_port}/#{os}/crowbar-extra/#{f}"
+        bin="baseurl=#{provisioner_web}/#{os}/crowbar-extra/#{f}"
          node.normal["crowbar"]["provisioner"]["server"]["repositories"][os][f][bin] = true
         else
           raise ::RangeError.new("Cannot handle repos for #{os}")
@@ -222,15 +225,15 @@ EOC
 
   case
   when (/^ubuntu/ =~ os and File.exists?("/tftpboot/#{os}/install/dists"))
-     node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+     node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "#{provisioner_web}/#{os}/install" => true }
   when /^(suse)/ =~ os
-     node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+     node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=#{provisioner_web}/#{os}/install" => true }
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     if ::File.exists? "/tftpboot/#{os}/install/repodata"
-       node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
+       node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=#{provisioner_web}/#{os}/install" => true }
     elsif ::File.exists? "/tftpboot/#{os}/install/Server/repodata"
-       node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install/Server" => true }
+       node.normal["crowbar"]["provisioner"]["server"]["repositories"][os]["base"] = { "baseurl=#{provisioner_web}/#{os}/install/Server" => true }
     end
   end
 end
@@ -284,9 +287,9 @@ template "#{node["apache"]["dir"]}/sites-available/proxy.conf" do
   variables(:port => 8123,
             :logfile => "/var/log/apache2/proxy-access_log",
             :errorlog => "/var/log/apache2/proxy-error_log",
-            :allowed_clients => ["127.0.0.1"] + node.all_addresses.map{|a|a.network.to_s}.sort,
+            :allowed_clients => ["127.0.0.1","::1"] + node.all_addresses.map{|a|a.network.to_s}.sort,
             :upstream_proxy => ( node["crowbar"]["provisioner"]["server"]["upstream_proxy"] || "" rescue ""),
-            :no_cache => "http://#{admin_ip}"
+            :no_cache => node.addresses("admin")
             )
   notifies :reload, resources(:service => "apache2")
 end
@@ -353,7 +356,7 @@ end
 
 bash "Fetch elilo 3.14" do
   code <<EOC
-export http_proxy=http://#{admin_ip}:8123
+export http_proxy=http://#{node.name}:8123
 mkdir -p #{tftproot}/files
 cd #{tftproot}/files
 curl -J -O 'http://sourceforge.net/projects/elilo/files/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
@@ -379,10 +382,10 @@ end
 template "/updates/control.sh" do
   source "control.sh.erb"
   mode "0755"
-  variables(
-            :provisioner_ip => admin_ip,
-            :online =>  node["crowbar"]["provisioner"]["server"]["online"],
+  variables(:provisioner_name => node.name,
+            :online => node["crowbar"]["provisioner"]["server"]["online"],
             :provisioner_web => provisioner_web,
-            :proxy => "http://#{admin_ip}:8123"
+            :proxy => node["crowbar"]["provisioner"]["server"]["proxy"],
+            :v4_addr => node.address("admin",IP::IP4).addr
             )
 end
