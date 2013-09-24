@@ -34,13 +34,6 @@ crowbar:
   order: 10
 
 roles:
-  - name: provisioner-base
-    jig: chef
-    requires:
-      - network-admin
-      - provisioner-server
-    flags:
-      - discovery
   - name: provisioner-server
     jig: chef
     requires:
