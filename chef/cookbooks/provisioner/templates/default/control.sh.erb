@@ -17,65 +17,108 @@
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
-ADMIN_IP=<%=@provisioner_ip%>
-http_proxy="<%=@proxy%>"
-https_proxy="$http_proxy"
+if [[ $PWD != /tmp ]]; then
+    cd /tmp
+    exec ./control.sh
+fi
 
-if [ ! -f /etc/SuSE-release ]
-then
-  # HACK fix for chef-client
-  if [ -e /root/rest-client*gem ]
-  then
-    pushd /root
-    gem install --local rest-client
-    popd
-  fi
+exec >>/tmp/control.log
+exec 2>>/tmp/control.log
+set -x
+shopt -s extglob
+export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 
-  # Other gem dependency installs.
-  cat > /etc/gemrc <<EOF
+export http_proxy="http://<%=@proxy%>"
+export https_proxy="$http_proxy"
+provisioner="<%=@provisioner_web%>"
+crowbar="http://<%=@provisioner_name%>:3000"
+crowbar_v4="http://<%=@v4_addr%>:3000"
+host_re='crowbar\.fqdn=([^ ]+)'
+v6prefix_re='crowbar\.v6prefix=([^ ]+)'
+
+# Get our passed-in hostname
+if ! [[ $(cat /proc/cmdline) =~ $host_re ]]; then
+    NEED_CREATE=true
+    HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+else
+    HOSTNAME="${BASH_REMATCH[1]}"
+fi
+
+sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+if [[ -f /etc/sysconfig/network ]]; then
+    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
+fi
+echo "${HOSTNAME#*.}" >/etc/domainname
+hostname "$HOSTNAME"
+
+# Our first two curl calls need ot happen over IPv4,
+# because that is all we are guaranteed to have at that point.
+if [[ $NEED_CREATE ]]; then
+    curl -g --digest -u "$CROWBAR_KEY" -X POST \
+        -d "name=$HOSTNAME" \
+        "$crowbar_v4/api/v2/nodes/"
+fi
+
+# Ditch NFS for now.
+umount -l /install-logs/
+umount -l /updates
+
+ip_re='([0-9a-f.:]+/[0-9]+)'
+# Figure out what IP addresses we should have.
+netline=$(curl -g --digest -u "$CROWBAR_KEY" \
+    -X GET "$crowbar_v4/network/api/v2/networks/admin/allocations" \
+    -d "node=$HOSTNAME")
+
+# Bye bye to DHCP.
+killall dhclient
+ip addr flush "$BOOTDEV"
+
+# Add our new IP addresses.
+nets=(${netline//,/ })
+for net in "${nets[@]}"; do
+    [[ $net =~ $ip_re ]] || continue
+    net=${BASH_REMATCH[1]}
+    # Make this more complicated and exact later.
+    ip addr add "$net" dev "$BOOTDEV" || :
+    echo "${net%/*} $FQDN" >> /etc/hosts
+done
+
+# Synchronize our date
+ntpdate "<%=@provisioner_name%>"
+
+# Other gem dependency installs.
+cat > /etc/gemrc <<EOF
 :sources:
 <% if @online -%>
 - http://rubygems.org/
 <% end -%>
-- http://$ADMIN_IP:<%=@provisioner_port%>/gemsite/
-gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy <%=@proxy%>
+- ${provisioner}/gemsite/
+gem: --no-ri --no-rdoc --bindir /usr/local/bin --http-proxy $http_proxy
 EOF
-  gem install rest-client
-  gem install xml-simple
-  gem install libxml-ruby
-  gem install net-http-digest_auth
-  gem install json
-  gem install wsman
-  gem install cstruct
-fi
+gem install rest-client
+gem install xml-simple
+gem install libxml-ruby
+gem install net-http-digest_auth
+gem install wsman
+gem install cstruct
 
-[[ $DEBUG ]] && set -x
-if [[ ! $IN_CONTROL_SH ]]; then
-    # Get our passed-in hostname
-    HOSTNAME=$(grep -o -E 'crowbar\.fqdn=[^ ]+' /proc/cmdline)
-    if [[ ! $HOSTNAME ]]; then
-        # We did not get handed a hostname.
-        # Create one based on the MAC we booted from, and
-        # create a new host entry based off it.
-        HOSTNAME="d${MAC//:/-}.${DOMAIN}"
-        if [[ ! -d /updates/$HOSTNAME ]]; then
-            curl --digest -u "$CROWBAR_KEY" -X POST \
-                -d "name=$HOSTNAME" \
-                http://$ADMIN_IP:3000/api/v2/nodes/
-        fi
-    fi
-    sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
-    if [[ -f /etc/sysconfig/network ]]; then
-        sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
-    fi
-    echo "${HOSTNAME#*.}" >/etc/domainname
-    hostname "$HOSTNAME"
+# Get the "right" version of Chef.  Eventually we should not hardcode this.
+[[ -f /tmp/chef-11.6.0-1.el6.x86_64.rpm ]] || (
+    cd /tmp
+    curl -g -O "$provisioner/files/chef-11.6.0-1.el6.x86_64.rpm"
+    rpm -Uvh ./chef-11.6.0-1.el6.x86_64.rpm
+)
 
-    IN_CONTROL_SH=true
-    export HOSTNAME IN_CONTROL_SH
-    exec script -a -f -c "$0 $@" /install-logs/$HOSTNAME-control.log
-fi
+# Mark us as alive.
+# Mark the node as alive.
+curl -g --digest -u "$CROWBAR_KEY" \
+    -X PUT "$crowbar/api/v2/nodes/$HOSTNAME" \
+    -d 'alive=true'
 
+# We are alive, and we should have a host entry created now.  Wait forever to do something.
+exit 0
+
+# The rest of this will vanish once we migrate over to driving these via the script jig
 MYINDEX=${MYIP##*.}
 DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
 DHCP_STATE=${DHCP_STATE#*=}
@@ -100,12 +143,6 @@ do
   sleep 1
 done
 
-#
-# rely on the DHCP server to do the right thing
-# Stick with this address until we get finished.
-#
-killall dhclient
-killall dhclient3
 
 # Add full code set
 if [ -e /updates/full_data.sh ] ; then

@@ -21,15 +21,13 @@ end
 
 repositories = (node[:crowbar][:provisioner][:server][:repositories][os_token] || Hash.new rescue Hash.new)
 
-web_port = node[:crowbar][:provisioner][:server][:web_port]
-address = node[:crowbar][:provisioner][:server][:address]
-proxy = "http://#{address}:8123/"
 online = node[:crowbar][:provisioner][:server][:online] rescue nil
+proxy = node[:crowbar][:provisioner][:server][:proxy]
+webserver = node[:crowbar][:provisioner][:server][:webserver]
 
 template "/etc/gemrc" do
   variables(:online => online,
-            :admin_ip => address,
-            :web_port => web_port,
+            :webserver => webserver,
             :proxy => proxy)
 end
 
@@ -81,7 +79,7 @@ when "redhat","centos"
     action :nothing
   end
   bash "add yum proxy" do
-    code "echo proxy=#{proxy} >> /etc/yum.conf"
+    code "echo proxy=http://#{proxy} >> /etc/yum.conf"
     not_if "grep -q '^proxy=http' /etc/yum.conf"
   end
   bash "Disable fastestmirror plugin" do
@@ -93,6 +91,11 @@ when "redhat","centos"
     not_if "test -f /etc/yum.repos.d/CentOS-Base.repo"
     notifies :create, "file[/tmp/.repo_update]", :immediately
   end if online && (node[:platform] == "centos")
+  template "/etc/yum.repos.d/crowbar-base.repo" do
+    source "yum-base.repo.erb"
+    variables(:os_token => os_token, :webserver => webserver)
+    notifies :create, "file[/tmp/.repo_update]", :immediately
+  end
   repositories.each do |repo,urls|
     case
     when repo =~ /.*_online/
@@ -113,7 +116,7 @@ when "redhat","centos"
         bash "fetch /var/cache/#{file}" do
           not_if "test -f '/var/cache/#{file}'"
           code <<EOC
-export http_proxy=http://#{address}:8123
+export http_proxy=http://#{proxy}
 curl -o '/var/cache/#{file}' -L '#{url}'
 rpm -Uvh '/var/cache/#{file}'
 EOC
