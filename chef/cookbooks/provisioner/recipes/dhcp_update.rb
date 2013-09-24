@@ -1,5 +1,5 @@
 domain_name = (node[:crowbar][:dns][:domain] || node[:domain] rescue node[:domain])
-admin_ip = node.address.addr
+admin_ip = node.address("admin",IP::IP4).addr
 admin_net = node[:crowbar][:network][:admin]
 lease_time = node[:crowbar][:provisioner][:server][:dhcp][:lease_time]
 net_pools = admin_net["ranges"].select{|range|["dhcp","host"].include? range["name"]}
@@ -23,7 +23,7 @@ dhcp_subnet IP.coerce(net_pools[0]["first"]).network do
   pools net_pools
   pool_options pool_opts
   options [ "option domain-name \"#{domain_name}\"",
-            "option domain-name-servers #{admin_ip}",
+            "option domain-name-servers #{node.address("admin",IP::IP4).addr}",
             "default-lease-time #{lease_time}",
-            "max-lease-time #{lease_time}"]
+            "max-lease-time #{lease_time * 3}"]
 end

@@ -62,7 +62,7 @@ EOH
 end
 
 intfs = [node.interface.name]
-address = node.address.addr
+address = node.address("admin",IP::IP4).addr
 
 d_opts = node[:dhcp][:options]
 

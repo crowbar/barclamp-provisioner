@@ -7,12 +7,18 @@
 
            <IfModule mod_disk_cache.c>
                    CacheRoot /var/cache/apache2/
-                   CacheEnable disk http://
+                   CacheEnable disk /
                    CacheDirLevels 3
                    CacheDirLength 2
                    CacheMinFileSize 512
            </IfModule>
-           CacheDisable <%= @no_cache %>
+           <% @no_cache.each do |addr| -%>
+           <% if addr.v6? -%>
+           CacheDisable <%= "http://[#{addr}]" %>
+           <% else -%>
+           CacheDisable <%= "http://#{addr}" %>
+           <% end -%>
+           <% end -%>
     </IfModule>
 
     ErrorLog <%= @errorlog %>
