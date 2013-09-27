@@ -259,9 +259,12 @@ node[:provisioner][:supported_oses].each do |os,params|
   append = params["append"]
   initrd = params["initrd"]
   kernel = params["kernel"]
+  require_install_dir = params["require_install_dir"].nil? ? true : params["require_install_dir"]
 
-  # Don't bother for OSes that are not actaully present on the provisioner node.
-  next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+  if require_install_dir
+    # Don't bother for OSes that are not actually present on the provisioner node.
+    next unless File.directory? os_dir and File.directory? "#{os_dir}/install"
+  end
 
   # Index known barclamp repositories for this OS
   node[:provisioner][:repositories][os] ||= Mash.new
@@ -364,8 +367,33 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   when /^(hyperv|windows)/ =~ os
 
+    directory "#{tftproot}/adk-tools" do
+      recursive true
+      mode 0755
+      owner "root"
+      group "root"
+      action :create
+    end
+
+    template "#{tftproot}/adk-tools/build_winpe_#{os}.ps1" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "build_winpe_os.ps1.erb"
+      variables(:os => os,
+                :admin_ip => admin_ip)
+    end
+
+    directory "#{os_dir}/extra" do
+      recursive true
+      mode 0755
+      owner "root"
+      group "root"
+      action :create
+    end
+
     # Copy the crowbar_join script
-    cookbook_file "/tftpboot/windows-6.2/extra/crowbar_join.ps1" do
+    cookbook_file "#{os_dir}/extra/crowbar_join.ps1" do
       owner "root"
       group "root"
       mode "0644"
@@ -374,7 +402,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
     # Copy the script required for setting the hostname
-    cookbook_file "/tftpboot/windows-6.2/extra/set_hostname.ps1" do
+    cookbook_file "#{os_dir}/extra/set_hostname.ps1" do
       owner "root"
       group "root"
       mode "0644"
@@ -382,15 +410,32 @@ node[:provisioner][:supported_oses].each do |os,params|
       source "set_hostname.ps1"
     end
 
+    if ::File.exists?("/etc/crowbar.install.key")
+      crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
+    else
+      crowbar_key = ""
+    end
+
+    # Copy the script required for setting the installed state
+    template "#{os_dir}/extra/set_state.ps1" do
+      owner "root"
+      group "root"
+      mode "0644"
+      source "set_state.ps1.erb"
+      variables(:crowbar_key => crowbar_key,
+                :admin_ip => admin_ip,
+                :os => os)
+    end
+
     # Also copy the required files to install chef-client and communicate with Crowbar
-    cookbook_file "/tftpboot/windows-6.2/extra/chef-client-11.4.4-2.windows.msi" do
+    cookbook_file "#{os_dir}/extra/chef-client-11.4.4-2.windows.msi" do
       owner "root"
       group "root"
       mode "0644"
       action :create
       source "chef-client-11.4.4-2.windows.msi"
     end
-    cookbook_file "/tftpboot/windows-6.2/extra/curl.exe" do
+    cookbook_file "#{os_dir}/extra/curl.exe" do
       owner "root"
       group "root"
       mode "0644"

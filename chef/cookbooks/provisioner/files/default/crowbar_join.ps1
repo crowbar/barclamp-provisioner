@@ -159,7 +159,7 @@ if (-not (Test-Path -Path $ChefConfigFile))
   $domain = (Get-ItemProperty "HKLM:\SOFTWARE\Crowbar" -Name Domain).Domain
   Add-Content -Path "$CrowbarLogFile" -Value "$(Get-Date): Creating chef config file"
   Add-Content $ChefConfigFile "log_level :debug"
-  Add-Content $ChefConfigFile "node_name `""+$hostname+"."+$domain+"`""
+  Add-Content $ChefConfigFile ("node_name `""+$hostname+"."+$domain+"`"").ToString()
   Add-Content $ChefConfigFile ("log_location `""+$CrowbarLogsFolder.Replace("\","/")+"/chef_client.log`"").ToString()
   Add-Content $ChefConfigFile "chef_server_url $ChefServerURL"
   Add-Content $ChefConfigFile "validation_key `"$ChefServerCertificate`""

@@ -1,0 +1,2 @@
+$script_dir = Split-Path -Parent $MyInvocation.MyCommand.Path
+powershell -ExecutionPolicy Bypass $script_dir\build_winpe.ps1 -UseCrowbar -CrowbarAdminIP "<%= @admin_ip %>" -CrowbarFolder "<%= @os %>"
