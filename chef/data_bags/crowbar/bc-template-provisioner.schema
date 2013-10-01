@@ -54,8 +54,8 @@
                           "type": "map",
                           "required": false,
                           "mapping": {
-                            "url":          { "type": "str", "required": false },
-                            "ask_on_error": { "type": "str", "required": false }
+                            "url":          { "type": "str",  "required": false },
+                            "ask_on_error": { "type": "bool", "required": false }
                           }
                         }
                       }
