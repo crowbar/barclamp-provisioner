@@ -72,7 +72,10 @@ node["provisioner"]["access_keys"].strip.split("\n").each do |key|
 end
 
 # Find provisioner servers and include them.
+provisioner_server_node = nil
 search(:node, "roles:provisioner-server AND provisioner_config_environment:#{node[:provisioner][:config][:environment]}") do |n|
+  provisioner_server_node = n if provisioner_server_node.nil?
+
   pkey = n["crowbar"]["ssh"]["root_pub_key"] rescue nil
   if !pkey.nil? and pkey != node["crowbar"]["ssh"]["access_keys"][n.name]
     node.set["crowbar"]["ssh"]["access_keys"][n.name] = pkey
@@ -182,3 +185,47 @@ cookbook_file config_file do
   source "chef-client"
 end
 
+# On SUSE: install crowbar_join properly, with init script
+if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
+  admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(provisioner_server_node, "admin").address
+  template "/usr/sbin/crowbar_join" do
+    mode 0755
+    owner "root"
+    group "root"
+    source "crowbar_join.suse.sh.erb"
+    variables(:admin_ip => admin_ip)
+  end
+
+  cookbook_file "/etc/init.d/crowbar_join" do
+    owner "root"
+    group "root"
+    mode "0755"
+    action :create
+    source "crowbar_join.init.suse"
+  end
+
+  link "/usr/sbin/rccrowbar_join" do
+    action :create
+    to "/etc/init.d/crowbar_join"
+    not_if "test -L /usr/sbin/rccrowbar_join"
+  end
+
+  bash "Enable crowbar service" do
+    code "/sbin/chkconfig crowbar_join on"
+    not_if "/sbin/chkconfig crowbar_join | grep -q on"
+  end
+
+  cookbook_file "/etc/logrotate.d/crowbar_join" do
+    owner "root"
+    group "root"
+    mode "0644"
+    source "crowbar_join.logrotate.suse"
+    action :create
+  end
+
+  # remove old crowbar_join.sh file
+  file "/etc/init.d/crowbar_join.sh" do
+    action :delete
+    only_if "test -f /etc/init.d/crowbar_join.sh"
+  end
+end
