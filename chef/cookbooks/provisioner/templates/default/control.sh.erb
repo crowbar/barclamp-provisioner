@@ -100,7 +100,6 @@ for net in "${nets[@]}"; do
 done
 
 mv -f /etc/resolv.conf.new /etc/resolv.conf
-chattr +i /etc/resolv.conf
 
 # Force reliance on DNS
 echo '127.0.0.1 localhost' >/etc/hosts
