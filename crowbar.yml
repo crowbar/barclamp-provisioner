@@ -43,6 +43,7 @@ roles:
       - ntp-server
     flags:
       - bootstrap
+      - server
   - name: provisioner-repos
     jig: chef
     requires:
