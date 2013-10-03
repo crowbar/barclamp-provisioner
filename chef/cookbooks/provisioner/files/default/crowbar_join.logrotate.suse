@@ -1,0 +1,12 @@
+# Managed by Crowbar
+# Do not edit
+
+/var/log/crowbar/crowbar_join/*.log /var/log/crowbar/crowbar_join/*.err /var/log/crowbar/crowbar_join/errlog {
+    weekly
+    rotate 10
+    size 1M
+    compress
+    delaycompress
+    missingok
+    notifempty
+}

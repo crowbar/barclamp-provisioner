@@ -123,8 +123,8 @@ else
     rm -f /mnt/root/.ssh/authorized_keys.wget
 fi
 
-curl -s -o /mnt/etc/init.d/crowbar_join.sh <%= @crowbar_join %>
-chmod +x /mnt/etc/init.d/crowbar_join.sh
+curl -s -o /mnt/usr/sbin/crowbar_join <%= @crowbar_join %>
+chmod +x /mnt/usr/sbin/crowbar_join
 
 mkdir -p /mnt/var/log/crowbar
 post_state $HOSTNAME "installed"
@@ -138,8 +138,11 @@ sync
     </chroot-scripts>
     <init-scripts config:type="list">
       <script>
-        <filename>crowbar_join</filename>
-        <location>file:///etc/init.d/crowbar_join.sh</location>
+        <source>
+<![CDATA[
+/usr/sbin/crowbar_join --setup --debug --verbose
+]]>
+        </source>
       </script>
     </init-scripts>
   </scripts>

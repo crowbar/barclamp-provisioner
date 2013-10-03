@@ -1,0 +1,43 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          crowbar
+# Required-Start:    $syslog $network $remote_fs sshd
+# Should-Start:      
+# Required-Stop:     $syslog $network $remote_fs sshd
+# Should-Stop:       
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+# Short-Description: Synchronize with Crowbar administration server
+# Description:       Synchronize with Crowbar administration server
+### END INIT INFO
+
+# Note: the sshd dependency is there to make it possible to log in while
+# crowbar_join is running (in case it's hanging).
+
+PROGNAME="crowbar_join"
+
+. /etc/rc.status
+
+rc_reset
+
+case "$1" in
+    start)
+	echo -n "Starting $PROGNAME "
+        /usr/sbin/crowbar_join --start
+	rc_status -v
+	;;
+    stop)
+	echo -n "Shutting down $PROGNAME "
+        /usr/sbin/crowbar_join --stop
+	rc_status -v
+	;;
+    try-restart|restart|force-reload|reload|status)
+        echo "not implemented"
+        rc_status -s
+        ;;
+    *)
+	echo "Usage: $0 {start|stop|status|try-restart|restart|force-reload|reload}"
+	exit 1
+	;;
+esac
+rc_exit
