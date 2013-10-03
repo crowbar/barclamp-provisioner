@@ -43,10 +43,12 @@ roles:
       - ntp-server
     flags:
       - bootstrap
+      - server
   - name: provisioner-repos
     jig: chef
     requires:
       - network-admin
+      - dns-client
       - provisioner-server
     flags:
       - discovery
