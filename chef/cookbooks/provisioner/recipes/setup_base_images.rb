@@ -442,6 +442,13 @@ node[:provisioner][:supported_oses].each do |os,params|
       action :create
       source "curl.exe"
     end
+    cookbook_file "#{os_dir}/extra/curl.COPYING" do
+      owner "root"
+      group "root"
+      mode "0644"
+      action :create
+      source "curl.COPYING"
+    end
 
   end
 
