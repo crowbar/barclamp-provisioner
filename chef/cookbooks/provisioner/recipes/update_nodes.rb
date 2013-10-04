@@ -13,275 +13,217 @@
 # limitations under the License.
 #
 
-# Update_nodes will need a massive rework to work with CB 2.0
-# For now, it does nothing.
-return
-
-admin_ip = node.address.addr
-domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
-web_port = node[:provisioner][:web_port]
-use_local_security = node[:provisioner][:use_local_security]
-provisioner_web="http://#{admin_ip}:#{web_port}"
+domain_name = node["crowbar"]["dns"]["domain"]
+web_port = node["crowbar"]["provisioner"]["server"]["web_port"]
+use_local_security = node["crowbar"]["provisioner"]["server"]["use_local_security"]
+provisioner_web=node["crowbar"]["provisioner"]["server"]["webserver"]
+provisioner_addr = node["crowbar"]["provisioner"]["server"]["v4addr"]
+proxy=node["crowbar"]["provisioner"]["server"]["proxy"]
 os_token="#{node[:platform]}-#{node[:platform_version]}"
-tftproot = node[:provisioner][:root]
+tftproot = node["crowbar"]["provisioner"]["server"]["root"]
 discover_dir="#{tftproot}/discovery"
 pxecfg_dir="#{discover_dir}/pxelinux.cfg"
 uefi_dir=discover_dir
 pxecfg_default="#{pxecfg_dir}/default"
-nodes = search(:node, "*:*")
-Chef::Log.info("Node ount = #{nodes.length}")
-if not nodes.nil? and not nodes.empty?
-  nodes.map{|n|Node.load(n.name)}.each do |mnode|
-    Chef::Log.info("Testing if #{mnode[:fqdn]} needs a state transition")
-    if mnode[:state].nil?
-      Chef::Log.info("#{mnode[:fqdn]} has no current state!")
-      next
-    end
-    new_group = mnode[:provisioner_state]
+node.normal["crowbar_wall"] ||= Mash.new
+node.normal["crowbar_wall"]["dhcp"] ||= Mash.new
+node.normal["crowbar_wall"]["dhcp"]["clients"] ||= Mash.new
+new_clients = {}
 
-    if new_group.nil?
-      Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
-      next
+(node["crowbar"]["dhcp"]["clients"] || {} rescue {}).each do |mnode_name,dhcp_info|
+  # Build DHCP, PXE, and ELILO config files for each system
+  v4addr = IP.coerce(dhcp_info["v4addr"])
+  nodeaddr = sprintf("%X",v4addr.address)
+  bootenv = dhcp_info["bootenv"]
+  mac_list = dhcp_info["mac_addresses"]
+  pxefile = "#{pxecfg_dir}/#{nodeaddr}"
+  uefifile = "#{uefi_dir}/#{nodeaddr}.conf"
+  new_clients[mnode_name] = {
+    "v4addr" => dhcp_info["v4addr"],
+    "nodeaddr" => nodeaddr,
+    "mac_addresses" => mac_list,
+    "pxefile" => pxefile,
+    "uefifile" => uefifile
+  }
+  Chef::Log.info("DHCP: #{mnode_name} Updating PXE and UEFI boot for bootenv #{bootenv}")
+  # Default to creating appropriate boot config files for Sledgehammer.
+  case
+  when bootenv == "sledgehammer"
+    provisioner_bootfile bootenv do
+      kernel_params "#{node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]} crowbar.fqdn=#{mnode_name}"
+      address v4addr
+      action :add
     end
-    Chef::Log.info("#{mnode[:fqdn]} transitioning to group #{new_group}")
-
-    mac_list = []
-    mnode["network"]["interfaces"].each do |net, net_data|
-      net_data.each do |field, field_data|
-        next if field != "addresses" 
-        field_data.each do |addr, addr_data|
-          next if addr_data["family"] != "lladdr"
-          Chef::Log.info("#{mnode.name}: #{net}: #{addr}")
-          mac_list << addr unless mac_list.include? addr
-        end
-      end
+  when bootenv == "local"
+    provisioner_bootfile bootenv do
+      address v4addr
+      action :remove
     end
-    mac_list.sort!
-    # Build DHCP, PXE, and ELILO config files for each system
-    nodeaddr = sprintf("%X",mnode.address("admin",IP::IP4).address)
-    pxefile = "#{pxecfg_dir}/#{nodeaddr}"
-    uefifile = "#{uefi_dir}/#{nodeaddr}.conf"
-    if new_group == "reset" or new_group == "delete"
-      Chef::Log.info("Deleting config for #{mnode.name}")
-      # Kill DHCP config and netboot configs for this system.
-      mac_list.each_index do |idx|
-        Chef::Log.info("Deleting DHCP config for #{mnode.name}-#{idx}")
-        dhcp_host "#{mnode.name}-#{idx}" do
-          hostname mnode.name
-          ipaddress "0.0.0.0"
-          macaddress mac_list[idx]
-          action :remove
-        end
-      end
-      [ pxefile,uefifile ].each do |f|
-        Chef::Log.info("Deleting netboot info for #{mnode.name}: #{f}")
-        file f do
-          action :delete
-        end
-      end
-    elsif mnode.address("admin",IP::IP4)
-      # Make our DHCP config for this system.
-      mac_list.each_index do |idx|
-        if new_group == "execute"
-          dhcp_opts = []
-        else
-          dhcp_opts = [
-                     '  if option arch = 00:06 {
+  else
+    Chef::Log.info("Not messing with boot files for bootenv #{bootenv}")
+  end
+  # Create pxe and uefi netboot files.
+  # We always need our FQDN.
+  mac_list.each_index do |idx|
+    if bootenv == "local"
+      dhcp_opts = []
+    else
+      dhcp_opts = [
+                   '  if option arch = 00:06 {
       filename = "discovery/bootia32.efi";
    } else if option arch = 00:07 {
       filename = "discovery/bootx64.efi";
    } else {
       filename = "discovery/pxelinux.0";
    }',
-                     "next-server #{admin_ip}"]
-        end
-        dhcp_host "#{mnode.name}-#{idx}" do
-          hostname mnode.name
-          ipaddress mnode.address.addr
-          macaddress mac_list[idx]
-          options dhcp_opts
-          action :add
-        end
-      end
-      case
-      when ["discovery","update","hwinstall","debug"].member?(new_group)
-        append_line = node[:provisioner][:sledgehammer_kernel_params]
-        append_line << " crowbar.fqdn=#{mnode.fqdn}"
-        # Generate the appropriate pxe config file for discovery and execute.
-        template pxefile do
-          mode 0644
-          owner "root"
-          group "root"
-          source "default.erb"
-          variables(:append_line => "#{append_line} crowbar.state=#{new_group}",
-                    :install_name => new_group,
-                    :initrd => "initrd0.img",
-                    :kernel => "vmlinuz0")
-        end
-        template uefifile do
-          mode 0644
-          owner "root"
-          group "root"
-          source "default.elilo.erb"
-          variables(:append_line => "#{append_line} crowbar.state=#{new_group}",
-                    :install_name => new_group,
-                    :initrd => "initrd0.img",
-                    :kernel => "vmlinuz0")
-        end
-      when new_group =~ /.*_install$/
-        os = new_group.split('_')[0]
-        web_path = "#{provisioner_web}/#{os}"
-        admin_web="#{web_path}/install"
-        crowbar_repo_web="#{web_path}/crowbar-extra"
-        os_dir="#{tftproot}/#{os}"
-        os_codename=node[:lsb][:codename]
-        params = node[:provisioner][:boot_specs][os]
-        append_line = "crowbar.fqdn=#{mnode.fqdn}"
-        if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
-          append_line << " BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':','-')}"
-        end
-        # These should really be made libraries or something.
-        case
-        when /^(suse)/ =~ os
-          template "#{os_dir}/#{mnode.name}.xml" do
-            mode 0644
-            source "autoyast.xml.erb"
-            owner "root"
-            group "root"
-            variables(:admin_node_ip => admin_ip,
-                      :name => mnode.name,
-                      :web_port => web_port,
-                      :repos => node[:provisioner][:repositories][os],
-                      :admin_web => admin_web,
-                      :crowbar_join => "#{web_path}/crowbar_join.sh")
-          end
-          template "#{os_dir}/crowbar_join.sh" do
-            mode 0644
-            owner "root"
-            group "root"
-            source "crowbar_join.suse.sh.erb"
-            variables(:admin_ip => admin_ip)
-          end
-          append_line << " autoyast=#{web_path}/#{mnode.name}.xml"
-        when /^(redhat|centos)/ =~ os
-          # Default kickstarts and crowbar_join scripts for redhat.
-          template "#{os_dir}/#{mnode.name}.ks" do
-            mode 0644
-            source "compute.ks.erb"
-            owner "root"
-            group "root"
-            variables(:admin_node_ip => admin_ip,
-                      :web_port => web_port,
-                      :name => mnode.name,
-                      :online => node[:provisioner][:online],
-                      :proxy => "http://#{node.address.addr}:8123/",
-                      :provisioner_web => provisioner_web,
-                      :repos => node[:provisioner][:repositories][os],
-                      :admin_web => admin_web,
-                      :os_install_site => params[:os_install_site],
-                      :crowbar_join => "#{web_path}/crowbar_join.sh")
-          end
-          template "#{os_dir}/crowbar_join.sh" do
-            mode 0644
-            owner "root"
-            group "root"
-            source "crowbar_join.redhat.sh.erb"
-            variables(:os_codename => os_codename,
-                      :crowbar_repo_web => crowbar_repo_web,
-                      :admin_ip => admin_ip,
-                      :provisioner_web => provisioner_web,
-                      :web_path => web_path)
-          end
-          append_line << " ks=#{web_path}/#{mnode.name}.ks ksdevice=bootif"
-        when /^ubuntu/ =~ os
-          # Default files needed for Ubuntu.
-          template "#{os_dir}/#{mnode.name}.seed" do
-            mode 0644
-            owner "root"
-            group "root"
-            source "net_seed.erb"
-            variables(:install_name => os,
-                      :name => mnode.name,
-                      :cc_use_local_security => use_local_security,
-                      :os_install_site => params[:os_install_site],
-                      :online => node[:provisioner][:online],
-                      :provisioner_web => provisioner_web,
-                      :web_path => web_path,
-                      :proxy => "http://#{node.address.addr}:8123/")
-          end
-          template "#{os_dir}/#{mnode.name}-post-install.sh" do
-            mode 0644
-            owner "root"
-            group "root"
-            source "net-post-install.sh.erb"
-            variables(:admin_web => admin_web,
-                      :os_codename => os_codename,
-                      :repos => node[:provisioner][:repositories][os],
-                      :admin_ip => admin_ip,
-                      :online => node[:provisioner][:online],
-                      :provisioner_web => provisioner_web,
-                      :proxy => "http://#{node.address.addr}:8123/",
-                      :web_path => web_path)
-          end
-          template "#{os_dir}/crowbar_join.sh" do
-            mode 0644
-            owner "root"
-            group "root"
-            source "crowbar_join.ubuntu.sh.erb"
-            variables(:admin_web => admin_web,
-                      :os_codename => os_codename,
-                      :crowbar_repo_web => crowbar_repo_web,
-                      :admin_ip => admin_ip,
-                      :provisioner_web => provisioner_web,
-                      :web_path => web_path)
-          end
-          append_line << " url=#{web_path}/#{mnode.name}.seed netcfg/get_hostname=#{mnode.name}"
-        end
-
-        # Create the pxe linux config for this OS.
-        template pxefile do
-          mode 0644
-          owner "root"
-          group "root"
-          source "default.erb"
-          variables(:append_line => "#{params[:kernel_params]} #{append_line}",
-                    :install_name => os,
-                    :initrd => params[:initrd],
-                    :kernel => params[:kernel])
-      end
-
-        template uefifile do
-          mode 0644
-          owner "root"
-          group "root"
-          source "default.elilo.erb"
-          variables(:append_line => "#{params[:kernel_params]} #{append_line}",
-                    :install_name => os,
-                    :initrd => params[:initrd],
-                    :kernel => params[:kernel])
-        end
-      when new_group == "execute"
-        append_line = node[:provisioner][:sledgehammer_kernel_params]
-        cookbook_file pxefile do
-          mode 0644
-          owner "root"
-          group "root"
-          source "localboot.default"
-        end
-
-        # If we ever netboot through UEFI for the execute state, then something went wrong.
-        # Drop the node into debug state intead.
-        template uefifile do
-          mode 0644
-          owner "root"
-          group "root"
-          source "default.elilo.erb"
-          variables(:append_line => "#{append_line} crowbar.state=debug",
-                    :install_name => "debug",
-                    :initrd => "initrd0.img",
-                    :kernel => "vmlinuz0")
-        end
-      end
+                   "next-server #{provisioner_addr}"]
+    end
+    dhcp_host "#{mnode_name}-#{idx}" do
+      hostname mnode_name
+      ipaddress v4addr.addr
+      macaddress mac_list[idx]
+      options dhcp_opts
+      action :add
     end
   end
+end
+
+# Now that we have handled any updates we care about, delete any info about nodes we have deleted.
+(node["crowbar_wall"]["dhcp"]["clients"].keys - new_clients.keys).each do |old_node_name|
+  old_node = node["crowbar_wall"]["dhcp"]["clients"][old_node_name]
+  mac_list = old_node["mac_addresses"]
+  mac_list.each_index do |idx|
+    a = dhcp_host "#{old_node_name}-#{idx}" do
+      hostname old_node_name
+      ipaddress "0.0.0.0"
+      macaddress mac_list[idx]
+      action :nothing
+    end
+    a.run_action(:remove)
+  end
+  a = provisioner_bootfile old_node["bootenv"] do
+    action :nothing
+    address IP.coerce(old_node["v4addr"])
+  end
+  a.run_action(:remove)
+end
+node.normal["crowbar_wall"]["dhcp"]["clients"]=new_clients
+
+return
+
+# OS install special-casing.
+# This really needs to be outsourced to its own roles or providers or something.
+case
+when bootenv =~ /.*_install$/
+  os = bootenv.split('_')[0]
+  web_path = "#{provisioner_web}/#{os}"
+  admin_web="#{web_path}/install"
+  crowbar_repo_web="#{web_path}/crowbar-extra"
+  os_dir="#{tftproot}/#{os}" /
+    params = node["crowbar"]["provisioner"]["server"]["boot_specs"][os]
+  # I need to think about this.
+  #if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
+  #  append_line << " BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':','-')}"
+  #end
+  # These should really be made libraries or something.
+  case
+  when /^(suse)/ =~ os
+    template "#{os_dir}/#{mnode_name}.xml" do
+      mode 0644
+      source "autoyast.xml.erb"
+      owner "root"
+      group "root"
+      variables(:admin_node_ip => provisioner_addr,
+                :name => mnode_name,
+                :web_port => web_port,
+                :repos => node["crowbar"]["provisioner"]["server"]["repositories"][os],
+                :admin_web => admin_web,
+                :crowbar_join => "#{web_path}/crowbar_join.sh")
+    end
+    template "#{os_dir}/crowbar_join.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "crowbar_join.suse.sh.erb"
+      variables(:admin_ip => provisioner_addr)
+    end
+    append_line = "autoyast=#{web_path}/#{mnode_name}.xml"
+  when /^(redhat|centos)/ =~ os
+    # Default kickstarts and crowbar_join scripts for redhat.
+    template "#{os_dir}/#{mnode_name}.ks" do
+      mode 0644
+      source "compute.ks.erb"
+      owner "root"
+      group "root"
+      variables(:admin_node_ip => provisioner_addr,
+                :web_port => web_port,
+                :name => mnode_name,
+                :online => node["crowbar"]["provisioner"]["server"]["online"],
+                :proxy => "http://#{proxy}/",
+                :provisioner_web => provisioner_web,
+                :repos => node["crowbar"]["provisioner"]["server"]["repositories"][os],
+                :admin_web => admin_web,
+                :os_install_site => params[:os_install_site],
+                :crowbar_join => "#{web_path}/crowbar_join.sh")
+    end
+    template "#{os_dir}/crowbar_join.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "crowbar_join.redhat.sh.erb"
+      variables(:os_codename => os_codename,
+                :crowbar_repo_web => crowbar_repo_web,
+                :admin_ip => provisioner_addr,
+                :provisioner_web => provisioner_web,
+                :web_path => web_path)
+    end
+    append_line = "ks=#{web_path}/#{mnode_name}.ks ksdevice=bootif"
+  when /^ubuntu/ =~ os
+    # Default files needed for Ubuntu.
+    template "#{os_dir}/#{mnode_name}.seed" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "net_seed.erb"
+      variables(:install_name => os,
+                :name => mnode_name,
+                :cc_use_local_security => use_local_security,
+                :os_install_site => params[:os_install_site],
+                :online => node["crowbar"]["provisioner"]["server"]["online"],
+                :provisioner_web => provisioner_web,
+                :web_path => web_path,
+                :proxy => "http://#{proxy}/")
+    end
+    template "#{os_dir}/#{mnode_name}-post-install.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "net-post-install.sh.erb"
+      variables(:admin_web => admin_web,
+                :os_codename => os_codename,
+                :repos => node["crowbar"]["provisioner"]["server"]["repositories"][os],
+                :admin_ip => provisioner_addr,
+                :online => node["crowbar"]["provisioner"]["server"]["online"],
+                :provisioner_web => provisioner_web,
+                :proxy => "http://#{proxy}/",
+                :web_path => web_path)
+    end
+    template "#{os_dir}/crowbar_join.sh" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "crowbar_join.ubuntu.sh.erb"
+      variables(:admin_web => admin_web,
+                :os_codename => os_codename,
+                :crowbar_repo_web => crowbar_repo_web,
+                :admin_ip => provisioner_addr,
+                :provisioner_web => provisioner_web,
+                :web_path => web_path)
+    end
+    append_line = "url=#{web_path}/#{mnode_name}.seed netcfg/get_hostname=#{mnode_name}"
+    end
+  # Create the pxe linux config for this OS.
+  append_line = "#{params[:kernel_params]} #{append_line}"
+  initrd = params[:initrd]
+  kernel = params[:kernel]
 end
