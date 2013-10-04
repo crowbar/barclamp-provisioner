@@ -217,6 +217,7 @@ if not nodes.nil? and not nodes.empty?
                       :timezone => timezone,
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :node_name => mnode[:fqdn],
+                      :software_raid => mnode[:software_raid],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
         when os =~ /^(hyperv|windows)/
