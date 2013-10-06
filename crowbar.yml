@@ -53,6 +53,18 @@ roles:
     flags:
       - discovery
       - bootstrap
+  - name: provisioner-dhcp-server
+    jig: chef
+    requires:
+      - provisioner-server
+    flags:
+      - bootstrap
+  - name: provisioner-dhcp-database
+    jig: chef
+    requires:
+      - provisioner-dhcp-server
+    flags:
+      - bootstrap
 
 debs:
   ubuntu-12.04:

@@ -62,9 +62,7 @@ EOH
 end
 
 intfs = [node.interface.name]
-address = node.address("admin",IP::IP4).addr
-
-d_opts = node[:dhcp][:options]
+d_opts = node[:crowbar][:dhcp][:options]
 
 case node[:platform]
 when "ubuntu","debian"
@@ -75,9 +73,7 @@ when "ubuntu","debian"
       group "root"
       mode 0644
       source "dhcpd.conf.erb"
-      variables(:options => d_opts,
-                :provisioner_ip => address,
-                :provisioner_port => provisioner_port)
+      variables(:options => d_opts)
       notifies :restart, "service[dhcp3-server]"
     end
     template "/etc/default/isc-dhcp-server" do
@@ -173,4 +169,36 @@ service "dhcp3-server" do
   end
   supports :restart => true, :status => true, :reload => true
   action [ :enable, :start ]
+end
+
+domain_name = (node[:crowbar][:dns][:domain] || node[:domain] rescue node[:domain])
+admin_ip = node[:crowbar][:provisioner][:server][:v4addr]
+admin_net = node[:crowbar][:network][:admin]
+lease_time = node[:crowbar][:dhcp][:lease_time]
+net_pools = admin_net["ranges"].select{|range|["dhcp","host"].include? range["name"]}
+
+pool_opts = {
+  "dhcp" => ['allow unknown-clients',
+             '      if option arch = 00:06 {
+      filename = "discovery/bootia32.efi";
+   } else if option arch = 00:07 {
+      filename = "discovery/bootx64.efi";
+   } else {
+      filename = "discovery/pxelinux.0";
+   }',
+             "next-server #{admin_ip}" ],
+  "host" => ['deny unknown-clients']
+}
+
+nameserver=node[:crowbar][:dns][:nameservers].map{|a|IP.coerce(a)}.reject{|a|a.v6?}.map{|a|a.addr}.sort.first
+
+dhcp_subnet IP.coerce(net_pools[0]["first"]).network do
+  action :add
+  network admin_net
+  pools net_pools
+  pool_options pool_opts
+  options [ "option domain-name \"#{domain_name}\"",
+            "option domain-name-servers #{nameserver}",
+            "default-lease-time #{lease_time}",
+            "max-lease-time #{lease_time * 3}"]
 end
