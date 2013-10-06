@@ -18,7 +18,10 @@ admin_ip = node.address.addr
 domain_name = node["dns"].nil? ? node["domain"] : (node["dns"]["domain"] || node["domain"])
 Chef::Log.info("Provisioner: raw server data #{ node["crowbar"]["provisioner"]["server"]}")
 node.normal["crowbar"]["provisioner"]["server"]["name"]=node.name
-
+v4addr=node.address("admin",IP::IP4)
+v6addr=node.address("admin",IP::IP6)
+node.normal["crowbar"]["provisioner"]["server"]["v4addr"]=v4addr.addr if v4addr
+node.normal["crowbar"]["provisioner"]["server"]["v6addr"]=v6addr.addr if v6addr
 node.normal["crowbar"]["provisioner"]["server"]["proxy"]="#{node.name}:8123"
 web_port = node["crowbar"]["provisioner"]["server"]["web_port"]
 use_local_security =  node["crowbar"]["provisioner"]["server"]["use_local_security"]
@@ -64,7 +67,7 @@ unless  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
   
   node.normal["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"] = append_line
 else
-  append_line =  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
+  append_line = node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
 end
 
 # By default, install the same OS that the admin node is running

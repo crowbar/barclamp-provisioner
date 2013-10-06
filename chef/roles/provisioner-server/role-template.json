@@ -39,27 +39,7 @@
                 "root": "/tftpboot",
                 "web_port": 8091,
                 "use_local_security": true,
-                "use_serial_console": false,
-                "dhcp": {
-                    "lease_time": 60,
-                    "state_machine": {
-                        "debug": "debug",
-                        "delete": "delete",
-                        "discovered": "discovery",
-                        "discovering": "discovery",
-                        "hardware-installed": "os_install",
-                        "hardware-installing": "hwinstall",
-                        "hardware-updated": "execute",
-                        "hardware-updating": "update",
-                        "installed": "execute",
-                        "installing": "os_install",
-                        "ready": "execute",
-                        "readying": "execute",
-                        "reinstall": "os_install",
-                        "reset": "reset",
-                        "update": "update"
-                    }
-                }
+                "use_serial_console": false
             }
         }
     }
