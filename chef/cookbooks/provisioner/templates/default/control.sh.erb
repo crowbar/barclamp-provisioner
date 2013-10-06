@@ -57,6 +57,12 @@ if [[ $NEED_CREATE ]]; then
     curl -g --digest -u "$CROWBAR_KEY" -X POST \
         -d "name=$HOSTNAME" \
         "$crowbar_v4/api/v2/nodes/"
+else
+    # We know who we should be, but we are coming back to life.
+    # Mark us as dead to let our role resynchronize.
+    curl -g --digest -u "$CROWBAR_KEY" \
+        -X PUT "$crowbar_v4/api/v2/nodes/$HOSTNAME" \
+        -d 'alive=false'
 fi
 
 # Ditch NFS for now.
