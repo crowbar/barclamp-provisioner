@@ -172,7 +172,7 @@ service "dhcp3-server" do
 end
 
 domain_name = (node[:crowbar][:dns][:domain] || node[:domain] rescue node[:domain])
-admin_ip = node[:crowbar][:provisioner][:server][:v4addr]
+admin_ip = IP.coerce(node[:crowbar][:provisioner][:server][:v4addr])
 admin_net = node[:crowbar][:network][:admin]
 lease_time = node[:crowbar][:dhcp][:lease_time]
 net_pools = admin_net["ranges"].select{|range|["dhcp","host"].include? range["name"]}
@@ -186,7 +186,7 @@ pool_opts = {
    } else {
       filename = "discovery/pxelinux.0";
    }',
-             "next-server #{admin_ip}" ],
+             "next-server #{admin_ip.addr}" ],
   "host" => ['deny unknown-clients']
 }
 
@@ -197,6 +197,7 @@ dhcp_subnet IP.coerce(net_pools[0]["first"]).network do
   network admin_net
   pools net_pools
   pool_options pool_opts
+  admin_ip admin_ip
   options [ "option domain-name \"#{domain_name}\"",
             "option domain-name-servers #{nameserver}",
             "default-lease-time #{lease_time}",

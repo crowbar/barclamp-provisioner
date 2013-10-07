@@ -59,10 +59,13 @@ if [[ $NEED_CREATE ]]; then
         "$crowbar_v4/api/v2/nodes/"
 else
     # We know who we should be, but we are coming back to life.
-    # Mark us as dead to let our role resynchronize.
+    # Mark us as dead to let our role resynchronize, and
+    # make sure the crowbar framework is aware that we booted into
+    # Sledgehammer.
     curl -g --digest -u "$CROWBAR_KEY" \
         -X PUT "$crowbar_v4/api/v2/nodes/$HOSTNAME" \
-        -d 'alive=false'
+        -d 'alive=false' \
+        -d 'bootenv=sledgehammer'
 fi
 
 # Ditch NFS for now.
@@ -141,6 +144,11 @@ gem install cstruct
     curl -g -O "$provisioner/files/chef-11.6.0-1.el6.x86_64.rpm"
     rpm -Uvh ./chef-11.6.0-1.el6.x86_64.rpm
 )
+
+mkdir -p /root/.ssh
+cat >/root/.ssh/authorized_keys <<EOF
+<% @keys %>
+EOF
 
 # Mark us as alive.
 # Mark the node as alive.

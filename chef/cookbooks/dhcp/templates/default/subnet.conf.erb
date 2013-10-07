@@ -2,6 +2,8 @@
 subnet <%= @addr.addr -%> netmask <%= @addr.netmask %> {
 <% if @network["router"] -%>
   option routers <%= @network["router"]["address"].addr %>;
+<% else -%>
+  option routers <%= @admin_ip.addr %>;
 <% end -%>
   option subnet-mask <%= @addr.netmask %>;
   option broadcast-address <%= @addr.broadcast.addr %>;
