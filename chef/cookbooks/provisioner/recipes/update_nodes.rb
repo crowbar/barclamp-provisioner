@@ -77,7 +77,9 @@ if not nodes.nil? and not nodes.empty?
       mac_list.each_index do |i|
         dhcp_host "#{mnode.name}-#{i}" do
           hostname mnode.name
-          ipaddress admin_data_net.address
+          if mnode.macaddress == mac_list[i]
+            ipaddress admin_data_net.address
+          end
           macaddress mac_list[i]
           action :add
         end
@@ -92,20 +94,22 @@ if not nodes.nil? and not nodes.empty?
       mac_list.each_index do |i|
         dhcp_host "#{mnode.name}-#{i}" do
           hostname mnode.name
-          ipaddress admin_data_net.address
           macaddress mac_list[i]
-          options [
-   '      if option arch = 00:06 {
-      filename = "discovery/bootia32.efi";
-   } else if option arch = 00:07 {
-      filename = "discovery/bootx64.efi";
-   } else if option arch = 00:09 {
-      filename = "discovery/bootx64.efi";
-   } else {
-      filename = "discovery/pxelinux.0";
-   }',
-                   "next-server #{admin_ip}"
-                  ]
+          if mnode.macaddress == mac_list[i]
+            ipaddress admin_data_net.address
+            options [
+     '      if option arch = 00:06 {
+        filename = "discovery/bootia32.efi";
+     } else if option arch = 00:07 {
+        filename = "discovery/bootx64.efi";
+     } else if option arch = 00:09 {
+        filename = "discovery/bootx64.efi";
+     } else {
+        filename = "discovery/pxelinux.0";
+     }',
+                     "next-server #{admin_ip}"
+                    ]
+          end
           action :add
         end
       end
