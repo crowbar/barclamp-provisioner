@@ -156,17 +156,23 @@ curl -L -o /etc/chef/validation.pem \
 . "/updates/control_lib.sh"
 
 nuke_everything() {
-    local uuid maj min blocks name
+    local vg pv maj min blocks name
     # Make sure that the kernel knows about all the partitions
     for bd in /sys/block/sd*; do
         [[ -b /dev/${bd##*/} ]] || continue
         partprobe "/dev/${bd##*/}"
     done
-    vgscan
-    while read uuid; do
-        vgremove -f "$uuid"
-    done < <(vgs --noheading -o vg_name)
-    # and then wipe them all out.
+    # Zap any volume groups that may be lying around.
+    vgscan --ignorelockingfailure -P
+    while read vg; do
+        vgremove -f "$vg"
+    done < <(vgs --noheadings -o vg_name)
+    # Wipe out any LVM metadata that the kernel may have detected.
+    pvscan --ignorelockingfailure
+    while read pv; do
+        pvremove -f -y "$pv"
+    done < <(pvs --noheadings -o pv_name)
+    # Now zap any partitions.
     while read maj min blocks name; do
         [[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
         [[ $name = loop* ]] && continue
@@ -224,16 +230,18 @@ walk_node_through () {
     shift
     while (( $# > 1)); do
         state="$1"
-        post_state "$name" "$1"
-        run_hooks "$HOSTNAME" "$1" pre
-        chef-client -S http://$ADMIN_IP:4000/ -N "$name"
-        run_hooks "$HOSTNAME" "$1" post
+        post_state "$name" "$1" && \
+            run_hooks "$HOSTNAME" "$1" pre && \
+            chef-client -S http://$ADMIN_IP:4000/ -N "$name" && \
+            run_hooks "$HOSTNAME" "$1" post || \
+            { post_state "$name" problem; reboot_system; }
         shift
     done
     state="$1"
-    run_hooks "$HOSTNAME" "$1" pre
-    report_state "$name" "$1"
-    run_hooks "$HOSTNAME" "$1" post
+    run_hooks "$HOSTNAME" "$1" pre && \
+        report_state "$name" "$1" && \
+        run_hooks "$HOSTNAME" "$1" post || \
+        { post_state "$name" problem; reboot_system; }
 }
 
 # If there is a custom control.sh for this system, source it.
