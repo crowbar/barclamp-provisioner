@@ -65,6 +65,10 @@ roles:
       - provisioner-dhcp-server
     flags:
       - bootstrap
+  - name: provisioner-os-install
+    jig: script
+    requires:
+      - provisioner-dhcp-server
 
 debs:
   ubuntu-12.04:

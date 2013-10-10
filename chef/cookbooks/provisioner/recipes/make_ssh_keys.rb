@@ -19,10 +19,19 @@ directory "/root/.ssh" do
   action :create
 end
 
+node.normal["crowbar"]["provisioner"]["server"]["access_keys"] ||= Mash.new
+if node["crowbar"]["provisioner"]["server"]["access_keys"].empty? &&
+    File.exists?("/root/.ssh/authorized_keys")
+  count=1
+  IO.foreach("/root/.ssh/authorized_keys") do |line|
+    node.normal["crowbar"]["provisioner"]["server"]["access_keys"]["admin-#{count}"] = line.strip
+    count += 1
+  end
+end
+
+
 # Build my key
 unless ::File.exists?("/root/.ssh/id_rsa.pub")
   %x{ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""}
+  node.normal["crowbar"]["provisioner"]["server"]["access_keys"][node["fqdn"]] = IO.read("/root/.ssh/id_rsa.pub").strip
 end
-
-node.set["crowbar"]["provisioner"]["server"]["access_keys"] ||= {}
-node.set["crowbar"]["provisioner"]["server"]["access_keys"][node["fqdn"]] ||= %x{cat /root/.ssh/id_rsa.pub}.chomp
