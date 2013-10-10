@@ -26,12 +26,12 @@ action :add do
     cookbook "dhcp"
     source "subnet.conf.erb"
     variables(
-      :addr => ::IP.coerce(new_resource.subnet),
-      :network => new_resource.network,
-      :options => new_resource.options,
-      :pools => new_resource.pools,
-      :pool_options => new_resource.pool_options
-    )
+              :addr => ::IP.coerce(new_resource.subnet),
+              :admin_ip => new_resource.admin_ip,
+              :network => new_resource.network,
+              :options => new_resource.options,
+              :pools => new_resource.pools,
+              :pool_options => new_resource.pool_options)
     owner "root"
     group "root"
     mode 0644

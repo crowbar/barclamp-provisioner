@@ -49,15 +49,24 @@ new_clients = {}
   # Default to creating appropriate boot config files for Sledgehammer.
   case
   when bootenv == "sledgehammer"
-    provisioner_bootfile bootenv do
+    provisioner_bootfile mnode_name do
       kernel_params "#{node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]} crowbar.fqdn=#{mnode_name}"
       address v4addr
+      bootenv "sledgehammer"
       action :add
     end
   when bootenv == "local"
-    provisioner_bootfile bootenv do
+    provisioner_bootfile mnode_name do
+      bootenv "sledgehammer"
       address v4addr
       action :remove
+    end
+  when bootenv == "ubuntu-12.04-install"
+    provisioner_ubuntu mnode_name do
+      version "12.04"
+      address v4addr
+      target mnode_name
+      action :add
     end
   else
     Chef::Log.info("Not messing with boot files for bootenv #{bootenv}")
@@ -120,7 +129,7 @@ when bootenv =~ /.*_install$/
   admin_web="#{web_path}/install"
   crowbar_repo_web="#{web_path}/crowbar-extra"
   os_dir="#{tftproot}/#{os}" /
-    params = node["crowbar"]["provisioner"]["server"]["boot_specs"][os]
+
   # I need to think about this.
   #if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
   #  append_line << " BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':','-')}"
@@ -178,50 +187,7 @@ when bootenv =~ /.*_install$/
                 :web_path => web_path)
     end
     append_line = "ks=#{web_path}/#{mnode_name}.ks ksdevice=bootif"
-  when /^ubuntu/ =~ os
-    # Default files needed for Ubuntu.
-    template "#{os_dir}/#{mnode_name}.seed" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "net_seed.erb"
-      variables(:install_name => os,
-                :name => mnode_name,
-                :cc_use_local_security => use_local_security,
-                :os_install_site => params[:os_install_site],
-                :online => node["crowbar"]["provisioner"]["server"]["online"],
-                :provisioner_web => provisioner_web,
-                :web_path => web_path,
-                :proxy => "http://#{proxy}/")
-    end
-    template "#{os_dir}/#{mnode_name}-post-install.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "net-post-install.sh.erb"
-      variables(:admin_web => admin_web,
-                :os_codename => os_codename,
-                :repos => node["crowbar"]["provisioner"]["server"]["repositories"][os],
-                :admin_ip => provisioner_addr,
-                :online => node["crowbar"]["provisioner"]["server"]["online"],
-                :provisioner_web => provisioner_web,
-                :proxy => "http://#{proxy}/",
-                :web_path => web_path)
-    end
-    template "#{os_dir}/crowbar_join.sh" do
-      mode 0644
-      owner "root"
-      group "root"
-      source "crowbar_join.ubuntu.sh.erb"
-      variables(:admin_web => admin_web,
-                :os_codename => os_codename,
-                :crowbar_repo_web => crowbar_repo_web,
-                :admin_ip => provisioner_addr,
-                :provisioner_web => provisioner_web,
-                :web_path => web_path)
-    end
-    append_line = "url=#{web_path}/#{mnode_name}.seed netcfg/get_hostname=#{mnode_name}"
-    end
+  end
   # Create the pxe linux config for this OS.
   append_line = "#{params[:kernel_params]} #{append_line}"
   initrd = params[:initrd]

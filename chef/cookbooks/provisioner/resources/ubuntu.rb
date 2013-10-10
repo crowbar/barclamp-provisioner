@@ -1,4 +1,4 @@
-# Copyright 2011, Dell
+# Copyright 2013, Dell
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +13,9 @@
 # limitations under the License.
 #
 
-actions :add, :remove
+actions :add
 
-attribute :subnet, :kind_of => String, :name_attribute => true
-attribute :network, :kind_of => Mash
-attribute :pools, :kind_of => Array
-attribute :pool_options, :kind_of => Hash, :default => { "dhcp" => [ "allow unknown-hosts" ] }
-attribute :options, :kind_of => Array, :default => []
-attribute :admin_ip, :kind_of => IP, :required => true
-
+attribute :name, :kind_of => String, :name_attribute => true
+attribute :target, :kind_of => String, :required => true
+attribute :address, :kind_of => IP, :required => true
+attribute :version, :kind_of => String, :required => true

@@ -28,7 +28,7 @@ action :add do
     group "root"
     source "default.erb"
     variables(:append_line => new_resource.kernel_params,
-              :install_name => new_resource.name,
+              :install_name => new_resource.bootenv,
               :initrd => new_resource.initrd,
               :kernel => new_resource.kernel)
   end
@@ -38,7 +38,7 @@ action :add do
     group "root"
     source "default.elilo.erb"
     variables(:append_line => new_resource.kernel_params,
-              :install_name => new_resource.name,
+              :install_name => new_resource.bootenv,
               :initrd => new_resource.initrd,
               :kernel => new_resource.kernel)
   end
