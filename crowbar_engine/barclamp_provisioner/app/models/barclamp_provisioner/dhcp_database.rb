@@ -16,49 +16,57 @@
 class BarclampProvisioner::DhcpDatabase < Role
 
   def on_node_change(node)
-    do_stuff
+    Rails.logger.info("provisioner-dhcp-database: Updating for changed node #{node.name}")
+    rerun_my_noderoles
   end
 
   def on_node_delete(node)
-    do_stuff
+    Rails.logger.info("provisioner-dhcp-database: Updating for deleted node #{node.name}")
+    rerun_my_noderoles
   end
 
-  private
-
-  def do_stuff()
+  def rerun_my_noderoles
     clients = {}
-    Node.all.each do |node|
-      ints = (node.discovery["ohai"]["network"]["interfaces"] rescue nil)
-      next unless ints
-      mac_list = []
-      ints.each do |net, net_data|
-        net_data.each do |field, field_data|
-          next if field != "addresses"
-          field_data.each do |addr, addr_data|
-            next if addr_data["family"] != "lladdr"
-            mac_list << addr unless mac_list.include? addr
+    Role.transaction do
+      Node.all.each do |node|
+        ints = (node.discovery["ohai"]["network"]["interfaces"] rescue nil)
+        next unless ints
+        mac_list = []
+        ints.each do |net, net_data|
+          net_data.each do |field, field_data|
+            next if field != "addresses"
+            field_data.each do |addr, addr_data|
+              next if addr_data["family"] != "lladdr"
+              mac_list << addr unless mac_list.include? addr
+            end
           end
         end
+        clients[node.name] = {
+          "mac_addresses" => mac_list.sort,
+          "v4addr" => node.addresses.reject{|a|a.v6?}.sort.first.to_s,
+          "bootenv" => node.bootenv
+        }
       end
-      clients[node.name] = {
-        "mac_addresses" => mac_list.sort,
-        "v4addr" => node.addresses.reject{|a|a.v6?}.sort.first.to_s,
-        "bootenv" => node.bootenv
-      }
     end
-    node_roles.each do |nr|
-      nr_clients = (nr.sysdata["crowbar"]["dhcp"]["clients"] || {} rescue {})
-      next if nr_clients == clients
-      nr.sysdata = {
-        "crowbar" =>{
-          "dhcp" => {
-            "clients" => clients
-          }
+    new_sysdata = {
+      "crowbar" =>{
+        "dhcp" => {
+          "clients" => clients
         }
       }
-      nr.save!
-      Rails.logger.info("DHCP database: enqueing #{nr.name}")
-      Run.enqueue(nr) if nr.active? || nr.transition?
+    }
+    NodeRole.transaction do
+      node_roles.committed.each do |nr|
+        if nr.sysdata == new_sysdata
+          Rails.logger.info("DHCP database: No changes, not enqueuing #{nr.name}")
+          next
+        end
+        nr.sysdata = new_sysdata
+        nr.save!
+        Rails.logger.info("DHCP database: enqueing #{nr.name}")
+        Run.enqueue(nr)
+      end
     end
   end
+
 end
