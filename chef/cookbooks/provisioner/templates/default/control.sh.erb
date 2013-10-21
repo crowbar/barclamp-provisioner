@@ -147,8 +147,11 @@ gem install cstruct
 
 mkdir -p /root/.ssh
 cat >/root/.ssh/authorized_keys <<EOF
-<% @keys %>
+<%= @keys %>
 EOF
+
+echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
+service sshd restart
 
 # Mark us as alive.
 # Mark the node as alive.
