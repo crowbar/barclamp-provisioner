@@ -22,6 +22,8 @@ ruby_block "Find the fallback boot device" do
         break if dev =~ /^[hsv]d[a-z]+$/
         # pci-0000:0b:08.0-cciss-disk0 -> ../../cciss/c0d0
         break if dev =~ /^c[0-9]+d[0-9]+$/
+        # xen-vbd-51712-part1 -> ../../xvda1
+        break if dev =~ /^xvd[a-z]+$/
         dev = nil
         disk_by_path = nil
       end
