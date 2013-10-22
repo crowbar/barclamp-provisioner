@@ -75,8 +75,7 @@ when "ubuntu","debian"
       group "root"
       mode 0644
       source "dhcpd.conf.erb"
-      variables(:options => d_opts,
-                :provisioner_ip => address)
+      variables(:options => d_opts)
       notifies :restart, "service[dhcp3-server]"
     end
     template "/etc/default/isc-dhcp-server" do
@@ -93,8 +92,7 @@ when "ubuntu","debian"
       group "root"
       mode 0644
       source "dhcpd.conf.erb"
-      variables(:options => d_opts,
-                :provisioner_ip => address)
+      variables(:options => d_opts)
       notifies :restart, "service[dhcp3-server]"
     end
     template "/etc/default/dhcp3-server" do
@@ -120,8 +118,7 @@ when "redhat","centos"
     group "root"
     mode 0644
     source "dhcpd.conf.erb"
-    variables(:options => d_opts,
-              :provisioner_ip => address)
+    variables(:options => d_opts)
     notifies :restart, "service[dhcp3-server]"
   end
 
@@ -140,8 +137,7 @@ when "suse"
     group "root"
     mode 0644
     source "dhcpd.conf.erb"
-    variables(:options => d_opts,
-              :provisioner_ip => address)
+    variables(:options => d_opts)
     notifies :restart, "service[dhcp3-server]"
   end
 
