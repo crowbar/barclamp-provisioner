@@ -23,7 +23,7 @@ class BarclampProvisioner::OsInstall < Role
     }
   end
 
-  def on_active(nr)
+  def on_transition(nr)
     node = nr.node
     target = nr.all_my_data["crowbar"]["target_os"] rescue nr.deployment_data["crowbar"]["target_os"]
     return if node.bootenv == "local"
