@@ -313,7 +313,7 @@ EXVAL=0
 export HOME=/root
 
 IP="<%= @admin_ip %>"
-HTTP_SERVER="<%= @admin_ip %>:8091"
+HTTP_SERVER="<%= @admin_ip %>:<%= @web_port %>"
 
 if [[ -f /etc/crowbar.install.key ]]; then
     export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
