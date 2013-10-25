@@ -2,7 +2,7 @@
 ### BEGIN INIT INFO
 # Provides:          crowbar
 # Required-Start:    $syslog $network $remote_fs sshd
-# Should-Start:      
+# Should-Start:      openstack-keystone
 # Required-Stop:     $syslog $network $remote_fs sshd
 # Should-Stop:       
 # Default-Start:     3 5
@@ -11,8 +11,13 @@
 # Description:       Synchronize with Crowbar administration server
 ### END INIT INFO
 
-# Note: the sshd dependency is there to make it possible to log in while
-# crowbar_join is running (in case it's hanging).
+# Notes:
+# - the sshd dependency is there to make it possible to log in while
+#   crowbar_join is running (in case it's hanging).
+# - the optional openstack-keystone dependency is there so that the calls to
+#   keystone APIs in cookbooks work (if we're running on controller node)
+#   Otherwise, the chef-client run will fail there (because keystone is started
+#   delayed in the cookbook)
 
 PROGNAME="crowbar_join"
 
