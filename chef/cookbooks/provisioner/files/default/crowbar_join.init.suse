@@ -2,7 +2,7 @@
 ### BEGIN INIT INFO
 # Provides:          crowbar
 # Required-Start:    $syslog $network $remote_fs sshd
-# Should-Start:      openstack-keystone
+# Should-Start:      openstack-keystone openstack-neutron
 # Required-Stop:     $syslog $network $remote_fs sshd
 # Should-Stop:       
 # Default-Start:     3 5
@@ -18,6 +18,8 @@
 #   keystone APIs in cookbooks work (if we're running on controller node)
 #   Otherwise, the chef-client run will fail there (because keystone is started
 #   delayed in the cookbook)
+# - similarly, the neutron cookbook will contact the neutron APIs so we need an
+#   optional openstack-neutron dependency.
 
 PROGNAME="crowbar_join"
 
