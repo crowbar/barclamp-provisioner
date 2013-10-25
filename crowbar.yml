@@ -42,7 +42,6 @@ roles:
       - logging-server
       - ntp-server
     flags:
-      - bootstrap
       - server
   - name: provisioner-repos
     jig: chef
@@ -51,24 +50,21 @@ roles:
       - dns-client
       - provisioner-server
     flags:
-      - discovery
-      - bootstrap
+      - implicit
   - name: provisioner-dhcp-server
     jig: chef
     requires:
       - provisioner-server
-    flags:
-      - bootstrap
   - name: provisioner-dhcp-database
     jig: chef
     requires:
       - provisioner-dhcp-server
-    flags:
-      - bootstrap
   - name: provisioner-os-install
     jig: script
     requires:
       - provisioner-dhcp-server
+    flags:
+      - implicit
 
 debs:
   ubuntu-12.04:
