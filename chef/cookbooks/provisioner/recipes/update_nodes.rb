@@ -1,4 +1,4 @@
-# Copyright 2011, Dell 
+# Copyright 2011, Dell
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ if not nodes.nil? and not nodes.empty?
       end
     end
     mac_list.sort!
-    
+
     #no boot_ip means that no admin network address has been assigned to node, and
     # it will boot into the default discovery image.
     next unless boot_ip_hex
@@ -55,7 +55,7 @@ if not nodes.nil? and not nodes.empty?
     when  new_group.nil? || new_group == "noop"
       Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
       next
-    when (new_group == "delete") 
+    when (new_group == "delete")
       Chef::Log.info("Deleting #{mnode[:fqdn]}")
       # Delete the node
       system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
@@ -193,8 +193,8 @@ if not nodes.nil? and not nodes.empty?
           %w(
             SLE-Cloud
             SLE-Cloud-PTF
-            SUSE-Cloud-2.0-Pool
-            SUSE-Cloud-2.0-Updates
+            SUSE-Cloud-3-Pool
+            SUSE-Cloud-3-Updates
             SLES11-SP3-Pool
             SLES11-SP3-Updates
           ).each do |name|
