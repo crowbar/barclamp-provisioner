@@ -1,14 +1,26 @@
-Welcome to a Barclamp for the Crowbar Framework project
-=======================================================
+# Crowbar Documentation README
 
-The code and documentation is distributed under the Apache 2 license (http://www.apache.org/licenses/LICENSE-2.0.html). Contributions back to the source are encouraged.
+_This is not the documentation you are looking for, it is a pointer to the real documentation_
 
-The Crowbar Framework (https://github.com/dellcloudedge/crowbar) was developed by the Dell CloudEdge Solutions Team (http://dell.com/openstack) as a OpenStack installer (http://OpenStack.org) but has evolved as a much broader function tool. 
-A Barclamp is a module component that implements functionality for Crowbar.  Core barclamps operate the essential functions of the Crowbar deployment mechanics while other barclamps extend the system for specific applications.
+## Looking for Crowbar Resources?
 
-* This functonality of this barclamp DOES NOT stand alone, the Crowbar Framework is required * 
+[The Crowbar website](http://crowbar.github.io) has links to all information and is our recommended starting place.
 
-About this barclamp
--------------------
+## Specific Crowbar Documentation 
 
-Information for this barclamp is maintained on the Crowbar Framework Wiki: https://github.com/dellcloudedge/crowbar/wiki
+We track Crowbar documentation with the code so that we can track versions of documentation with the code.
+
+Here are commonly requested references:
+
+* [Getting Started Guide](https://github.com/crowbar/barclamp-crowbar/tree/master/doc/gettingstarted.md)
+* [User Resources](https://github.com/crowbar/barclamp-crowbar/tree/master/doc/userguide.md)
+* [Developer Resources](https://github.com/crowbar/barclamp-crowbar/tree/master/doc/devguide.md)
+* [Crowbar Release Management](https://github.com/crowbar/barclamp-crowbar/tree/master/doc/releases.md)
+
+> You may need to look in subdirectories under the links below for additional details.
+
+## Background
+Crowbar documentation is distributed into multiple places under the /doc directory of each Crowbar module (aka "barclamps").  When the modules are installed, Crowbar combines all the /doc directories into a master documentation set.  These directories are structured into subdirectories for general topics.  This structure is common across all barclamps in the [Crowbar project](https://github.com/crowbar/)
+
+> Please, do NOT add documentation in locations besides /doc!  If necessary, expand this README to include pointers to important /doc information.
+
