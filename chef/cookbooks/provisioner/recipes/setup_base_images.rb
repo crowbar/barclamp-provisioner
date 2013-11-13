@@ -122,7 +122,7 @@ if node[:platform] == "suse"
     source "base-apache.conf.erb"
     mode 0644
     variables(:docroot => "/srv/tftpboot",
-              :port => 8091,
+              :port => web_port,
               :logfile => "/var/log/apache2/provisioner-access_log",
               :errorlog => "/var/log/apache2/provisioner-error_log")
     notifies :reload, resources(:service => "apache2")
@@ -157,7 +157,7 @@ else
   template "/etc/nginx/provisioner.conf" do
     source "base-nginx.conf.erb"
     variables(:docroot => tftproot,
-              :port => 8091,
+              :port => web_port,
               :logfile => "/var/log/provisioner-webserver.log",
               :pidfile => "/var/run/provisioner-webserver.pid")
   end
@@ -310,7 +310,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       owner "root"
       group "root"
       source "crowbar_join.suse.sh.erb"
-      variables(:admin_ip => admin_ip)
+      variables(:admin_ip => admin_ip, :web_port => web_port)
     end
 
   when /^(redhat|centos)/ =~ os
