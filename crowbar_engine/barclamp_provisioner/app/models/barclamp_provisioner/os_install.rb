@@ -30,7 +30,8 @@ class BarclampProvisioner::OsInstall < Role
     Rails.logger.info("provisioner-install: Trying to install #{target} on #{node.name} (bootenv: #{node.bootenv})")
 
     node.bootenv = "#{target}-install"
-    node.alive = false
+    # for most jigs we want force the node to check back in.  Since the 
+    node.alive = false unless nr.role.jig_name.eql? 'test'
     node.save!
   end
 
