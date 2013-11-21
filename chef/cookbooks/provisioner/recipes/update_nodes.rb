@@ -60,11 +60,11 @@ if not nodes.nil? and not nodes.empty?
       # Delete the node
       system("knife node delete -y #{mnode.name} -u chef-webui -k /etc/chef/webui.pem")
       system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
-      mac_list.each_index do |i|
-        dhcp_host "#{mnode.name}-#{i}" do
-          hostname mnode.name
-          ipaddress "0.0.0.0"
-          macaddress mac_list[i]
+
+      # find all dhcp hosts for a node (not just ones matching currently known MACs)
+      host_files        = Dir.glob("/etc/dhcp3/hosts.d/#{mnode.name}-*.conf")
+      host_files.each do |host_file|
+        dhcp_host host_file.gsub(/^.*\/(.*)\.conf$/, '\\1') do
           action :remove
         end
       end
