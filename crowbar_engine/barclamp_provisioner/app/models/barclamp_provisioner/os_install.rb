@@ -26,12 +26,12 @@ class BarclampProvisioner::OsInstall < Role
   def on_transition(nr)
     node = nr.node
     target = nr.all_my_data["crowbar"]["target_os"] rescue nr.deployment_data["crowbar"]["target_os"]
-    return if node.bootenv == "local"
+    return if ["local"].member? node.bootenv
     Rails.logger.info("provisioner-install: Trying to install #{target} on #{node.name} (bootenv: #{node.bootenv})")
 
     node.bootenv = "#{target}-install"
     # for most jigs we want force the node to check back in.  Since the 
-    node.alive = false unless nr.role.jig_name.eql? 'test'
+    node.alive = false
     node.save!
   end
 
