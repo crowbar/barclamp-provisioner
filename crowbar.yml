@@ -35,7 +35,7 @@ crowbar:
 
 roles:
   - name: provisioner-server
-    jig: chef
+    jig: chef-solo
     requires:
       - network-admin
       - dns-client
@@ -44,7 +44,7 @@ roles:
     flags:
       - server
   - name: provisioner-repos
-    jig: chef
+    jig: chef-solo
     requires:
       - network-admin
       - dns-client
@@ -52,11 +52,11 @@ roles:
     flags:
       - implicit
   - name: provisioner-dhcp-server
-    jig: chef
+    jig: chef-solo
     requires:
       - provisioner-server
   - name: provisioner-dhcp-database
-    jig: chef
+    jig: chef-solo
     requires:
       - provisioner-dhcp-server
   - name: provisioner-os-install

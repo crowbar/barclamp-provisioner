@@ -52,11 +52,7 @@ unless  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
       append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
     end
   end
-  
-  if ::File.exists?("/etc/crowbar.install.key")
-    append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
-  end
-  
+
   if  node["crowbar"]["provisioner"]["server"]["use_serial_console"]
     append_line += " console=tty0 console=ttyS1,115200n8"
   end
@@ -204,15 +200,11 @@ EOC
     append << " console=tty0 console=ttyS1,115200n8"
   end
 
-  # Make sure we get a crowbar install key as well.
-  if ::File.exists?("/etc/crowbar.install.key")
-    append << " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
-  end
-
   # If we were asked to use a serial console, arrange for it.
   if  node["crowbar"]["provisioner"]["server"]["use_serial_console"]
     append << " console=tty0 console=ttyS1,115200n8"
   end
+  
   # Add per-OS base repos that may not have been added above.
 
   unless node["crowbar"]["provisioner"]["server"]["boot_specs"]
@@ -251,6 +243,7 @@ template "#{pxecfg_dir}/default" do
   variables(:append_line => "#{append_line} crowbar.state=discovery",
             :install_name => "discovery",
             :initrd => "initrd0.img",
+            :machine_key => node["crowbar"]["provisioner"]["machine_key"],
             :kernel => "vmlinuz0")
 end
 
@@ -263,6 +256,7 @@ template "#{uefi_dir}/elilo.conf" do
   variables(:append_line => "#{append_line} crowbar.state=discovery",
             :install_name => "discovery",
             :initrd => "initrd0.img",
+            :machine_key => node["crowbar"]["provisioner"]["machine_key"],
             :kernel => "vmlinuz0")
 end
 
