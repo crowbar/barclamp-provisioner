@@ -22,6 +22,7 @@ admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").
 web_port = node[:provisioner][:web_port]
 provisioner_web = "http://#{admin_ip}:#{web_port}"
 default_repos_url = "#{provisioner_web}/repos"
+dhcp_hosts_dir = node["provisioner"]["dhcp_hosts"]
 
 nodes = search(:node, "*:*")
 if not nodes.nil? and not nodes.empty?
@@ -62,9 +63,9 @@ if not nodes.nil? and not nodes.empty?
       system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
 
       # find all dhcp hosts for a node (not just ones matching currently known MACs)
-      host_files        = Dir.glob("/etc/dhcp3/hosts.d/#{mnode.name}-*.conf")
+      host_files        = Dir.glob("#{dhcp_hosts_dir}#{mnode.name}-*.conf")
       host_files.each do |host_file|
-        dhcp_host host_file.gsub(/^.*\/(.*)\.conf$/, '\\1') do
+        dhcp_host ::File.basename(host_file, ".conf") do
           action :remove
         end
       end

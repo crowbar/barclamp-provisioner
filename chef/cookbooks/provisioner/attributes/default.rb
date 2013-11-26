@@ -6,3 +6,4 @@ else
 end
 
 default[:provisioner][:coredump] = false
+default[:provisioner][:dhcp_hosts] = "/etc/dhcp3/hosts.d/"
