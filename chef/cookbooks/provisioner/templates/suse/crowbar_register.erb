@@ -1,0 +1,297 @@
+#! /bin/bash -e
+# vim: sw=4 et
+#
+# Copyright 2013, SUSE
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# TODO:
+#   change timezeone?
+
+
+usage () {
+    cat <<EOF
+`basename $0` [-h|--help] [-v|--verbose] [--gpg-auto-import-keys] [--interface IF]
+
+Register node in Crowbar.
+EOF
+    exit
+}
+
+# Variables for options
+CROWBAR_AUTO_IMPORT_KEYS=0
+CROWBAR_VERBOSE=0
+DEFINEDDEV=
+
+while test $# -gt 0; do
+    case "$1" in
+        -h|--help|--usage|-\?) usage ;;
+        -v|--verbose) CROWBAR_VERBOSE=1 ;;
+        --gpg-auto-import-keys) CROWBAR_AUTO_IMPORT_KEYS=1 ;;
+        --interface)
+            if test $# -eq 1; then
+                echo "Option --interface requires an argument."
+                exit 1
+            else
+                shift
+                DEFINEDDEV="$1"
+            fi
+            ;;
+        *) ;;
+    esac
+    shift
+done
+
+if [ $(id -u) -gt 0 ]; then
+    echo "$0 needs to be run as root user."
+    echo ""
+    exit 1
+fi
+
+
+# Variables that are templated
+# ----------------------------
+
+ADMIN_IP="<%= @admin_ip %>"
+ADMIN_BROADCAST="<%= @admin_broadcast %>"
+WEB_PORT="<%= @web_port %>"
+HTTP_SERVER="http://${ADMIN_IP}:${WEB_PORT}"
+CROWBAR_OS="<%= @os %>"
+CROWBAR_KEY="<%= @crowbar_key %>"
+DOMAIN="<%= @domain %>"
+
+
+# Make sure we know which interface to use as a basis
+# ---------------------------------------------------
+
+NIC_CANDIDATES=
+DEFINEDDEV_FOUND=0
+MULTIPLE_NICS=0
+for nic in /sys/class/net/*; do
+    [[ -f $nic/address && -f $nic/type && \
+        $(cat "$nic/type") = 1 ]] || continue
+    NICDEV="${nic##*/}"
+    ip addr show $NICDEV | grep -q " brd $ADMIN_BROADCAST "
+    if test $? -eq 0; then
+        test "x$NICDEV" == "x$DEFINEDDEV" && DEFINEDDEV_FOUND=1
+        test -n "$NIC_CANDIDATES" && MULTIPLE_NICS=1
+        NIC_CANDIDATES="$NIC_CANDIDATES $NICDEV"
+    fi
+done
+
+# remove leading space
+NIC_CANDIDATES=${NIC_CANDIDATES## }
+
+if test $DEFINEDDEV_FOUND -ne 1 -a -n "$DEFINEDDEV"; then
+    if test -f "/sys/class/net/$DEFINEDDEV/address"; then
+        echo "Defined interface to use ($DEFINEDDEV) does not seem to be on the admin network."
+        echo "Is DHCP used for it?"
+    else
+        echo "Defined interface to use ($DEFINEDDEV) was not detected."
+    fi
+    exit 1
+elif test "x$NIC_CANDIDATES" == "x"; then
+    echo "Cannot find any good interface that would be on the admin network."
+    echo "Did the node boot with DHCP on the admin network?"
+    exit 1
+elif test $MULTIPLE_NICS -ne 0; then
+    echo "More than one potential interface can be used:"
+    echo "   $NIC_CANCIDATES"
+    echo ""
+    echo "Please define the one to use with the --interface option."
+    exit 1
+fi
+
+if test -n "$DEFINEDDEV"; then
+    BOOTDEV="$DEFINEDDEV"
+else
+    BOOTDEV="$NIC_CANDIDATES"
+fi
+
+
+# Check that we're really on the admin network
+# --------------------------------------------
+
+MD5_ADMIN=$(curl -s $HTTP_SERVER/$CROWBAR_OS/crowbar_register | md5sum | awk -F " " '{print $1}')
+MD5_LOCAL=$(md5sum $0 | awk -F " " '{print $1}')
+
+if test "x$MD5_ADMIN" != "x$MD5_LOCAL"; then
+    echo "This script does not match the one from the administration server."
+    echo "Please download $HTTP_SERVER/$CROWBAR_OS/crowbar_register and use it."
+    exit 1
+fi
+
+
+# Setup the repos
+# ---------------
+
+# TODO really needs to be more flexible for SMT / SUSE Manager
+zypper ar "$HTTP_SERVER/repos/SLES11-SP3-Pool/" "SLES11-SP3-Pool"
+zypper ar "$HTTP_SERVER/repos/SLES11-SP3-Updates/" "SLES11-SP3-Updates"
+zypper ar "$HTTP_SERVER/repos/SUSE-Cloud-3-Pool/" "SUSE-Cloud-3-Pool"
+zypper ar "$HTTP_SERVER/repos/SUSE-Cloud-3-Updates/" "SUSE-Cloud-3-Updates"
+zypper ar "$HTTP_SERVER/repos/Cloud/" "SLE-Cloud"
+zypper ar "$HTTP_SERVER/repos/Cloud-PTF/" "SLE-Cloud-PTF"
+
+# Cloud-PTF has an unknown key, and this is expected
+zypper --gpg-auto-import-keys refresh -r SLE-Cloud-PTF
+
+ZYPPER_REF_OPT=
+test $CROWBAR_AUTO_IMPORT_KEYS -eq 1 && ZYPPER_REF_OPT=--gpg-auto-import-keys
+zypper $ZYPPER_REF_OPT refresh
+
+
+# Install packages that are needed
+# --------------------------------
+
+PATTERNS_INSTALL=
+PACKAGES_INSTALL=
+
+# Obvious dependencies
+PACKAGES_INSTALL="$PACKAGES_INSTALL openssh"
+
+# From autoyast profile
+PATTERNS_INSTALL="$PATTERNS_INSTALL Minimal base"
+PACKAGES_INSTALL="$PACKAGES_INSTALL biosdevname rubygem-cstruct supportutils-plugin-susecloud"
+
+# From sleshammer
+PACKAGES_INSTALL="$PACKAGES_INSTALL rubygem-chef rubygem-rest-client rubygem-cstruct rubygem-libxml-ruby rubygem-wsman rubygem-xml-simple parted lvm2 ipmitool curl tack nfs-client rsyslog ntp tcpdump"
+
+zypper --non-interactive install -t pattern $PATTERNS_INSTALL
+# Auto-agree with the license since it was already agreed on for the admin server
+zypper --non-interactive install --auto-agree-with-licenses suse-cloud-release
+zypper --non-interactive install $PACKAGES_INSTALL
+
+
+# Some initial setup
+# ------------------
+
+# Disable firewall
+/sbin/SuSEfirewall2 off
+
+# SSH setup
+chkconfig -a sshd
+service sshd start
+
+mkdir -p /var/log/crowbar
+
+# Taken from autoyast profile
+mkdir -p /root/.ssh
+chmod 700 /root/.ssh
+if ! curl -s -o /root/.ssh/authorized_keys.wget \
+    $HTTP_SERVER/authorized_keys ||\
+    grep -q "Error 404" /root/.ssh/authorized_keys.wget; then
+    rm -f /root/.ssh/authorized_keys.wget
+else
+    test -f /root/.ssh/authorized_keys && chmod 644 /root/.ssh/authorized_keys
+    cat /root/.ssh/authorized_keys.wget >> /root/.ssh/authorized_keys
+    rm -f /root/.ssh/authorized_keys.wget
+fi
+
+
+# Helper functions
+# ----------------
+
+post_allocate() {
+  local curlargs=(--connect-timeout 60 -s \
+                  -L -X POST --data-binary "{ \"name\": \"$1\" }" \
+                  -H "Accept: application/json" -H "Content-Type: application/json" \
+                  --max-time 240)
+
+  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+
+  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/allocate/0"
+}
+
+post_state() {
+  local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
+                  -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
+                  -H "Accept: application/json" -H "Content-Type: application/json" \
+                  --max-time 240)
+
+  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+
+  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
+}
+
+
+# Steps from sledgehammer
+# -----------------------
+
+MAC=$(cat /sys/class/net/$BOOTDEV/address)
+HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
+echo "$HOSTNAME" > /etc/HOSTNAME
+hostname "$HOSTNAME"
+export DOMAIN
+export HOSTNAME
+
+# Make sure date is up-to-date
+ntp="sntp -P no -r $ADMIN_IP"
+until $ntp; do
+  echo "Waiting for NTP server"
+  sleep 1
+done
+
+####killall dhclient
+####killall dhclient3
+
+curl -L -o /etc/chef/validation.pem \
+    --connect-timeout 60 -s \
+    "$HTTP_SERVER/validation.pem"
+
+post_state $HOSTNAME "discovering"
+chef-client -S http://$ADMIN_IP:4000/ -N "$HOSTNAME"
+post_state $HOSTNAME "discovered"
+# TODO need to find way of knowing that chef run is over on server side
+sleep 30
+
+post_allocate $HOSTNAME
+
+# Cheat to make sure that the bootdisk finder attribute will claim the right disks
+TMP_ATTRIBUTES=$(mktemp --suffix .json)
+echo '{ "crowbar_wall": { "registering": true } }' > "$TMP_ATTRIBUTES"
+
+rm -f /etc/chef/client.pem
+post_state $HOSTNAME "hardware-installing"
+chef-client -S http://$ADMIN_IP:4000/ -N "$HOSTNAME" --json-attributes "$TMP_ATTRIBUTES"
+post_state $HOSTNAME "hardware-installed"
+#TODO
+#wait_for_pxe_state ".*_install"
+sleep 30
+
+rm -f "$TMP_ATTRIBUTES"
+
+post_state $HOSTNAME "installing"
+
+# Obviously, on reboot from sledgehammer, we lose the client key
+rm -f /etc/chef/client.pem
+
+
+# Steps from autoyast profile
+# ---------------------------
+echo "$CROWBAR_KEY" > /etc/crowbar.install.key
+
+# normally done by crowbar_join, but only when chef is installed by crowbar_join
+chkconfig -a chef-client
+
+curl -s -o /usr/sbin/crowbar_join $HTTP_SERVER/$CROWBAR_OS/crowbar_join.sh
+chmod +x /usr/sbin/crowbar_join
+
+post_state $HOSTNAME "installed"
+#TODO
+# Wait for DHCP to update
+sleep 30
+
+/usr/sbin/crowbar_join --setup --debug --verbose

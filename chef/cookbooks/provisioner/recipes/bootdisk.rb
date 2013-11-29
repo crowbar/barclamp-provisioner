@@ -2,6 +2,29 @@
 
 node[:crowbar_wall] ||= Mash.new
 
+# Special code for crowbar_register:
+# We claim all devices that are in use.
+if node["crowbar_wall"]["registering"]
+  Chef::Log.info("Using crowbar_register mode to claim devices...")
+  unclaimed_disks = BarclampLibrary::Barclamp::Inventory::Disk.unclaimed(node)
+  unclaimed_disks.each do |d|
+    # Make sure to claim disks that are used for mount points
+    %x{lsblk #{d.name.gsub(/!/, "/")} --noheadings --output MOUNTPOINT | grep -q ^/$}
+    if $?.exitstatus == 0
+        Chef::Log.info("Claiming #{d.name} (#{d.unique_name}) as boot device for crowbar_register mode.")
+        node[:crowbar_wall][:boot_device] = d.unique_name.sub(/^\/dev\//, "")
+        d.claim("Boot")
+    else
+       %x{lsblk #{d.name} --noheadings --output MOUNTPOINT | grep -q -v ^$}
+       d.claim("OS") if $?.exitstatus == 0
+    end
+  end
+
+ # Remove attribute that is really temporary
+ node["crowbar_wall"].delete("registering")
+ node.save
+end
+
 # Find the first thing that looks like a hard drive based on
 # PCI bus enumeration, and use it as the target disk.
 # Unless some other barclamp has set it, that is.
