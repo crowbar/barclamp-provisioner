@@ -136,13 +136,9 @@ fi
 # Setup the repos
 # ---------------
 
-# TODO really needs to be more flexible for SMT / SUSE Manager
-zypper ar "$HTTP_SERVER/repos/SLES11-SP3-Pool/" "SLES11-SP3-Pool"
-zypper ar "$HTTP_SERVER/repos/SLES11-SP3-Updates/" "SLES11-SP3-Updates"
-zypper ar "$HTTP_SERVER/repos/SUSE-Cloud-3-Pool/" "SUSE-Cloud-3-Pool"
-zypper ar "$HTTP_SERVER/repos/SUSE-Cloud-3-Updates/" "SUSE-Cloud-3-Updates"
-zypper ar "$HTTP_SERVER/repos/Cloud/" "SLE-Cloud"
-zypper ar "$HTTP_SERVER/repos/Cloud-PTF/" "SLE-Cloud-PTF"
+<% @repos.keys.sort.each do |name| %>
+zypper ar "<%= @repos[name][:url] %>" "<%= name %>"
+<% end %>
 
 # Cloud-PTF has an unknown key, and this is expected
 zypper --gpg-auto-import-keys refresh -r SLE-Cloud-PTF
