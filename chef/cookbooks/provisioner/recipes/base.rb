@@ -193,7 +193,8 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     owner "root"
     group "root"
     source "crowbar_join.suse.sh.erb"
-    variables(:admin_ip => admin_ip)
+    variables(:admin_ip => admin_ip,
+              :web_port => provisioner_server_node[:provisioner][:web_port])
   end
 
   cookbook_file "/etc/init.d/crowbar_join" do
