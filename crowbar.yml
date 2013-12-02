@@ -65,6 +65,7 @@ roles:
       - provisioner-dhcp-server
     flags:
       - implicit
+      - destructive
 
 debs:
   ubuntu-12.04:
