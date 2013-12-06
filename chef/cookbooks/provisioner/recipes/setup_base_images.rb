@@ -365,10 +365,10 @@ end if  node["crowbar"]["provisioner"]["server"]["online"]
 bash "Install elilo as UEFI netboot loader" do
   code <<EOC
 cd #{uefi_dir}
-tar xzf '#{tftproot}/files/elilo-3.14-all.tar.gz'
-mv elilo-3.14-x86_64.efi bootx64.efi
-mv elilo-3.14-ia32.efi bootia32.efi
-mv elilo-3.14-ia64.efi bootia64.efi
+tar xzf '#{tftproot}/files/elilo-3.16-all.tar.gz'
+mv elilo-3.16-x86_64.efi bootx64.efi
+mv elilo-3.16-ia32.efi bootia32.efi
+mv elilo-3.16-ia64.efi bootia64.efi
 rm elilo*.efi elilo*.tar.gz || :
 EOC
   not_if "test -f '#{uefi_dir}/bootx64.efi'"
