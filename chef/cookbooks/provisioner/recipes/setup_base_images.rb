@@ -235,6 +235,11 @@ end
 
 # Generate the appropriate pxe and uefi config files for discovery
 # These will only be used if we have not already discovered the system.
+directory "#{pxecfg_dir}" do
+  action :create
+  recursive true
+end
+
 template "#{pxecfg_dir}/default" do
   mode 0644
   owner "root"
