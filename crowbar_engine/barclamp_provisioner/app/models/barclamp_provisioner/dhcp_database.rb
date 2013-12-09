@@ -17,42 +17,43 @@ class BarclampProvisioner::DhcpDatabase < Role
 
   def on_node_create(node)
     Rails.logger.info("provisioner-dhcp-database: Updating for added node #{node.name}")
-    # get the suggested mac (requies an ip address also!0
-    mac = node.get_hint["provisioner-dhcp-database"]["mac"] if node && node.hint["provisioner-dhcp-database"] && node.hint["network-admin"]
-    rerun_my_noderoles mac
+    rerun_my_noderoles node
   end
 
   def on_node_change(node)
     Rails.logger.info("provisioner-dhcp-database: Updating for changed node #{node.name}")
-    rerun_my_noderoles
+    rerun_my_noderoles node
   end
 
   def on_node_delete(node)
     Rails.logger.info("provisioner-dhcp-database: Updating for deleted node #{node.name}")
-    rerun_my_noderoles
+    rerun_my_noderoles node
   end
 
-  def rerun_my_noderoles preload=nil
+  def rerun_my_noderoles node
+
     clients = {}
     Role.transaction do
       Node.all.each do |node|
         ints = (node.discovery["ohai"]["network"]["interfaces"] rescue nil)
-        # we need to have discovered macs or a preloaded mac to add this node to the DHCP list
-        next unless ints or preload
         mac_list = []
-        # if we have a preloaded "hint" mac, then add that to the list
-        mac_list << preload if preload
+        # get the suggested mac (requies an ip address also!0
+        if node && node.get_hint["provisioner-dhcp-database"] && node.get_hint["network-admin"]
+          mac_list << node.get_hint["provisioner-dhcp-database"]["mac"]
+        end
         # scan interfaces to capture all the mac addresses discovered
-        ints.each do |net, net_data|
-          net_data.each do |field, field_data|
-            next if field != "addresses"
-            field_data.each do |addr, addr_data|
-              next if addr_data["family"] != "lladdr"
-              mac_list << addr unless mac_list.include? addr
+        unless ints.nil?
+          ints.each do |net, net_data|
+            net_data.each do |field, field_data|
+              next if field != "addresses"
+              field_data.each do |addr, addr_data|
+                next if addr_data["family"] != "lladdr"
+                mac_list << addr unless mac_list.include? addr
+              end
             end
           end
         end
-        # double check, we need to have at least 1 mac
+        # we need to have at least 1 mac (from preload or inets)
         next unless mac_list.length > 0
         # add this node to the DHCP clients list
         clients[node.name] = {
