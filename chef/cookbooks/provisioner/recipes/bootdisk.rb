@@ -23,7 +23,16 @@ ruby_block "Find the fallback boot device" do
       disk_by_path = nil
     end
     raise "Cannot find a hard disk!" unless dev
-    node[:crowbar_wall][:boot_device] = disk_by_path
+    # it's temporary changes for supportiong virtio storage device
+    # The bug is releted to this problem, can be find here
+    # http://lists.opensuse.org/opensuse-bugs/2012-04/msg00301.html
+    if dev =~ /^vd[a-z]+$/
+         node[:crowbar_wall][:boot_device] = dev
+    else
+         node[:crowbar_wall][:boot_device] = disk_by_path
+    end
+
+
     # Turn the found device into its corresponding /dev/disk/by-id link.
     # This name should be more stable than the /dev/disk/by-path one.
 
@@ -39,8 +48,10 @@ ruby_block "Find the fallback boot device" do
           bootdisks.find{|b|b =~ /^ata-/} ||
           bootdisks.find{|b|b =~ /^cciss-/} ||
           bootdisks.first
+     if dev !~ /^vd[a-z]+$/
         node[:crowbar_wall][:boot_device] = "disk/by-id/#{bootdisk}"
-      end
+      end 
+     end
     end
     disk = BarclampLibrary::Barclamp::Inventory::Disk.new(node,dev)
     disk.claim("Boot")
