@@ -89,6 +89,10 @@ roles:
     jig: chef-solo
     requires:
       - provisioner-dhcp-server
+    - attribs:
+      - name: 'hint_admin_mac'
+        description: 'Hint for Admin MAC address'
+        map: 'admin_mac'
   - name: provisioner-os-install
     jig: script
     requires:
