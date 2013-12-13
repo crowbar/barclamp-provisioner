@@ -33,7 +33,7 @@ class BarclampProvisioner::DhcpDatabase < Role
   def rerun_my_noderoles node
 
     clients = {}
-    mac_hint = Attrib.find_key "hint_admin_mac"
+    mac_hint = ::Attrib.find_key "hint-admin-mac"
 
 
     Role.transaction do
@@ -41,7 +41,7 @@ class BarclampProvisioner::DhcpDatabase < Role
         ints = (node.discovery["ohai"]["network"]["interfaces"] rescue nil)
         mac_list = []
         # get the suggested mac (requies an ip address also!
-        preseed = mac_hint(node, :hint)
+        preseed = mac_hint.get(node, :hint) if mac_hint
         mac_list << preseed if preseed 
 
         # scan interfaces to capture all the mac addresses discovered
