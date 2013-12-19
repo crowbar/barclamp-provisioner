@@ -30,17 +30,6 @@ crowbar:
   chef_order: 1060
   proposal_schema_version: 2
 
-locale_additions:
-  en:
-    barclamp:
-      provisioner:
-        edit_attributes: 
-          attributes: Attributes
-          access_keys: Additional SSH keys
-          access_keys_hint: (newline separated)
-        edit_deployment: 
-          deployment: Deployment
-
 debs:
   ubuntu-10.10:
     repos: 
