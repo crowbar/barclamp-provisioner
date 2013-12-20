@@ -15,32 +15,50 @@
 
 class BarclampProvisioner::DhcpDatabase < Role
 
+  def on_node_create(node)
+    Rails.logger.info("provisioner-dhcp-database: Updating for added node #{node.name}")
+    rerun_my_noderoles node
+  end
+
   def on_node_change(node)
     Rails.logger.info("provisioner-dhcp-database: Updating for changed node #{node.name}")
-    rerun_my_noderoles
+    rerun_my_noderoles node
   end
 
   def on_node_delete(node)
     Rails.logger.info("provisioner-dhcp-database: Updating for deleted node #{node.name}")
-    rerun_my_noderoles
+    rerun_my_noderoles node
   end
 
-  def rerun_my_noderoles
+  def rerun_my_noderoles node
+
     clients = {}
+    mac_hint = ::Attrib.find_key "hint-admin-mac"
+
+
     Role.transaction do
       Node.all.each do |node|
         ints = (node.discovery["ohai"]["network"]["interfaces"] rescue nil)
-        next unless ints
         mac_list = []
-        ints.each do |net, net_data|
-          net_data.each do |field, field_data|
-            next if field != "addresses"
-            field_data.each do |addr, addr_data|
-              next if addr_data["family"] != "lladdr"
-              mac_list << addr unless mac_list.include? addr
+        # get the suggested mac (requies an ip address also!
+        preseed = mac_hint.get(node, :hint) if mac_hint
+        mac_list << preseed if preseed 
+
+        # scan interfaces to capture all the mac addresses discovered
+        unless ints.nil?
+          ints.each do |net, net_data|
+            net_data.each do |field, field_data|
+              next if field != "addresses"
+              field_data.each do |addr, addr_data|
+                next if addr_data["family"] != "lladdr"
+                mac_list << addr unless mac_list.include? addr
+              end
             end
           end
         end
+        # we need to have at least 1 mac (from preload or inets)
+        next unless mac_list.length > 0
+        # add this node to the DHCP clients list
         clients[node.name] = {
           "mac_addresses" => mac_list.sort,
           "v4addr" => node.addresses.reject{|a|a.v6?}.sort.first.to_s,
@@ -48,6 +66,7 @@ class BarclampProvisioner::DhcpDatabase < Role
         }
       end
     end
+    # this gets the client list sent to the jig implementing the DHCP database role
     new_sysdata = {
       "crowbar" =>{
         "dhcp" => {
