@@ -3,4 +3,4 @@ en:
     provisioner:
       edit_attributes:
         access_keys: Additional SSH keys
-        access_keys_hint: Please write on a new line for each SSH key
+        access_keys_hint: Each SSH key must be on its own line
