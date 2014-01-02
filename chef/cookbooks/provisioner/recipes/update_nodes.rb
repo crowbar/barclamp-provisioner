@@ -63,7 +63,7 @@ if not nodes.nil? and not nodes.empty?
       system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
 
       # find all dhcp hosts for a node (not just ones matching currently known MACs)
-      host_files        = Dir.glob("#{dhcp_hosts_dir}#{mnode.name}-*.conf")
+      host_files        = Dir.glob("#{dhcp_hosts_dir}/#{mnode.name}-*.conf")
       host_files.each do |host_file|
         dhcp_host ::File.basename(host_file, ".conf") do
           action :remove
