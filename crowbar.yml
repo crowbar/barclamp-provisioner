@@ -84,7 +84,8 @@ roles:
         description: 'Hint for Admin MAC address'
         map: 'admin_mac'
     wants-attribs:
-      - provisioner-package-repos
+      - name: provisioner-package-repos
+        at: 'crowbar/provisioner/server/repositories'
   - name: provisioner-dhcp-server
     jig: chef-solo
     requires:
