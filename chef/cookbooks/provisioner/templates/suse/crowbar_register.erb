@@ -22,7 +22,7 @@
 
 usage () {
     cat <<EOF
-`basename $0` [-h|--help] [-v|--verbose] [--gpg-auto-import-keys] [--interface IF]
+`basename $0` [-h|--help] [-v|--verbose] [-f|--force] [--gpg-auto-import-keys] [--interface IF]
 
 Register node in Crowbar.
 EOF
@@ -31,6 +31,7 @@ EOF
 
 # Variables for options
 CROWBAR_AUTO_IMPORT_KEYS=0
+CROWBAR_FORCE=0
 CROWBAR_VERBOSE=0
 DEFINEDDEV=
 
@@ -38,6 +39,7 @@ while test $# -gt 0; do
     case "$1" in
         -h|--help|--usage|-\?) usage ;;
         -v|--verbose) CROWBAR_VERBOSE=1 ;;
+        -f|--force) CROWBAR_FORCE=1 ;;
         --gpg-auto-import-keys) CROWBAR_AUTO_IMPORT_KEYS=1 ;;
         --interface)
             if test $# -eq 1; then
@@ -57,6 +59,15 @@ if [ $(id -u) -gt 0 ]; then
     echo "$0 needs to be run as root user."
     echo ""
     exit 1
+fi
+
+if test $CROWBAR_FORCE -ne 1; then
+    echo    "Running this tool will alter the system for integration with SUSE Cloud."
+    echo -n "Continue? [y/N]: "
+    read ANSWER
+    if test "x$ANSWER" != xy -a "x$ANSWER" != xY; then
+        exit 0
+    fi
 fi
 
 
