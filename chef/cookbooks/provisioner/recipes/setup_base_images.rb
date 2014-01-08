@@ -19,9 +19,7 @@ package "syslinux"
 # Set up the OS images as well
 # Common to all OSes
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
-domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 web_port = node[:provisioner][:web_port]
-use_local_security = node[:provisioner][:use_local_security]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
 
