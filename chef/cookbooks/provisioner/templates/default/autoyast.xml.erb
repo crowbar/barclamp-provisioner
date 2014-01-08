@@ -29,28 +29,28 @@
   </general>
   <add-on>
     <add_on_products config:type="list">
-    <% for name, attrs in @repos %>
-      <listentry>
-        <name><%= name %></name>
-        <product><%= name %></product>
-        <product_dir>/</product_dir>
-        <media_url><%= attrs[:url] %></media_url>
-        <!-- See bnc#787157 for discussion on ask_on_error -->
-        <ask_on_error config:type="boolean"><%= attrs[:ask_on_error] || 'false' %></ask_on_error>
-      </listentry>
-    <% end %>
+      <% for name, attrs in @repos %>
+        <listentry>
+          <name><%= name %></name>
+          <product><%= name %></product>
+          <product_dir>/</product_dir>
+          <media_url><%= attrs[:url] %></media_url>
+          <!-- See bnc#787157 for discussion on ask_on_error -->
+          <ask_on_error config:type="boolean"><%= attrs[:ask_on_error] || 'false' %></ask_on_error>
+        </listentry>
+      <% end %>
     </add_on_products>
   </add-on>
   <users config:type="list">
-      <user>
-         <username>root</username>
-<% if @rootpw_hash != "" %>
-         <user_password><%= @rootpw_hash %></user_password>
-         <encrypted config:type="boolean">true</encrypted>
-<% end %>
-         <forename/>
-         <surname/>
-      </user>
+    <user>
+      <username>root</username>
+      <% if @rootpw_hash != "" %>
+        <user_password><%= @rootpw_hash %></user_password>
+        <encrypted config:type="boolean">true</encrypted>
+      <% end %>
+      <forename/>
+      <surname/>
+    </user>
   </users>
   <networking>
     <keep_install_network config:type="boolean">true</keep_install_network>
@@ -66,15 +66,70 @@
     </routing>
   </networking>
   <partitioning config:type="list">
-    <drive>
-<% if @boot_device %>
-      <device>/dev/<%= @boot_device %></device>
-<% end %>
-      <initialize config:type="boolean">true</initialize>
-      <partitions config:type="list"/>
-      <type config:type="symbol">CT_DISK</type>
-      <use>all</use>
-    </drive>
+    <% if @software_raid %>
+      <drive>
+        <type config:type="symbol">CT_DISK</type>
+        <partitions config:type="list">
+          <partition>
+            <mount>swap</mount>
+            <size>auto</size>
+          </partition>
+          <partition>
+            <partition_id config:type="integer">253</partition_id>
+            <format config:type="boolean">false</format>
+            <raid_name>/dev/md0</raid_name>
+            <raid_type>raid</raid_type>
+            <size>max</size>
+          </partition>
+        </partitions>
+        <use>all</use>
+      </drive>
+      <drive>
+        <type config:type="symbol">CT_DISK</type>
+        <partitions config:type="list">
+          <partition>
+            <mount>swap</mount>
+            <size>auto</size>
+          </partition>
+          <partition>
+            <format config:type="boolean">false</format>
+            <partition_id config:type="integer">253</partition_id>
+            <raid_name>/dev/md0</raid_name>
+            <raid_type>raid</raid_type>
+            <size>max</size>
+          </partition>
+        </partitions>
+        <use>all</use>
+      </drive>
+      <drive>
+        <device>/dev/md</device>
+        <partitions config:type="list">
+          <partition>
+            <filesystem config:type="symbol">ext3</filesystem>
+            <format config:type="boolean">true</format>
+            <mount>/</mount>
+            <partition_id config:type="integer">131</partition_id>
+            <partition_nr config:type="integer">0</partition_nr>
+            <raid_options>
+              <chunk_size>4</chunk_size>
+              <parity_algorithm>left-asymmetric</parity_algorithm>
+              <raid_type>raid1</raid_type>
+            </raid_options>
+          </partition>
+        </partitions>
+        <use>all</use>
+      </drive>
+    <% else %>
+      <drive>
+        <% if @boot_device %>
+          <device>/dev/<%= @boot_device %></device>
+        <% end %>
+        <initialize config:type="boolean">true</initialize>
+        <partitions config:type="list"/>
+        <type config:type="symbol">CT_DISK</type>
+        <use>all</use>
+      </drive>
+    <% end %>
   </partitioning>
   <timezone>
     <hwclock>UTC</hwclock>
@@ -82,11 +137,11 @@
   </timezone>
   <scripts>
     <chroot-scripts config:type="list">
-        <script>
-            <chrooted config:type="boolean">false</chrooted>
-            <debug config:type="boolean">true</debug>
-            <filename>crowbar_post</filename>
-            <source>
+      <script>
+        <chrooted config:type="boolean">false</chrooted>
+        <debug config:type="boolean">true</debug>
+        <filename>crowbar_post</filename>
+        <source>
 <![CDATA[
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
@@ -133,8 +188,8 @@ post_state $HOSTNAME "installed"
 sleep 30
 sync
 ]]>
-            </source>
-        </script>
+        </source>
+      </script>
     </chroot-scripts>
     <init-scripts config:type="list">
       <script>
