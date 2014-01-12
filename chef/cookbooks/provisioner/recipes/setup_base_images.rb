@@ -27,7 +27,6 @@ web_port = node["crowbar"]["provisioner"]["server"]["web_port"]
 use_local_security =  node["crowbar"]["provisioner"]["server"]["use_local_security"]
 provisioner_web="http://#{node.name}:#{web_port}"
 node.normal["crowbar"]["provisioner"]["server"]["webserver"]=provisioner_web
-append_line = ''
 os_token="#{node["platform"]}-#{node["platform_version"]}"
 tftproot =  node["crowbar"]["provisioner"]["server"]["root"]
 discover_dir="#{tftproot}/discovery"
@@ -35,7 +34,7 @@ pxecfg_dir="#{discover_dir}/pxelinux.cfg"
 uefi_dir=discover_dir
 pxecfg_default="#{pxecfg_dir}/default"
 
-unless  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
+unless node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
   # FIXME: What is the purpose of this, really? If pxecfg_default does not exist
   # the root= parameters will not get appended to the kernel commandline. (Luckily
   # we don't need those with the SLES base sledgehammer)
@@ -44,27 +43,28 @@ unless  node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
   # append the root= parameters?
   # ANSWER:  This hackery exists to automatically do The Right Thing in handling
   # CentOS 5 vs. CentOS 6 based sledgehammer images.
-  if File.exists? pxecfg_default
-    append_line = IO.readlines(pxecfg_default).detect{|l| /APPEND/i =~ l}
-    if append_line
-      append_line = append_line.strip.gsub(/(^APPEND |initrd=[^ ]+|console=[^ ]+|rhgb|quiet|crowbar\.[^ ]+)/i,'').strip
-    elsif node["platform"] != "suse"
-      append_line = "root=/sledgehammer.iso rootfstype=iso9660 rootflags=loop"
-    end
+  sledge_args = Array.new
+  sledge_args << "rootflags=loop"
+  sledge_args << "initrd=initrd0.img"
+  sledge_args << "root=live:/sledgehammer.iso"
+  sledge_args << "rootfstype=auto"
+  sledge_args << "ro"
+  sledge_args << "liveimg"
+  sledge_args << "rd_NO_LUKS"
+  sledge_args << "rd_NO_MD"
+  sledge_args << "rd_NO_DM"
+  if node["crowbar"]["provisioner"]["server"]["use_serial_console"]
+    sledge_args << "console=tty0 console=ttyS1,115200n8"
   end
+  sledge_args << "provisioner.web=http://#{v4addr.addr}:#{web_port}"
+  # This should not be hardcoded!
+  sledge_args << "crowbar.web=http://#{v4addr.addr}:3000"
+  sledge_args << "crowbar.dns.domain=#{node["crowbar"]["dns"]["domain"]}"
+  sledge_args << "crowbar.dns.servers=#{node["crowbar"]["dns"]["nameservers"].join(',')}"
 
-  if  node["crowbar"]["provisioner"]["server"]["use_serial_console"]
-    append_line += " console=tty0 console=ttyS1,115200n8"
-  end
-
-  if (node["crowbar"]["network"]["admin"]["v6prefix"] rescue nil)
-    append_line += " crowbar.v6prefix=#{node["crowbar"]["network"]["admin"]["v6prefix"]}"
-  end
-  
-  node.normal["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"] = append_line
-else
-  append_line = node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
+  node.normal["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"] = sledge_args.join(" ")
 end
+append_line = node["crowbar"]["provisioner"]["server"]["sledgehammer_kernel_params"]
 
 # By default, install the same OS that the admin node is running
 # If the comitted proposal has a defualt, try it.
@@ -377,18 +377,4 @@ mv elilo-3.16-ia64.efi bootia64.efi
 rm elilo*.efi elilo*.tar.gz || :
 EOC
   not_if "test -f '#{uefi_dir}/bootx64.efi'"
-end
-
-
-# Generate an appropriate control.sh for the system.
-template "/updates/control.sh" do
-  source "control.sh.erb"
-  mode "0755"
-  variables(:provisioner_name => node.name,
-            :online => node["crowbar"]["provisioner"]["server"]["online"],
-            :provisioner_web => provisioner_web,
-            :proxy => node["crowbar"]["provisioner"]["server"]["proxy"],
-            :keys => (node["crowbar"]["provisioner"]["server"]["access_keys"] rescue Hash.new).values.sort.join($/),
-            :v4_addr => node.address("admin",IP::IP4).addr
-            )
 end

@@ -56,8 +56,6 @@ class BarclampProvisioner::DhcpDatabase < Role
             end
           end
         end
-        # we need to have at least 1 mac (from preload or inets)
-        next unless mac_list.length > 0
         # add this node to the DHCP clients list
         clients[node.name] = {
           "mac_addresses" => mac_list.sort,
