@@ -16,8 +16,8 @@
 class ProvisionerService < ServiceObject
 
   def initialize(thelogger)
+    super(thelogger)
     @bc_name = "provisioner"
-    @logger = thelogger
   end
 
   def create_proposal
@@ -25,6 +25,12 @@ class ProvisionerService < ServiceObject
     base = super
     @logger.debug("Provisioner create_proposal: exiting")
     base
+  end
+
+  def validate_proposal_after_save proposal
+    validate_one_for_role proposal, "provisioner-server"
+
+    super
   end
 
   def transition(inst, name, state)
