@@ -86,6 +86,8 @@ roles:
         map: 'admin_mac'
     wants-attribs:
       - provisioner-package-repos
+      - provisioner-proxy
+      - provisioner-webserver
   - name: provisioner-dhcp-server
     jig: chef-solo
     wants-attribs:
