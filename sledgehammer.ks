@@ -41,6 +41,7 @@ libxml2.i686
 libxslt
 lvm2
 make
+mdadm
 mktemp
 ntp
 openssh-clients

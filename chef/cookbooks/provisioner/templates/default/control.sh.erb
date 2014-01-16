@@ -67,27 +67,5 @@ curl -g --digest -u "$CROWBAR_KEY" \
     -d 'alive=true'
 
 # We are alive, and we should have a host entry created now.  Wait forever to do something.
+# The last line in this script must always be exit 0!!
 exit 0
-
-nuke_everything() {
-    # Make sure that the kernel knows about all the partitions
-    for bd in /sys/block/sd*; do
-        [[ -b /dev/${bd##*/} ]] || continue
-        partprobe "/dev/${bd##*/}"
-    done
-    # and then wipe them all out.
-    while read maj min blocks name; do
-        [[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
-        [[ $name = loop* ]] && continue
-        [[ $name = dm* ]] && continue
-        if (( blocks >= 2048)); then
-            dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048"
-            dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
-        else
-            dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=$blocks"
-        fi
-    done < <(tac /proc/partitions)
-
-    ## for good measure, nuke partition tables on disks (nothing should remain bootable)
-    for i in `ls /dev/sd?`; do  parted -m -s  $i mklabel bsd ; sleep 1 ; done
-}
