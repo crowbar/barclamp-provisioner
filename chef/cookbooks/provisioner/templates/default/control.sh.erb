@@ -17,13 +17,6 @@
 # We get the following variables from start-up.sh
 # MAC BOOTDEV ADMIN_IP DOMAIN HOSTNAME HOSTNAME_MAC MYIP
 
-if [[ $PWD != /tmp ]]; then
-    cd /tmp
-    exec ./control.sh
-fi
-
-exec >>/tmp/control.log
-exec 2>>/tmp/control.log
 set -x
 shopt -s extglob
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
@@ -33,91 +26,8 @@ export https_proxy="$http_proxy"
 provisioner="<%=@provisioner_web%>"
 crowbar="http://<%=@provisioner_name%>:3000"
 crowbar_v4="http://<%=@v4_addr%>:3000"
-host_re='crowbar\.fqdn=([^ ]+)'
-v6prefix_re='crowbar\.v6prefix=([^ ]+)'
 
-# Get our passed-in hostname
-if ! [[ $(cat /proc/cmdline) =~ $host_re ]]; then
-    NEED_CREATE=true
-    HOSTNAME="d${MAC//:/-}.${DOMAIN}"
-else
-    HOSTNAME="${BASH_REMATCH[1]}"
-fi
-
-sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
-if [[ -f /etc/sysconfig/network ]]; then
-    sed -i -e "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" /etc/sysconfig/network
-fi
-echo "${HOSTNAME#*.}" >/etc/domainname
-hostname "$HOSTNAME"
-
-# Our first two curl calls need ot happen over IPv4,
-# because that is all we are guaranteed to have at that point.
-if [[ $NEED_CREATE ]]; then
-    curl -g --digest -u "$CROWBAR_KEY" -X POST \
-        -d "name=$HOSTNAME" \
-        "$crowbar_v4/api/v2/nodes/"
-else
-    # We know who we should be, but we are coming back to life.
-    # Mark us as dead to let our role resynchronize, and
-    # make sure the crowbar framework is aware that we booted into
-    # Sledgehammer.
-    curl -g --digest -u "$CROWBAR_KEY" \
-        -X PUT "$crowbar_v4/api/v2/nodes/$HOSTNAME" \
-        -d 'alive=false' \
-        -d 'bootenv=sledgehammer'
-fi
-
-# Ditch NFS for now.
-umount -l /install-logs/
-umount -l /updates
-
-ip_re='([0-9a-f.:]+/[0-9]+)'
-# Figure out what IP addresses we should have.
-netline=$(curl -g --digest -u "$CROWBAR_KEY" \
-    -X GET "$crowbar_v4/network/api/v2/networks/admin/allocations" \
-    -d "node=$HOSTNAME")
-
-# Bye bye to DHCP.
-killall dhclient
-ip addr flush "$BOOTDEV"
-
-# Add our new IP addresses.
-nets=(${netline//,/ })
-for net in "${nets[@]}"; do
-    [[ $net =~ $ip_re ]] || continue
-    net=${BASH_REMATCH[1]}
-    # Make this more complicated and exact later.
-    ip addr add "$net" dev "$BOOTDEV" || :
-done
-
-# Figure out what IP addresses the admin node has
-netline=$(curl -g --digest -u "$CROWBAR_KEY" \
-    -X GET "$crowbar_v4/network/api/v2/networks/admin/allocations" \
-    -d "node=<%=@provisioner_name%>")
-
-# Update our /etc/resolv.conf with the IP address of our admin node,
-# which is assumed to be our nameserver
-chattr -i /etc/resolv.conf || :
-echo "domain $DOMAIN" >/etc/resolv.conf.new
-
-nets=(${netline//,/ })
-for net in "${nets[@]}"; do
-    [[ $net =~ $ip_re ]] || continue
-    net=${BASH_REMATCH[1]}
-    echo "nameserver ${net%%/*}" >> /etc/resolv.conf.new
-done
-
-mv -f /etc/resolv.conf.new /etc/resolv.conf
-
-# Force reliance on DNS
-echo '127.0.0.1 localhost' >/etc/hosts
-echo '::1 localhost6' >>/etc/hosts
-
-# Wait for the DNS server to notice that we are alive.
-while ! ping6 -c 1 -w 1 "$HOSTNAME"; do
-    sleep 1
-done
+# Set up just enough infrastructure to let the jigs work.
 
 # Synchronize our date
 ntpdate "<%=@provisioner_name%>"
@@ -150,9 +60,6 @@ cat >/root/.ssh/authorized_keys <<EOF
 <%= @keys %>
 EOF
 
-echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
-service sshd restart
-
 # Mark us as alive.
 # Mark the node as alive.
 curl -g --digest -u "$CROWBAR_KEY" \
@@ -161,46 +68,6 @@ curl -g --digest -u "$CROWBAR_KEY" \
 
 # We are alive, and we should have a host entry created now.  Wait forever to do something.
 exit 0
-
-# The rest of this will vanish once we migrate over to driving these via the script jig
-MYINDEX=${MYIP##*.}
-DHCP_STATE=$(grep -o -E 'crowbar\.state=[^ ]+' /proc/cmdline)
-DHCP_STATE=${DHCP_STATE#*=}
-MAXTRIES=5
-BMC_ADDRESS=""
-BMC_NETMASK=""
-BMC_ROUTER=""
-ALLOCATED=false
-CHEF_SERVER="http://$ADMIN_IP:4000"
-export DHCP_STATE MYINDEX BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
-export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE http_proxy https_proxy
-
-# Make sure date is up-to-date
-NTPDATE=/usr/sbin/ntpdate
-
-# SLES doesn't have ntpdate use sntp there. On openSUSE 12.2 and newer
-# ntpdate is present again
-[ -f /etc/SuSE-release ] && grep "Enterprise" /etc/SuSE-release && NTPDATE="sntp -P no -r"
-until $NTPDATE $ADMIN_IP || [[ $DHCP_STATE = 'debug' ]]
-do
-  echo "Waiting for NTP server"
-  sleep 1
-done
-
-
-# Add full code set
-if [ -e /updates/full_data.sh ] ; then
-  cp /updates/full_data.sh /tmp
-  /tmp/full_data.sh
-fi
-
-# Get stuff out of nfs.
-cp /updates/parse_node_data /tmp
-
-mkdir -p /etc/chef
-cp "/updates/$HOSTNAME/client.pem" /etc/chef
-
-. "/updates/control_lib.sh"
 
 nuke_everything() {
     # Make sure that the kernel knows about all the partitions
@@ -224,98 +91,3 @@ nuke_everything() {
     ## for good measure, nuke partition tables on disks (nothing should remain bootable)
     for i in `ls /dev/sd?`; do  parted -m -s  $i mklabel bsd ; sleep 1 ; done
 }
-
-# If there are pre/post transition hooks for this state (per system or not),
-# handle them.
-run_hooks() {
-    # $1 = state
-    # $2 = pre or post
-    local hookdirs=() hookdir='' hook=''
-    # We only handle pre and post hooks.  Anything else is a bug in
-    # control.sh that we should debug.
-    case $3 in
-        pre) hookdirs=("/updates/$HOSTNAME/$1-$2" "/updates/$1-$2");;
-        post) hookdirs=("/updates/$1-$2" "/updates/$HOSTNAME/$1-$2");;
-        *) post_state debug; reboot_system;;
-    esac
-    for hookdir in "${hookdirs[@]}"; do
-        [[ -d $hookdir ]] || continue
-        for hook in "$hookdir/"*.hook; do
-            [[ -x $hook ]] || continue
-            # If a hook fails, then Something Weird happened, and it
-            # needs to be debugged.
-            export HOOKSTATE="$1-$2" HOOKNAME="${hook##*/}"
-            if "$hook"; then
-                unset HOOKSTATE HOOKNAME
-                get_state
-                continue
-            else
-                post_state debug
-                reboot_system
-            fi
-        done
-    done
-}
-
-run_chef_client() {
-    # $1 = URL of server
-    # $2 = name of client
-    # $3 = Crowbar state client is in.
-    chef-client -S "$CHEF_SERVER" && return
-    post_state debug
-    exit
-}
-
-walk_node_through () {
-    # $1 = hostname for chef-client run
-    # $@ = states to walk through
-    local f='' state=''
-    while (( $# > 0)); do
-        if (( $# == 1)); then
-            report_state "$1"
-        else
-            post_state "$1"
-        fi
-        run_hooks "$1" pre
-        run_chef_client
-        run_hooks "$1" post
-        shift
-    done
-}
-
-# If there is a custom control.sh for this system, source it.
-[[ -x /updates/$HOSTNAME/control.sh ]] && \
-    . "/updates/$HOSTNAME/control.sh"
-
-discover() {
-    echo "Discovering with: $HOSTNAME"
-    walk_node_through discovering
-    post_state discovered
-    run_chef_client
-}
-
-hardware_install () {
-    wait_for_allocated "$HOSTNAME"
-    echo "Hardware installing with: $HOSTNAME"
-    nuke_everything
-    walk_node_through hardware-installing hardware-installed
-    nuke_everything
-    post_state installing
-}
-
-hwupdate () {
-    walk_node_through hardware-updating hardware-updated
-}
-
-run_chef_client
-
-__post_state discovered
-exit 0
-
-case $DHCP_STATE in
-    discovery) discover && hardware_install;;
-    hwinstall) hardware_install;;
-    update) hwupdate;;
-esac 2>&1 | tee -a /install-logs/$HOSTNAME-update.log
-[[ $DHCP_STATE = 'debug' ]] && exit
-reboot_system
