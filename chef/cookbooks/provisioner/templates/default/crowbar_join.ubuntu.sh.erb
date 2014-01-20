@@ -30,10 +30,12 @@ if [[ -f /etc/crowbar.install.key ]]; then
 fi
 
 put_alive() {
-    curl -u "$CROWBAR_KEY" --digest -L -X PUT \
+    while ! curl -f -u "$CROWBAR_KEY" --digest -L -X PUT \
         -d "bootenv=local" \
         -d "alive=$1" \
-        "http://<%=@admin_ip%>:3000/api/v2/nodes/$HOSTNAME"
+        "http://<%=@admin_ip%>:3000/api/v2/nodes/$HOSTNAME" &>/dev/null; do
+        sleep 1
+    done
 }
 
 case $1 in

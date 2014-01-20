@@ -23,18 +23,13 @@ class BarclampProvisioner::OsInstall < Role
     }
   end
 
-  def on_transition(nr)
+  def on_active(nr)
     node = nr.node
+    return if node.bootenv == "local" || node.admin
     target = nr.all_my_data["crowbar"]["target_os"] rescue nr.deployment_data["crowbar"]["target_os"]
-    # this could be expanded if needed but "local" can be used for any overrides including simulator & docker vms
-    # local means, skip sledgehammer and use the installed OS
-    return if ["local"].member? node.bootenv
-    Rails.logger.info("provisioner-install: Trying to install #{target} on #{node.name} (bootenv: #{node.bootenv})")
-
     node.bootenv = "#{target}-install"
     # for most jigs we want force the node to check back in.  Since the 
-    node.alive = false
-    node.save!
+    node.reboot
   end
 
 end
