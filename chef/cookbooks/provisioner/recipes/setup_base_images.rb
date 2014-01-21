@@ -19,6 +19,8 @@ package "syslinux"
 # Set up the OS images as well
 # Common to all OSes
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
+admin_broadcast = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").broadcast
+domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
 web_port = node[:provisioner][:web_port]
 provisioner_web="http://#{admin_ip}:#{web_port}"
 append_line = ''
@@ -28,6 +30,13 @@ tftproot = node[:provisioner][:root]
 pxecfg_dir="#{tftproot}/discovery/pxelinux.cfg"
 pxecfg_default="#{tftproot}/discovery/pxelinux.cfg/default"
 uefi_dir="#{tftproot}/discovery"
+
+if ::File.exists?("/etc/crowbar.install.key")
+  crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
+else
+  crowbar_key = ""
+end
+
 
 ["share","lib"].each do |d|
   next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
@@ -77,8 +86,8 @@ if node[:provisioner][:use_serial_console]
   append_line += " console=tty0 console=ttyS1,115200n8"
 end
 
-if ::File.exists?("/etc/crowbar.install.key")
-  append_line += " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
+if crowbar_key != ""
+  append_line += " crowbar.install.key=#{crowbar_key}"
 end
 append_line = append_line.split.join(' ')
 node.set[:provisioner][:sledgehammer_append_line] = append_line
@@ -293,8 +302,8 @@ node[:provisioner][:supported_oses].each do |os,params|
   end
 
   # Make sure we get a crowbar install key as well.
-  if ::File.exists?("/etc/crowbar.install.key")
-    append << " crowbar.install.key=#{::File.read("/etc/crowbar.install.key").chomp.strip}"
+  unless crowbar_key.empty?
+    append << " crowbar.install.key=#{crowbar_key}"
   end
 
   # These should really be made libraries or something.
@@ -309,6 +318,45 @@ node[:provisioner][:supported_oses].each do |os,params|
       group "root"
       source "crowbar_join.suse.sh.erb"
       variables(:admin_ip => admin_ip, :web_port => web_port)
+    end
+
+    default_repos_url = "#{provisioner_web}/repos"
+    # Keep in sync with update_nodes.rb
+    repos = Mash.new
+    if node[:provisioner][:suse]
+      if node[:provisioner][:suse][:autoyast]
+        if node[:provisioner][:suse][:autoyast][:repos]
+          repos = node[:provisioner][:suse][:autoyast][:repos].to_hash
+        end
+      end
+    end
+    # This needs to be done here rather than via deep-merge with static
+    # JSON due to the dynamic nature of the default value.
+    %w(
+      SLE-Cloud
+      SLE-Cloud-PTF
+      SUSE-Cloud-3-Pool
+      SUSE-Cloud-3-Updates
+      SLES11-SP3-Pool
+      SLES11-SP3-Updates
+    ).each do |name|
+      suffix = name.sub(/^SLE-/, '')
+      repos[name] ||= Mash.new
+      repos[name][:url] ||= default_repos_url + '/' + suffix
+    end
+
+    template "#{os_dir}/crowbar_register" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "crowbar_register.erb"
+      variables(:admin_ip => admin_ip,
+                :admin_broadcast => admin_broadcast,
+                :web_port => web_port,
+                :os => os,
+                :crowbar_key => crowbar_key,
+                :domain => domain_name,
+                :repos => repos)
     end
 
   when /^(redhat|centos)/ =~ os
@@ -406,12 +454,6 @@ node[:provisioner][:supported_oses].each do |os,params|
       mode "0644"
       action :create
       source "set_hostname.ps1"
-    end
-
-    if ::File.exists?("/etc/crowbar.install.key")
-      crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
-    else
-      crowbar_key = ""
     end
 
     # Copy the script required for setting the installed state
