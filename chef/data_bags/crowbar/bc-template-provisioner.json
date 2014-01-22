@@ -22,6 +22,11 @@
 	  "kernel": "images/pxeboot/vmlinuz",
           "append": "ksdevice=bootif"
 	},
+        "redhat-6.5": {
+          "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+          "append": "ksdevice=bootif"
+	},
         "centos-6.2": {
      	  "initrd": "images/pxeboot/initrd.img",
 	  "kernel": "images/pxeboot/vmlinuz",
@@ -32,6 +37,11 @@
 	  "kernel": "images/pxeboot/vmlinuz",
 	  "append": "ksdevice=bootif"
 	},
+        "centos-6.5": {
+     	  "initrd": "images/pxeboot/initrd.img",
+	  "kernel": "images/pxeboot/vmlinuz",
+	  "append": "ksdevice=bootif"
+    },
         "suse-11.3": {
           "initrd": "boot/x86_64/loader/initrd",
           "kernel": "boot/x86_64/loader/linux",
