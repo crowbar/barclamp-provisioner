@@ -243,7 +243,7 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
           %x{zypper --non-interactive removerepo #{name}}
         end
         Chef::Log.info("Adding #{name} zypper repository...")
-        %x{zypper --non-interactive addrepo #{attrs[:url]} #{name}}
+        %x{zypper --non-interactive addrepo --refresh #{attrs[:url]} #{name}}
       end
     end
   end
