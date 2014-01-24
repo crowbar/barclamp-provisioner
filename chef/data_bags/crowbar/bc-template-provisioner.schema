@@ -66,6 +66,7 @@
             },
             "use_local_security": { "type": "bool", "required": true },
             "use_serial_console": { "type": "bool", "required": true },
+            "serial_tty": { "type": "str",  "required": true },
             "dhcp": {
               "type": "map",
               "required": true,
@@ -100,6 +101,7 @@
             "crowbar-status": { "type": "str" },
             "crowbar-failed": { "type": "str" },
             "crowbar-queued": { "type": "bool" },
+            "schema-revision": { "type": "int" },
             "element_states": {
               "type": "map",
               "mapping": {

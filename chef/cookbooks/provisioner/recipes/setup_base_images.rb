@@ -83,7 +83,7 @@ if File.exists? pxecfg_default
 end
 
 if node[:provisioner][:use_serial_console]
-  append_line += " console=tty0 console=ttyS1,115200n8"
+  append_line += " console=tty0 console=#{node[:provisioner][:serial_tty]}"
 end
 
 if crowbar_key != ""
@@ -298,7 +298,7 @@ node[:provisioner][:supported_oses].each do |os,params|
 
   # If we were asked to use a serial console, arrange for it.
   if node[:provisioner][:use_serial_console]
-    append << " console=tty0 console=ttyS1,115200n8"
+    append << " console=tty0 console=#{node[:provisioner][:serial_tty]}"
   end
 
   # Make sure we get a crowbar install key as well.

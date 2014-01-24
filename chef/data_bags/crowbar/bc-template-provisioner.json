@@ -55,6 +55,7 @@
       "coredump": false,
       "use_local_security": true,
       "use_serial_console": false,
+      "serial_tty": "ttyS0,115200n8",
       "dhcp": {
         "lease-time": 60,
         "state_machine": {
@@ -81,6 +82,7 @@
   "deployment": {
     "provisioner": {
       "crowbar-revision": 0,
+      "schema-revision": 1,
       "element_states": {
         "provisioner-bootdisk-finder": [ "hardware-installing" ],
         "provisioner-server": [ "readying", "ready", "applying" ],
