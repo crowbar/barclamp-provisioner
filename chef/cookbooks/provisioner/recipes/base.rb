@@ -261,15 +261,15 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     end
 
     for name, attrs in repos
-      url = %x{zypper repos #{name} 2> /dev/null | grep "^URI " | cut -d : -f 2-}
+      url = %x{zypper --non-interactive repos #{name} 2> /dev/null | grep "^URI " | cut -d : -f 2-}
       url.strip!
       if url != attrs[:url]
         unless url.empty?
           Chef::Log.info("Removing #{name} zypper repository pointing to wrong URI...")
-          %x{zypper removerepo #{name}}
+          %x{zypper --non-interactive removerepo #{name}}
         end
         Chef::Log.info("Adding #{name} zypper repository...")
-        %x{zypper addrepo #{attrs[:url]} #{name}}
+        %x{zypper --non-interactive addrepo #{attrs[:url]} #{name}}
       end
     end
   end
