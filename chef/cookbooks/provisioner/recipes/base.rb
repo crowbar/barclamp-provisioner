@@ -187,13 +187,15 @@ end
 # On SUSE: install crowbar_join properly, with init script
 if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
   admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(provisioner_server_node, "admin").address
+  web_port = provisioner_server_node[:provisioner][:web_port]
+
   template "/usr/sbin/crowbar_join" do
     mode 0755
     owner "root"
     group "root"
     source "crowbar_join.suse.sh.erb"
     variables(:admin_ip => admin_ip,
-              :web_port => provisioner_server_node[:provisioner][:web_port])
+              :web_port => web_port)
   end
 
   cookbook_file "/etc/init.d/crowbar_join" do
@@ -227,5 +229,48 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
   file "/etc/init.d/crowbar_join.sh" do
     action :delete
     only_if "test -f /etc/init.d/crowbar_join.sh"
+  end
+
+  if node["platform"] == "suse"
+    ## make sure the repos are properly setup
+    provisioner_web = "http://#{admin_ip}:#{web_port}"
+    default_repos_url = "#{provisioner_web}/repos"
+
+    # Keep in sync with similar code in update_nodes.rb
+    repos = Mash.new
+    if provisioner_server_node[:provisioner][:suse]
+      if provisioner_server_node[:provisioner][:suse][:autoyast]
+        if provisioner_server_node[:provisioner][:suse][:autoyast][:repos]
+          repos = provisioner_server_node[:provisioner][:suse][:autoyast][:repos].to_hash
+        end
+      end
+    end
+    # This needs to be done here rather than via deep-merge with static
+    # JSON due to the dynamic nature of the default value.
+    %w(
+      SLE-Cloud
+      SLE-Cloud-PTF
+      SUSE-Cloud-3-Pool
+      SUSE-Cloud-3-Updates
+      SLES11-SP3-Pool
+      SLES11-SP3-Updates
+    ).each do |name|
+      suffix = name.sub(/^SLE-/, '')
+      repos[name] ||= Mash.new
+      repos[name][:url] ||= default_repos_url + '/' + suffix
+    end
+
+    for name, attrs in repos
+      url = %x{zypper repos #{name} 2> /dev/null | grep "^URI " | cut -d : -f 2-}
+      url.strip!
+      if url != attrs[:url]
+        unless url.empty?
+          Chef::Log.info("Removing #{name} zypper repository pointing to wrong URI...")
+          %x{zypper removerepo #{name}}
+        end
+        Chef::Log.info("Adding #{name} zypper repository...")
+        %x{zypper addrepo #{attrs[:url]} #{name}}
+      end
+    end
   end
 end

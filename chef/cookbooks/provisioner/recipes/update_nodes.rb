@@ -189,6 +189,7 @@ if not nodes.nil? and not nodes.empty?
 
           Chef::Log.info("repos: #{repos.inspect}")
 
+          ### Keep in sync with base.rb and setup_base_images.rb!
           # This needs to be done here rather than via deep-merge with static
           # JSON due to the dynamic nature of the default value.
           %w(
