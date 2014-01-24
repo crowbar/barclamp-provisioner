@@ -233,33 +233,7 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
 
   if node["platform"] == "suse"
     ## make sure the repos are properly setup
-    provisioner_web = "http://#{admin_ip}:#{web_port}"
-    default_repos_url = "#{provisioner_web}/repos"
-
-    # Keep in sync with similar code in update_nodes.rb
-    repos = Mash.new
-    if provisioner_server_node[:provisioner][:suse]
-      if provisioner_server_node[:provisioner][:suse][:autoyast]
-        if provisioner_server_node[:provisioner][:suse][:autoyast][:repos]
-          repos = provisioner_server_node[:provisioner][:suse][:autoyast][:repos].to_hash
-        end
-      end
-    end
-    # This needs to be done here rather than via deep-merge with static
-    # JSON due to the dynamic nature of the default value.
-    %w(
-      SLE-Cloud
-      SLE-Cloud-PTF
-      SUSE-Cloud-3-Pool
-      SUSE-Cloud-3-Updates
-      SLES11-SP3-Pool
-      SLES11-SP3-Updates
-    ).each do |name|
-      suffix = name.sub(/^SLE-/, '')
-      repos[name] ||= Mash.new
-      repos[name][:url] ||= default_repos_url + '/' + suffix
-    end
-
+    repos = Provisioner::Repositories.get_repos(provisioner_server_node, "suse")
     for name, attrs in repos
       url = %x{zypper --non-interactive repos #{name} 2> /dev/null | grep "^URI " | cut -d : -f 2-}
       url.strip!
