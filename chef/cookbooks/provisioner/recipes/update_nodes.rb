@@ -21,7 +21,6 @@ uefi_dir = "#{tftproot}/discovery"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 web_port = node[:provisioner][:web_port]
 provisioner_web = "http://#{admin_ip}:#{web_port}"
-default_repos_url = "#{provisioner_web}/repos"
 dhcp_hosts_dir = node["provisioner"]["dhcp_hosts"]
 
 nodes = search(:node, "*:*")
@@ -174,36 +173,15 @@ if not nodes.nil? and not nodes.empty?
         when os =~ /^(open)?suse/
           append << "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
 
-          repos = Mash.new
+          repos = Provisioner::Repositories.get_repos(node, "suse")
+          Chef::Log.info("repos: #{repos.inspect}")
 
           if node[:provisioner][:suse]
             if node[:provisioner][:suse][:autoyast]
               ssh_password = node[:provisioner][:suse][:autoyast][:ssh_password]
               append << "UseSSH=1 SSHPassword=#{ssh_password}" if ssh_password
-
-              if node[:provisioner][:suse][:autoyast][:repos]
-                repos = node[:provisioner][:suse][:autoyast][:repos].to_hash
-              end
             end
           end
-
-          Chef::Log.info("repos: #{repos.inspect}")
-
-          # This needs to be done here rather than via deep-merge with static
-          # JSON due to the dynamic nature of the default value.
-          %w(
-            SLE-Cloud
-            SLE-Cloud-PTF
-            SUSE-Cloud-3-Pool
-            SUSE-Cloud-3-Updates
-            SLES11-SP3-Pool
-            SLES11-SP3-Updates
-          ).each do |name|
-            suffix = name.sub(/^SLE-/, '')
-            repos[name] ||= Mash.new
-            repos[name][:url] ||= default_repos_url + '/' + suffix
-          end
-          Chef::Log.info("repos after: #{repos.inspect}")
 
           template "#{node_cfg_dir}/autoyast.xml" do
             mode 0644

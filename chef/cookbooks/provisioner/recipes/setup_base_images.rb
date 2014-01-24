@@ -320,30 +320,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       variables(:admin_ip => admin_ip, :web_port => web_port)
     end
 
-    default_repos_url = "#{provisioner_web}/repos"
-    # Keep in sync with update_nodes.rb
-    repos = Mash.new
-    if node[:provisioner][:suse]
-      if node[:provisioner][:suse][:autoyast]
-        if node[:provisioner][:suse][:autoyast][:repos]
-          repos = node[:provisioner][:suse][:autoyast][:repos].to_hash
-        end
-      end
-    end
-    # This needs to be done here rather than via deep-merge with static
-    # JSON due to the dynamic nature of the default value.
-    %w(
-      SLE-Cloud
-      SLE-Cloud-PTF
-      SUSE-Cloud-3-Pool
-      SUSE-Cloud-3-Updates
-      SLES11-SP3-Pool
-      SLES11-SP3-Updates
-    ).each do |name|
-      suffix = name.sub(/^SLE-/, '')
-      repos[name] ||= Mash.new
-      repos[name][:url] ||= default_repos_url + '/' + suffix
-    end
+    repos = Provisioner::Repositories.get_repos(node, "suse")
 
     template "#{os_dir}/crowbar_register" do
       mode 0644

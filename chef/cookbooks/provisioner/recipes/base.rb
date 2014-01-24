@@ -187,13 +187,15 @@ end
 # On SUSE: install crowbar_join properly, with init script
 if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
   admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(provisioner_server_node, "admin").address
+  web_port = provisioner_server_node[:provisioner][:web_port]
+
   template "/usr/sbin/crowbar_join" do
     mode 0755
     owner "root"
     group "root"
     source "crowbar_join.suse.sh.erb"
     variables(:admin_ip => admin_ip,
-              :web_port => provisioner_server_node[:provisioner][:web_port])
+              :web_port => web_port)
   end
 
   cookbook_file "/etc/init.d/crowbar_join" do
@@ -227,5 +229,22 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
   file "/etc/init.d/crowbar_join.sh" do
     action :delete
     only_if "test -f /etc/init.d/crowbar_join.sh"
+  end
+
+  if node["platform"] == "suse"
+    ## make sure the repos are properly setup
+    repos = Provisioner::Repositories.get_repos(provisioner_server_node, "suse")
+    for name, attrs in repos
+      url = %x{zypper --non-interactive repos #{name} 2> /dev/null | grep "^URI " | cut -d : -f 2-}
+      url.strip!
+      if url != attrs[:url]
+        unless url.empty?
+          Chef::Log.info("Removing #{name} zypper repository pointing to wrong URI...")
+          %x{zypper --non-interactive removerepo #{name}}
+        end
+        Chef::Log.info("Adding #{name} zypper repository...")
+        %x{zypper --non-interactive addrepo --refresh #{attrs[:url]} #{name}}
+      end
+    end
   end
 end
