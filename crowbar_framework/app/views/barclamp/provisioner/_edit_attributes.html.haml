@@ -1,3 +1,4 @@
+- register_javascripts "barclamps/provisioner/form"
 = attributes_for @proposal do
   .panel-sub
     = header @dep_raw, true
@@ -7,4 +8,9 @@
     %span.help-block
       = t(".access_keys_hint")
 
-    = boolean_field :use_serial_console
+    %fieldset
+      %legend
+        = t(".serial_console")
+
+      = boolean_field :use_serial_console
+      = string_field :serial_tty
