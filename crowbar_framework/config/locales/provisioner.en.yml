@@ -4,3 +4,4 @@ en:
       edit_attributes:
         access_keys: Additional SSH keys
         access_keys_hint: Each SSH key must be on its own line
+        use_serial_console: Enable Serial Console
