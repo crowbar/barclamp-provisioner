@@ -21,6 +21,11 @@ when "ubuntu","debian"
   pkg = "dhcp3"
   package "dhcp3-server"
   owner = "dhcpd"
+  bash "disable apparmor for dhcpd" do
+    command "ln -s /etc/apparmor.d/usr.sbin.dhcpd /etc/apparmor.d/disable/usr.sbin.dhcpd"
+    notifies :restart, "service[dhcp3-server]"
+    not_if "dpkg -l apparmor && file /etc/apparmor.d/disable/usr.sbin.dhcpd"
+  end
 when "redhat","centos"
   pkg = "dhcp"
   package "dhcp"
