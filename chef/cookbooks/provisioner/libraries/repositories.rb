@@ -43,8 +43,9 @@ class Provisioner
               SUSE-Cloud-3-Updates
               SLES11-SP3-Pool
               SLES11-SP3-Updates
+              SLE-HAE-11-SP3
             ).each do |name|
-              suffix = name.sub(/^SLE-/, '')
+              suffix = name.sub(/^SLE-Cloud/, 'Cloud')
               repos[name] ||= Mash.new
               repos[name][:url] ||= default_repos_url + '/' + suffix
             end
