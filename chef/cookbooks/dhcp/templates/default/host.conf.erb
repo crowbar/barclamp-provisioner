@@ -1,7 +1,11 @@
 host <%= @name %> {
   option host-name "<%= @hostname %>";
   hardware ethernet <%= @macaddress %>;
+<% if @ipaddress -%> 
   fixed-address <%= @ipaddress %>;
+<% else -%>
+  deny booting;
+<% end -%> 
 <% if not @options.empty? -%>
 <%   @options.each do |option| -%>
   <%= option %><%=if option[-1,1] != '}' then ';' else '' end%>
