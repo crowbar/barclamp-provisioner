@@ -172,6 +172,19 @@ rpms:
       - mod_fcgid
       - mod_ssl
       - mod_wsgi
+  centos-6.5:
+    pkgs:
+      - rpcbind
+      - ipmitool
+      - dhclient
+      - nfs-utils
+      - tftp-server
+      # apache stuff
+      - httpd
+      - httpd-devel
+      - mod_fcgid
+      - mod_ssl
+      - mod_wsgi
 
     build_pkgs:
       - tar
