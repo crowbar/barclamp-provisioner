@@ -66,15 +66,74 @@
     </routing>
   </networking>
   <partitioning config:type="list">
-    <drive>
-<% if @boot_device %>
-      <device>/dev/<%= @boot_device %></device>
-<% end %>
-      <initialize config:type="boolean">true</initialize>
-      <partitions config:type="list"/>
-      <type config:type="symbol">CT_DISK</type>
-      <use>all</use>
-    </drive>
+    <% if @raid_type == "single" -%>
+      <drive>
+        <% if @boot_device %>
+          <device>/dev/<%= @boot_device %></device>
+        <% end %>
+        <initialize config:type="boolean">true</initialize>
+        <partitions config:type="list"/>
+        <type config:type="symbol">CT_DISK</type>
+        <use>all</use>
+      </drive>
+    <% else -%>
+      <% @raid_disks.each do |disk| -%>
+        <drive>
+          <device><%= disk %></device>
+          <type config:type="symbol">CT_DISK</type>
+          <initialize config:type="boolean">true</initialize>
+          <partitions config:type="list">
+            <partition>
+              <mount>swap</mount>
+              <size>auto</size>
+            </partition>
+            <partition>
+              <partition_id config:type="integer">253</partition_id>
+              <format config:type="boolean">false</format>
+              <raid_name>/dev/md0</raid_name>
+              <raid_type>raid</raid_type>
+              <size>200M</size>
+            </partition>
+            <partition>
+              <partition_id config:type="integer">253</partition_id>
+              <format config:type="boolean">false</format>
+              <raid_name>/dev/md1</raid_name>
+              <raid_type>raid</raid_type>
+              <size>max</size>
+            </partition>
+          </partitions>
+          <use>all</use>
+        </drive>
+      <% end -%>
+      <drive>
+        <device>/dev/md</device>
+        <type config:type="symbol">CT_MD</type>
+        <initialize config:type="boolean">true</initialize>
+        <partitions config:type="list">
+          <partition>
+            <filesystem config:type="symbol">ext3</filesystem>
+            <format config:type="boolean">true</format>
+            <mount>/boot</mount>
+            <partition_id config:type="integer">131</partition_id>
+            <partition_nr config:type="integer">0</partition_nr>
+            <raid_options>
+              <raid_type>raid1</raid_type>
+            </raid_options>
+          </partition>
+          <partition>
+            <filesystem config:type="symbol">ext3</filesystem>
+            <format config:type="boolean">true</format>
+            <mount>/</mount>
+            <partition_id config:type="integer">131</partition_id>
+            <partition_nr config:type="integer">1</partition_nr>
+            <raid_options>
+              <raid_type><%= @raid_type %></raid_type>
+            </raid_options>
+          </partition>
+        </partitions>
+        <use>all</use>
+      </drive>
+    <% end -%>
   </partitioning>
   <timezone>
     <hwclock>UTC</hwclock>
