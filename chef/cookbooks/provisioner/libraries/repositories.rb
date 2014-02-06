@@ -39,8 +39,8 @@ class Provisioner
             %w(
               SLE-Cloud
               SLE-Cloud-PTF
-              SUSE-Cloud-3-Pool
-              SUSE-Cloud-3-Updates
+              SUSE-Cloud-4-Pool
+              SUSE-Cloud-4-Updates
               SLES11-SP3-Pool
               SLES11-SP3-Updates
             ).each do |name|
