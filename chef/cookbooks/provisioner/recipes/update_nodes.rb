@@ -195,6 +195,8 @@ if not nodes.nil? and not nodes.empty?
                       :rootpw_hash => node[:provisioner][:root_password_hash] || "",
                       :timezone => timezone,
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
+                      :raid_type => (mnode[:crowbar_wall][:raid_type] || "single"),
+                      :raid_disks => (mnode[:crowbar_wall][:raid_disks] || []),
                       :node_name => mnode[:fqdn],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
