@@ -31,6 +31,12 @@ template "/etc/gemrc" do
             :proxy => proxy)
 end
 
+template "/root/.gemrc" do
+  variables(:online => online,
+            :webserver => webserver,
+            :proxy => proxy)
+end
+
 unless repositories
   Chef::Log.info("Provisioner: No repositories for #{os_token}")
 end
