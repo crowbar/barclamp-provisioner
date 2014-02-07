@@ -116,6 +116,7 @@ roles:
       - provisioner-server-data
     requires:
       - provisioner-dhcp-server
+      - ipmi-configure
     flags:
       - implicit
       - destructive
