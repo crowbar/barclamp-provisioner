@@ -20,12 +20,20 @@ case node[:platform]
 when "ubuntu","debian"
   pkg = "dhcp3"
   package "dhcp3-server"
+  owner = "dhcpd"
+  bash "disable apparmor for dhcpd" do
+    command "ln -s /etc/apparmor.d/usr.sbin.dhcpd /etc/apparmor.d/disable/usr.sbin.dhcpd"
+    notifies :restart, "service[dhcp3-server]"
+    not_if "dpkg -l apparmor && file /etc/apparmor.d/disable/usr.sbin.dhcpd"
+  end
 when "redhat","centos"
   pkg = "dhcp"
   package "dhcp"
+  owner = "root"
 when "suse"
   pkg = "dhcp-server"
   package "dhcp-server"
+  owner = "root"
 end
 
 provisioner_port = (node["crowbar"]["provisioner"]["server"]["web_port"] rescue 8091)
@@ -36,18 +44,18 @@ directory "/etc/dhcp3/subnets.d"
 directory "/etc/dhcp3/hosts.d"
 
 file "/etc/dhcp3/groups.d/group_list.conf" do
-  owner "root"
-  group "root"
+  owner "#{owner}"
+  group "#{owner}"
   mode 0644
 end
 file "/etc/dhcp3/subnets.d/subnet_list.conf" do
-  owner "root"
-  group "root"
+  owner "#{owner}"
+  group "#{owner}"
   mode 0644
 end
 file "/etc/dhcp3/hosts.d/host_list.conf" do
-  owner "root"
-  group "root"
+  owner "#{owner}"
+  group "#{owner}"
   mode 0644
 end
 
