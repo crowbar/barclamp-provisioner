@@ -172,7 +172,7 @@ class ProvisionerService < ServiceObject
       system("sudo -i /opt/dell/bin/single_chef_client.sh")
     end
     @logger.debug("Provisioner transition: exiting for #{name} for #{state}")
-    [200, node.to_hash ]
+    [200, { :name => name } ]
   end
 
 end
