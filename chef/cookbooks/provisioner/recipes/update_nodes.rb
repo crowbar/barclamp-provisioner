@@ -73,6 +73,11 @@ if not nodes.nil? and not nodes.empty?
           action :delete
         end
       end
+
+      directory "#{tftproot}/nodes/#{mnode[:fqdn]}" do
+        recursive true
+        action :delete
+      end
     when new_group == "execute"
       mac_list.each_index do |i|
         dhcp_host "#{mnode.name}-#{i}" do
