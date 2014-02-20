@@ -320,6 +320,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       variables(:admin_ip => admin_ip, :web_port => web_port)
     end
 
+    Provisioner::Repositories.inspect_repos(node)
     repos = Provisioner::Repositories.get_repos(node, "suse")
 
     template "#{os_dir}/crowbar_register" do

@@ -177,6 +177,7 @@ if not nodes.nil? and not nodes.empty?
         when os =~ /^(open)?suse/
           append << "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
 
+          Provisioner::Repositories.inspect_repos(node)
           repos = Provisioner::Repositories.get_repos(node, "suse")
           Chef::Log.info("repos: #{repos.inspect}")
 
