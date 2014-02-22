@@ -217,6 +217,13 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     not_if "/sbin/chkconfig crowbar_join | grep -q on"
   end
 
+  # Make sure that any dependency change is taken into account
+  bash "insserv crowbar_join service" do
+    code "insserv crowbar_join"
+    action :nothing
+    subscribes :run, resources(:cookbook_file=> "/etc/init.d/crowbar_join"), :delayed
+  end
+
   cookbook_file "/etc/logrotate.d/crowbar_join" do
     owner "root"
     group "root"
