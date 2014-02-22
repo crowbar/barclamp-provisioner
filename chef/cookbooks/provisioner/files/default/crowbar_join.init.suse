@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          crowbar
+# Provides:          crowbar_join
 # Required-Start:    $syslog $network $remote_fs sshd
 # Should-Start:      neutron-ovs-cleanup xend libvirtd
 # Required-Stop:     $syslog $network $remote_fs sshd
