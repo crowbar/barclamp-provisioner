@@ -51,6 +51,8 @@ class Provisioner
             missing ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}")
           end
 
+          # set an attribute about missing repos so that cookbooks and crowbar
+          # know that HA cannot be used
           node.set[:provisioner][:suse] ||= {}
           if node[:provisioner][:suse][:missing_hae] != missing
             node.set[:provisioner][:suse][:missing_hae] = missing
@@ -59,6 +61,9 @@ class Provisioner
         end
       end
 
+      # This returns a hash containing the data about the repos that must be
+      # used on nodes; optional repos (such as HA) will only be returned if
+      # they can be used.
       def get_repos(provisioner_server_node, platform)
         admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(provisioner_server_node, "admin").address
         web_port = provisioner_server_node[:provisioner][:web_port]
