@@ -17,6 +17,53 @@
 class Provisioner
   class Repositories
     class << self
+      def suse_optional_repos
+        %w(SLE11-HAE-SP3-Pool SLE11-HAE-SP3-Updates)
+      end
+
+      def suse_get_repos_from_attributes(node)
+        repos = Mash.new
+
+        if node[:provisioner][:suse]
+          if node[:provisioner][:suse][:autoyast]
+            if node[:provisioner][:suse][:autoyast][:repos]
+              repos = node[:provisioner][:suse][:autoyast][:repos].to_hash
+            end
+          end
+        end
+
+        repos
+      end
+
+      def inspect_repos(node)
+        unless node.roles.include? "provisioner-server"
+          raise "Internal error: inspect_repos method should only be called on provisioner-server node."
+        end
+
+        case node[:platform]
+        when "suse"
+          repos = suse_get_repos_from_attributes(node)
+
+          missing = false
+          suse_optional_repos.each do |name|
+            repos[name] ||= Mash.new
+            next unless repos[name][:url].nil?
+            missing ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}")
+          end
+
+          # set an attribute about missing repos so that cookbooks and crowbar
+          # know that HA cannot be used
+          node.set[:provisioner][:suse] ||= {}
+          if node[:provisioner][:suse][:missing_hae] != missing
+            node.set[:provisioner][:suse][:missing_hae] = missing
+            node.save
+          end
+        end
+      end
+
+      # This returns a hash containing the data about the repos that must be
+      # used on nodes; optional repos (such as HA) will only be returned if
+      # they can be used.
       def get_repos(provisioner_server_node, platform)
         admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(provisioner_server_node, "admin").address
         web_port = provisioner_server_node[:provisioner][:web_port]
@@ -26,28 +73,33 @@ class Provisioner
         repos = Mash.new
 
         case platform
-          when "suse"
-            if provisioner_server_node[:provisioner][:suse]
-              if provisioner_server_node[:provisioner][:suse][:autoyast]
-                if provisioner_server_node[:provisioner][:suse][:autoyast][:repos]
-                  repos = provisioner_server_node[:provisioner][:suse][:autoyast][:repos].to_hash
-                end
+        when "suse"
+          repos = suse_get_repos_from_attributes(provisioner_server_node)
+
+          # This needs to be done here rather than via deep-merge with static
+          # JSON due to the dynamic nature of the default value.
+          %w(
+            SLE-Cloud
+            SLE-Cloud-PTF
+            SUSE-Cloud-4-Pool
+            SUSE-Cloud-4-Updates
+            SLES11-SP3-Pool
+            SLES11-SP3-Updates
+          ).each do |name|
+            suffix = name.sub(/^SLE-Cloud/, 'Cloud')
+            repos[name] ||= Mash.new
+            repos[name][:url] ||= default_repos_url + '/' + suffix
+          end
+
+          # optional repos
+          unless provisioner_server_node[:provisioner][:suse].nil?
+            unless provisioner_server_node[:provisioner][:suse][:missing_hae]
+              suse_optional_repos.each do |name|
+                repos[name] ||= Mash.new
+                repos[name][:url] ||= default_repos_url + '/' + name
               end
             end
-            # This needs to be done here rather than via deep-merge with static
-            # JSON due to the dynamic nature of the default value.
-            %w(
-              SLE-Cloud
-              SLE-Cloud-PTF
-              SUSE-Cloud-4-Pool
-              SUSE-Cloud-4-Updates
-              SLES11-SP3-Pool
-              SLES11-SP3-Updates
-            ).each do |name|
-              suffix = name.sub(/^SLE-/, '')
-              repos[name] ||= Mash.new
-              repos[name][:url] ||= default_repos_url + '/' + suffix
-            end
+          end
         end
 
         repos

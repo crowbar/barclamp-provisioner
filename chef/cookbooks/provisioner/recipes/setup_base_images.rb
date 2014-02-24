@@ -128,7 +128,7 @@ if node[:platform] == "suse"
   template "#{node[:apache][:dir]}/vhosts.d/provisioner.conf" do
     source "base-apache.conf.erb"
     mode 0644
-    variables(:docroot => "/srv/tftpboot",
+    variables(:docroot => tftproot,
               :port => web_port,
               :logfile => "/var/log/apache2/provisioner-access_log",
               :errorlog => "/var/log/apache2/provisioner-error_log")
@@ -320,6 +320,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       variables(:admin_ip => admin_ip, :web_port => web_port)
     end
 
+    Provisioner::Repositories.inspect_repos(node)
     repos = Provisioner::Repositories.get_repos(node, "suse")
 
     template "#{os_dir}/crowbar_register" do
