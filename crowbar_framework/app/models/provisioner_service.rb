@@ -1,10 +1,13 @@
-# Copyright 2011, Dell
+# -*- encoding : utf-8 -*-
+#
+# Copyright 2011-2013, Dell
+# Copyright 2013-2014, SUSE LINUX Products GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#  http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +17,6 @@
 #
 
 class ProvisionerService < ServiceObject
-
   def initialize(thelogger)
     super(thelogger)
     @bc_name = "provisioner"
@@ -82,7 +84,7 @@ class ProvisionerService < ServiceObject
         return [400, "Failed to add role to node"]
       end
 
-      if HAVE_CHEF_WEBUI
+      if ENV["HAVE_CHEF_WEBUI"]
         # Set up the client url
         role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
 
@@ -191,6 +193,4 @@ class ProvisionerService < ServiceObject
     @logger.debug("Provisioner transition: exiting for #{name} for #{state}")
     [200, { :name => name } ]
   end
-
 end
-
