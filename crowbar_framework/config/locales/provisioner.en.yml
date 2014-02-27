@@ -1,9 +1,0 @@
-en:
-  barclamp:
-    provisioner:
-      edit_attributes:
-        access_keys: Additional SSH keys
-        access_keys_hint: Each SSH key must be on its own line
-        serial_console: Serial Console
-        use_serial_console: Enable Serial Console
-        serial_tty: Serial Console Device
