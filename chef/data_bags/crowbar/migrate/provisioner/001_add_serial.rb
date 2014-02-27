@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 def upgrade ta, td, a, d
   a['serial_tty'] = ta['serial_tty']
   return a, d
