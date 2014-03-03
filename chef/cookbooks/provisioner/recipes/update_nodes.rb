@@ -219,7 +219,7 @@ if not nodes.nil? and not nodes.empty?
             owner "root"
             group "root"
             source "unattended.xml.erb"
-            variables(:license_key => mnode[:license_key],
+            variables(:license_key => mnode[:license_key] || "",
                       :os_name => os,
                       :image_name => image_name,
                       :admin_ip => admin_ip,
