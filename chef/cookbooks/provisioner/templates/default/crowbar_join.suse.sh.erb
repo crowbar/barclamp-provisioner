@@ -166,7 +166,7 @@ EOF
             echo_verbose "Failed to do zypper refresh, wait and try again"
             sleep 10
         done
-        while ! log_to zypper zypper -n install rubygem-chef ; do
+        while ! log_to zypper zypper -n install rubygem-chef rubygem-ruby-shadow ; do
             echo_verbose "Failed to do zypper install, wait and try again"
             sleep 10
         done
