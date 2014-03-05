@@ -18,18 +18,4 @@
 #
 
 module ProvisionerBarclampHelper
-  def provisioner_role_contraints
-    {
-      "provisioner-server" => {
-        "unique" => false,
-        "count" => 1,
-        "admin" => true
-      },
-      "provisioner-base" => {
-        "unique" => false,
-        "count" => -1,
-        "admin" => true
-      }
-    }
-  end
 end
