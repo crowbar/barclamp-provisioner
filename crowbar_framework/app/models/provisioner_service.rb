@@ -20,6 +20,25 @@ class ProvisionerService < ServiceObject
     @bc_name = "provisioner"
   end
 
+  class << self
+    def role_constraints
+      @role_constraints ||= begin
+        {
+          "provisioner-server" => {
+            "unique" => false,
+            "count" => 1,
+            "admin" => true
+          },
+          "provisioner-base" => {
+            "unique" => false,
+            "count" => -1,
+            "admin" => true
+          }
+        }
+      end
+    end
+  end
+
   def create_proposal
     @logger.debug("Provisioner create_proposal: entering")
     base = super
