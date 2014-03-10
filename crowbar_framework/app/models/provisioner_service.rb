@@ -22,20 +22,18 @@ class ProvisionerService < ServiceObject
 
   class << self
     def role_constraints
-      @role_constraints ||= begin
-        {
-          "provisioner-server" => {
-            "unique" => false,
-            "count" => 1,
-            "admin" => true
-          },
-          "provisioner-base" => {
-            "unique" => false,
-            "count" => -1,
-            "admin" => true
-          }
+      {
+        "provisioner-server" => {
+          "unique" => false,
+          "count" => 1,
+          "admin" => true
+        },
+        "provisioner-base" => {
+          "unique" => false,
+          "count" => -1,
+          "admin" => true
         }
-      end
+      }
     end
   end
 
