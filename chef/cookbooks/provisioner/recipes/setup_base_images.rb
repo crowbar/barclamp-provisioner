@@ -312,12 +312,17 @@ node[:provisioner][:supported_oses].each do |os,params|
     # Add base OS install repo for suse
     node.set[:provisioner][:repositories][os]["base"] = { "baseurl=http://#{admin_ip}:#{web_port}/#{os}/install" => true }
 
+    ntp_servers = search(:node, "roles:ntp-server")
+    ntp_servers_ips = ntp_servers.map { |n| Chef::Recipe::Barclamp::Inventory.get_network_by_type(n, "admin").address }
+
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
       group "root"
       source "crowbar_join.suse.sh.erb"
-      variables(:admin_ip => admin_ip, :web_port => web_port)
+      variables(:admin_ip => admin_ip,
+                :web_port => web_port,
+                :ntp_servers_ips => ntp_servers_ips)
     end
 
     Provisioner::Repositories.inspect_repos(node)

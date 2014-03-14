@@ -110,7 +110,7 @@ wait_for_hostname() {
 }
 
 sync_time() {
-    if [ ${SKIP_NTP:-0} -eq 1 ]; then
+    if [ -z "$VALID_NTP_SERVERS" ]; then
         echo_verbose "Skipping time synchronization..."
         return
     fi
@@ -119,15 +119,15 @@ sync_time() {
 
     # Warning! Newer sntp releases use different options (e.g. the one
     # on openSUSE 12.1
-    while ! sntp -P no -r $IP; do
+    while ! sntp -P no -r $VALID_NTP_SERVERS; do
         tries_left=$(($tries_left-1))
         if [ $tries_left -eq 0 ]; then
-            SKIP_NTP=1
+            VALID_NTP_SERVERS=""
             echo_verbose "Giving up on time synchronization; will skip further attempts..."
             break
         fi
 
-        echo_verbose "Waiting for NTP server"
+        echo_verbose "Waiting for NTP server(s)"
         sleep 1
     done
 }
@@ -328,6 +328,8 @@ export HOME=/root
 
 IP="<%= @admin_ip %>"
 HTTP_SERVER="<%= @admin_ip %>:<%= @web_port %>"
+NTP_SERVERS="<%= @ntp_servers_ips.join(" ") %>"
+VALID_NTP_SERVERS=""
 
 if [[ -f /etc/crowbar.install.key ]]; then
     export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
@@ -363,12 +365,15 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     # Get our hostname
     HOSTNAME=$(hostname -f)
 
-    # We only run NTP-related bits if the NTP server can be reached
-    SKIP_NTP=0
-    netcat -zu $IP 123
-    if [ $? -ne 0 ]; then
-        echo_verbose "Cannot connect to NTP server, will skip time synchronization..."
-        SKIP_NTP=1
+    # We only run NTP-related bits if the NTP server(s) can be reached
+    for NTP_SERVER in $NTP_SERVERS; do
+        ping -q -c1 $NTP_SERVER > /dev/null && netcat -zu $NTP_SERVER 123
+        if [ $? -eq 0 ]; then
+            VALID_NTP_SERVERS="$VALID_NTP_SERVERS $NTP_SERVER"
+        fi
+    done
+    if -z "$VALID_NTP_SERVERS"; then
+        echo_verbose "Cannot connect to NTP server(s), will skip time synchronization..."
     fi
 
     # stop ntpd before we run ntpdate, and start it again afterwards.
