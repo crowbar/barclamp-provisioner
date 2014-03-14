@@ -336,6 +336,7 @@ node[:provisioner][:supported_oses].each do |os,params|
       variables(:admin_ip => admin_ip,
                 :admin_broadcast => admin_broadcast,
                 :web_port => web_port,
+                :ntp_servers_ips => ntp_servers_ips,
                 :os => os,
                 :crowbar_key => crowbar_key,
                 :domain => domain_name,

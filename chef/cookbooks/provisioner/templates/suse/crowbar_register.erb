@@ -81,6 +81,7 @@ HTTP_SERVER="http://${ADMIN_IP}:${WEB_PORT}"
 CROWBAR_OS="<%= @os %>"
 CROWBAR_KEY="<%= @crowbar_key %>"
 DOMAIN="<%= @domain %>"
+NTP_SERVERS="<%= @ntp_servers_ips.join(" ") %>"
 
 
 # Make sure we know which interface to use as a basis
@@ -245,9 +246,9 @@ export DOMAIN
 export HOSTNAME
 
 # Make sure date is up-to-date
-ntp="sntp -P no -r $ADMIN_IP"
+ntp="sntp -P no -r $NTP_SERVERS"
 until $ntp; do
-  echo "Waiting for NTP server"
+  echo "Waiting for NTP server(s)"
   sleep 1
 done
 
