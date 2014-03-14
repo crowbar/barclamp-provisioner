@@ -110,6 +110,11 @@ wait_for_hostname() {
 }
 
 sync_time() {
+    if [ ${SKIP_NTP:-0} -eq 1 ]; then
+        echo_verbose "Skipping time synchronization..."
+        return
+    fi
+
     # Warning! Newer sntp releases use different options (e.g. the one
     # on openSUSE 12.1
     while ! sntp -P no -r $IP; do
@@ -349,6 +354,14 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     # Get our hostname
     HOSTNAME=$(hostname -f)
 
+    # We only run NTP-related bits if the NTP server can be reached
+    SKIP_NTP=0
+    netcat -zu $IP 123
+    if [ $? -ne 0 ]; then
+        echo_verbose "Cannot connect to NTP server, will skip time synchronization..."
+        SKIP_NTP=1
+    fi
+
     # stop ntpd before we run ntpdate, and start it again afterwards.
     NTP_START=0
     if service ntp status > /dev/null; then
@@ -366,7 +379,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     [ "$MODE" == "setup" ] && do_setup
 
     # Run Chef
-    echo_verbose "Syncing time (pass 2)"
+    echo_verbose "Synchronizing time (pass 2)"
     sync_time
 
     [ "$MODE" == "setup" ] && do_chef_client_after_setup
