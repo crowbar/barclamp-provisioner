@@ -334,6 +334,12 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
         exit 1
     fi
 
+    netcat -z $IP 4000
+    if [ $? -ne 0 -a "$MODE" == "start" ]; then
+        echo_error "Cannot connect to chef-server..."
+        exit 1
+    fi
+
     echo_verbose "Getting hostname..."
     if ! wait_for_hostname; then
         echo_error "Cannot get hostname..."
