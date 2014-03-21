@@ -110,11 +110,25 @@ wait_for_hostname() {
 }
 
 sync_time() {
+    if [ -z "$VALID_NTP_SERVERS" ]; then
+        echo_verbose "Skipping time synchronization..."
+        return
+    fi
+
+    tries_left=120
+
     # Warning! Newer sntp releases use different options (e.g. the one
     # on openSUSE 12.1
-    while ! sntp -P no -r $IP; do
-	echo_verbose "Waiting for NTP server"
-	sleep 1
+    while ! sntp -P no -r $VALID_NTP_SERVERS; do
+        tries_left=$(($tries_left-1))
+        if [ $tries_left -eq 0 ]; then
+            VALID_NTP_SERVERS=""
+            echo_verbose "Giving up on time synchronization; will skip further attempts..."
+            break
+        fi
+
+        echo_verbose "Waiting for NTP server(s)"
+        sleep 1
     done
 }
 
@@ -314,6 +328,8 @@ export HOME=/root
 
 IP="<%= @admin_ip %>"
 HTTP_SERVER="<%= @admin_ip %>:<%= @web_port %>"
+NTP_SERVERS="<%= @ntp_servers_ips.join(" ") %>"
+VALID_NTP_SERVERS=""
 
 if [[ -f /etc/crowbar.install.key ]]; then
     export CROWBAR_KEY="$(cat /etc/crowbar.install.key)"
@@ -334,6 +350,12 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
         exit 1
     fi
 
+    netcat -z $IP 4000
+    if [ $? -ne 0 -a "$MODE" == "start" ]; then
+        echo_error "Cannot connect to chef-server..."
+        exit 1
+    fi
+
     echo_verbose "Getting hostname..."
     if ! wait_for_hostname; then
         echo_error "Cannot get hostname..."
@@ -342,6 +364,17 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
 
     # Get our hostname
     HOSTNAME=$(hostname -f)
+
+    # We only run NTP-related bits if the NTP server(s) can be reached
+    for NTP_SERVER in $NTP_SERVERS; do
+        ping -q -c1 $NTP_SERVER > /dev/null && netcat -zu $NTP_SERVER 123
+        if [ $? -eq 0 ]; then
+            VALID_NTP_SERVERS="$VALID_NTP_SERVERS $NTP_SERVER"
+        fi
+    done
+    if -z "$VALID_NTP_SERVERS"; then
+        echo_verbose "Cannot connect to NTP server(s), will skip time synchronization..."
+    fi
 
     # stop ntpd before we run ntpdate, and start it again afterwards.
     NTP_START=0
@@ -360,7 +393,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     [ "$MODE" == "setup" ] && do_setup
 
     # Run Chef
-    echo_verbose "Syncing time (pass 2)"
+    echo_verbose "Synchronizing time (pass 2)"
     sync_time
 
     [ "$MODE" == "setup" ] && do_chef_client_after_setup
