@@ -17,7 +17,10 @@
 #
 
 class ProvisionerController < BarclampController
-  def initialize
+
+  protected
+
+  def initialize_service
     @service_object = ProvisionerService.new logger
   end
 end
