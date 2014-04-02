@@ -96,14 +96,13 @@ wait_for_hostname() {
         break
       fi
 
-      echo_debug "sleeping 5 seconds"
-      sleep 5
-
       tries_left=$(($tries_left-1))
       if [ $tries_left -eq 0 ]; then
         return 1
       fi
 
+      echo_debug "sleeping 5 seconds"
+      sleep 5
     done
 
     return 0
