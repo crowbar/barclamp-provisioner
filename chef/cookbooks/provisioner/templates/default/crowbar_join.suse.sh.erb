@@ -109,6 +109,22 @@ wait_for_hostname() {
     return 0
 }
 
+wait_for_admin_server() {
+    # wait for admin server to become pingable
+    tries_left=120
+    while ! ping -q -c1 $IP > /dev/null; do
+      tries_left=$(($tries_left-1))
+      if [ $tries_left -eq 0 ]; then
+        return 1
+      fi
+
+      echo_debug "Waiting for administration server"
+      sleep 1
+    done
+
+    return 0
+}
+
 sync_time() {
     if [ -z "$VALID_NTP_SERVERS" ]; then
         echo_verbose "Skipping time synchronization..."
@@ -344,9 +360,10 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     echo_verbose "Waiting on our network interface to come up..."
     wait_for_network
 
-    ping -q -c1 $IP > /dev/null
+    echo_verbose "Checking connectivity with administration server..."
+    wait_for_admin_server
     if [ $? -ne 0 -a "$MODE" == "start" ]; then
-        echo_error "Cannot ping $IP..."
+        echo_error "Cannot ping administration server on $IP..."
         exit 1
     fi
 
