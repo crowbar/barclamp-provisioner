@@ -189,13 +189,17 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
   admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(provisioner_server_node, "admin").address
   web_port = provisioner_server_node[:provisioner][:web_port]
 
+  ntp_servers = search(:node, "roles:ntp-server")
+  ntp_servers_ips = ntp_servers.map { |n| Chef::Recipe::Barclamp::Inventory.get_network_by_type(n, "admin").address }
+
   template "/usr/sbin/crowbar_join" do
     mode 0755
     owner "root"
     group "root"
     source "crowbar_join.suse.sh.erb"
     variables(:admin_ip => admin_ip,
-              :web_port => web_port)
+              :web_port => web_port,
+              :ntp_servers_ips => ntp_servers_ips)
   end
 
   cookbook_file "/etc/init.d/crowbar_join" do

@@ -81,6 +81,7 @@ HTTP_SERVER="http://${ADMIN_IP}:${WEB_PORT}"
 CROWBAR_OS="<%= @os %>"
 CROWBAR_KEY="<%= @crowbar_key %>"
 DOMAIN="<%= @domain %>"
+NTP_SERVERS="<%= @ntp_servers_ips.join(" ") %>"
 
 
 # Make sure we know which interface to use as a basis
@@ -170,7 +171,7 @@ PACKAGES_INSTALL="$PACKAGES_INSTALL openssh"
 
 # From autoyast profile
 PATTERNS_INSTALL="$PATTERNS_INSTALL Minimal base"
-PACKAGES_INSTALL="$PACKAGES_INSTALL biosdevname rubygem-cstruct supportutils-plugin-susecloud"
+PACKAGES_INSTALL="$PACKAGES_INSTALL biosdevname netcat rubygem-cstruct supportutils-plugin-susecloud"
 
 # From sleshammer
 PACKAGES_INSTALL="$PACKAGES_INSTALL rubygem-chef rubygem-rest-client rubygem-cstruct rubygem-libxml-ruby rubygem-wsman rubygem-xml-simple parted lvm2 ipmitool curl tack nfs-client rsyslog ntp tcpdump"
@@ -245,9 +246,9 @@ export DOMAIN
 export HOSTNAME
 
 # Make sure date is up-to-date
-ntp="sntp -P no -r $ADMIN_IP"
+ntp="sntp -P no -r $NTP_SERVERS"
 until $ntp; do
-  echo "Waiting for NTP server"
+  echo "Waiting for NTP server(s)"
   sleep 1
 done
 
