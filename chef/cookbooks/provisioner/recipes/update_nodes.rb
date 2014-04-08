@@ -29,6 +29,11 @@ if not nodes.nil? and not nodes.empty?
     next if mnode[:state].nil?
 
     new_group = states[mnode[:state]]
+    if new_group.nil? || new_group == "noop"
+      Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
+      next
+    end
+
     boot_ip_hex = mnode["crowbar"]["boot_ip_hex"] rescue nil
     Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group} boot file: #{boot_ip_hex}")
 
@@ -71,10 +76,6 @@ if not nodes.nil? and not nodes.empty?
     admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
 
     case
-    when  new_group.nil? || new_group == "noop"
-      Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
-      next
-
     when (new_group == "delete")
       Chef::Log.info("Deleting #{mnode[:fqdn]}")
       # Delete the node
