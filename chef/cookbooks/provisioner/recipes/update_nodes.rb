@@ -47,6 +47,20 @@ if not nodes.nil? and not nodes.empty?
     end
     Chef::Log.warn("#{mnode[:fqdn]}: no MAC address found; DHCP will not work for that node!") if mac_list.empty?
 
+    # delete dhcp hosts that we will not overwrite/delete (ie, index is too
+    # high); this happens if there were more mac addresses at some point in the
+    # past
+    valid_host_files = mac_list.each_with_index.map { |mac, i| "#{mnode.name}-#{i}" }
+    host_files = Dir.glob("#{dhcp_hosts_dir}/#{mnode.name}-*.conf")
+    host_files.each do |absolute_host_file|
+      host_file = ::File.basename(absolute_host_file, ".conf")
+      unless valid_host_files.include? host_file
+        dhcp_host host_file do
+          action :remove
+        end
+      end
+    end
+
     #no boot_ip means that no admin network address has been assigned to node, and
     # it will boot into the default discovery image.
     next unless boot_ip_hex
@@ -68,7 +82,7 @@ if not nodes.nil? and not nodes.empty?
       system("knife role delete -y crowbar-#{mnode.name.gsub(".","_")} -u chef-webui -k /etc/chef/webui.pem")
 
       # find all dhcp hosts for a node (not just ones matching currently known MACs)
-      host_files        = Dir.glob("#{dhcp_hosts_dir}/#{mnode.name}-*.conf")
+      host_files = Dir.glob("#{dhcp_hosts_dir}/#{mnode.name}-*.conf")
       host_files.each do |host_file|
         dhcp_host ::File.basename(host_file, ".conf") do
           action :remove
