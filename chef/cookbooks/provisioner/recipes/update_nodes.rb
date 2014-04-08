@@ -66,11 +66,17 @@ if not nodes.nil? and not nodes.empty?
       end
     end
 
-    #no boot_ip means that no admin network address has been assigned to node, and
-    # it will boot into the default discovery image.
-    next unless boot_ip_hex
-    pxefile="#{pxecfg_dir}/#{boot_ip_hex}"
-    uefifile="#{uefi_dir}/#{boot_ip_hex}.conf"
+    # no boot_ip means that no admin network address has been assigned to node,
+    # and it will boot into the default discovery image. But it won't help if
+    # we're trying to delete the node.
+    if boot_ip_hex
+      pxefile = "#{pxecfg_dir}/#{boot_ip_hex}"
+      uefifile = "#{uefi_dir}/#{boot_ip_hex}.conf"
+    else
+      Chef::Log.warn("#{mnode[:fqdn]}: no boot IP known; PXE/UEFI boot files won't get updated!")
+      pxefile = nil
+      uefifile = nil
+    end
 
     # needed for dhcp
     admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
@@ -93,7 +99,7 @@ if not nodes.nil? and not nodes.empty?
       [pxefile,uefifile].each do |f|
         file f do
           action :delete
-        end
+        end unless f.nil?
       end
 
       directory "#{tftproot}/nodes/#{mnode[:fqdn]}" do
@@ -116,7 +122,7 @@ if not nodes.nil? and not nodes.empty?
       [pxefile,uefifile].each do |f|
         file f do
           action :delete
-        end
+        end unless f.nil?
       end
 
     else
@@ -282,7 +288,7 @@ if not nodes.nil? and not nodes.empty?
                       :install_name => node[:provisioner][:available_oses][os][:install_name],
                       :initrd => node[:provisioner][:available_oses][os][:initrd],
                       :kernel => node[:provisioner][:available_oses][os][:kernel])
-          end
+          end unless t[:file].nil?
         end
 
       else
@@ -297,7 +303,7 @@ if not nodes.nil? and not nodes.empty?
                       :install_name => new_group,
                       :initrd => "initrd0.img",
                       :kernel => "vmlinuz0")
-          end
+          end unless t[:file].nil?
         end
       end
     end
