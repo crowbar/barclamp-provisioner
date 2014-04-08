@@ -33,17 +33,19 @@ if not nodes.nil? and not nodes.empty?
     Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group} boot file: #{boot_ip_hex}")
 
     mac_list = []
-    next if mnode["network"].nil? or mnode["network"]["interfaces"].nil?
-    mnode["network"]["interfaces"].each do |net, net_data|
-      net_data.each do |field, field_data|
-        next if field != "addresses"
-        field_data.each do |addr, addr_data|
-          next if addr_data["family"] != "lladdr"
-          mac_list << addr unless mac_list.include? addr
+    unless mnode["network"].nil? || mnode["network"]["interfaces"].nil?
+      mnode["network"]["interfaces"].each do |net, net_data|
+        net_data.each do |field, field_data|
+          next if field != "addresses"
+          field_data.each do |addr, addr_data|
+            next if addr_data["family"] != "lladdr"
+            mac_list << addr unless mac_list.include? addr
+          end
         end
       end
+      mac_list.sort!
     end
-    mac_list.sort!
+    Chef::Log.warn("#{mnode[:fqdn]}: no MAC address found; DHCP will not work for that node!") if mac_list.empty?
 
     #no boot_ip means that no admin network address has been assigned to node, and
     # it will boot into the default discovery image.
