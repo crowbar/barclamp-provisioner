@@ -27,6 +27,7 @@ nodes = search(:node, "*:*")
 if not nodes.nil? and not nodes.empty?
   nodes.map{|n|Node.load(n.name)}.each do |mnode|
     next if mnode[:state].nil?
+
     new_group = states[mnode[:state]]
     boot_ip_hex = mnode["crowbar"]["boot_ip_hex"] rescue nil
     Chef::Log.info("#{mnode[:fqdn]}: transition to #{new_group} boot file: #{boot_ip_hex}")
@@ -49,12 +50,15 @@ if not nodes.nil? and not nodes.empty?
     next unless boot_ip_hex
     pxefile="#{pxecfg_dir}/#{boot_ip_hex}"
     uefifile="#{uefi_dir}/#{boot_ip_hex}.conf"
+
     # needed for dhcp
     admin_data_net = Chef::Recipe::Barclamp::Inventory.get_network_by_type(mnode, "admin")
+
     case
     when  new_group.nil? || new_group == "noop"
       Chef::Log.info("#{mnode[:fqdn]}: #{mnode[:state]} does not map to a DHCP state.")
       next
+
     when (new_group == "delete")
       Chef::Log.info("Deleting #{mnode[:fqdn]}")
       # Delete the node
@@ -68,6 +72,7 @@ if not nodes.nil? and not nodes.empty?
           action :remove
         end
       end
+
       [pxefile,uefifile].each do |f|
         file f do
           action :delete
@@ -78,6 +83,7 @@ if not nodes.nil? and not nodes.empty?
         recursive true
         action :delete
       end
+
     when new_group == "execute"
       mac_list.each_index do |i|
         dhcp_host "#{mnode.name}-#{i}" do
@@ -89,11 +95,13 @@ if not nodes.nil? and not nodes.empty?
           action :add
         end
       end
+
       [pxefile,uefifile].each do |f|
         file f do
           action :delete
         end
       end
+
     else
       append = []
       mac_list.each_index do |i|
@@ -118,6 +126,7 @@ if not nodes.nil? and not nodes.empty?
           action :add
         end
       end
+
       if new_group == "os_install"
         # This eventaully needs to be conifgurable on a per-node basis
         # We select the os based on the target platform specified.
@@ -129,11 +138,13 @@ if not nodes.nil? and not nodes.empty?
         unless defined?(append) and append.include? node[:provisioner][:available_oses][os][:append_line]
           append << node[:provisioner][:available_oses][os][:append_line]
         end
+
         append << node[:provisioner][:available_oses][os][:append_line]
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
         node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
         os_url="#{provisioner_web}/#{os}"
         install_url="#{os_url}/install"
+
         directory node_cfg_dir do
           action :create
           owner "root"
@@ -141,9 +152,11 @@ if not nodes.nil? and not nodes.empty?
           mode "0755"
           recursive true
         end
+
         if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
           append << "BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':',"-")}"
         end
+
         case
         when os =~ /^ubuntu/
           append << "url=#{node_url}/net_seed"
@@ -161,6 +174,7 @@ if not nodes.nil? and not nodes.empty?
                       :node_name => mnode[:fqdn],
                       :install_path => "#{os}/install")
           end
+
         when os =~ /^(redhat|centos)/
           append << "ks=#{node_url}/compute.ks method=#{install_url}"
           template "#{node_cfg_dir}/compute.ks" do
@@ -179,6 +193,7 @@ if not nodes.nil? and not nodes.empty?
                       :timezone => timezone,
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
+
         when os =~ /^(open)?suse/
           append << "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
 
@@ -210,6 +225,7 @@ if not nodes.nil? and not nodes.empty?
                       :node_name => mnode[:fqdn],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
+
         when os =~ /^(hyperv|windows)/
           os_dir_win = "#{tftproot}/#{os}"
           crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
@@ -233,9 +249,11 @@ if not nodes.nil? and not nodes.empty?
                       :admin_pass => "crowbar",
                       :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]))
           end
+
         else
           raise RangeError.new("Do not know how to handle #{os} in update_nodes.rb!")
         end
+
         [{:file => pxefile, :src => "default.erb"},
          {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
           template t[:file] do
@@ -249,6 +267,7 @@ if not nodes.nil? and not nodes.empty?
                       :kernel => node[:provisioner][:available_oses][os][:kernel])
           end
         end
+
       else
         [{:file => pxefile, :src => "default.erb"},
          {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
