@@ -221,7 +221,6 @@ do_chef_client() {
     # Note that we only transition to problem state if the second run fails.
     echo_verbose "Running Chef Client (pass 1)"
     if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
-        log_to ifup /sbin/service network restart
         post_state $HOSTNAME "recovering"
         echo_debug "Error Path"
         echo_debug "Syncing Time"
@@ -230,7 +229,6 @@ do_chef_client() {
         rm -rf /var/cache/chef/*
         echo_verbose "Running Chef Client (pass 2) - cache cleanup"
         if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
-            log_to ifup /sbin/service network restart
             echo_debug "Error Path"
             echo_debug "Syncing Time"
             sync_time
@@ -241,7 +239,6 @@ do_chef_client() {
             post_state $HOSTNAME "installed"
             echo_verbose "Running Chef Client (pass 3) - password cleanup"
             if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
-                log_to ifup /sbin/service network restart
                 echo_error "chef-client run failed too many times, giving up."
                 printf "Our IP address is: %s\n" "$(ip addr show)" >&2
                 final_state="problem"
