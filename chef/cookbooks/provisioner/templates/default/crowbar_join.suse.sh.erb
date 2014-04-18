@@ -219,35 +219,57 @@ do_chef_client_after_setup() {
 
 do_chef_client() {
     # Note that we only transition to problem state if the second run fails.
-    echo_verbose "Running Chef Client (pass 1)"
-    if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
-        post_state $HOSTNAME "recovering"
-        echo_debug "Error Path"
-        echo_debug "Syncing Time"
-        sync_time
-        echo_debug "Removing Chef Cache"
-        rm -rf /var/cache/chef/*
-        echo_verbose "Running Chef Client (pass 2) - cache cleanup"
-        if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
-            echo_debug "Error Path"
-            echo_debug "Syncing Time"
-            sync_time
-            echo_debug "Removing Chef Cache"
-            rm -rf /var/cache/chef/*
-            echo_debug "Checking Keys"
-            rm -f /etc/chef/client.pem
-            post_state $HOSTNAME "installed"
-            echo_verbose "Running Chef Client (pass 3) - password cleanup"
-            if ! log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
-                echo_error "chef-client run failed too many times, giving up."
-                printf "Our IP address is: %s\n" "$(ip addr show)" >&2
-                final_state="problem"
-            else
-                post_state "$HOSTNAME" "$final_state"
-                log_to chef chef-client $CHEF_CLIENT_OPTIONS
-            fi
+    echo_verbose "Running Chef Client (try 1)"
+    if log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
+        return
+    fi
+
+    # we didn't succeed with chef-client, so let's try running it again with a
+    # state where some roles will not be active
+    echo_debug "Failed to run chef-client, trying with state \"recovering\""
+    post_state $HOSTNAME "recovering"
+
+    echo_debug "Syncing Time"
+    sync_time
+    echo_debug "Removing Chef Cache"
+    rm -rf /var/cache/chef/*
+
+    echo_verbose "Running Chef Client (try 2, pass 1) - cache cleanup"
+    if log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
+	# it worked, cool, let's try again with "readying" state
+        post_state $HOSTNAME "readying"
+        echo_verbose "Running Chef Client (try 2, pass 2) - cache cleanup"
+        if log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
+            return
         fi
     fi
+
+    # we still didn't succeed with chef-client, so let's try running it again
+    # in "installed" state, to pretend we just come straight from a fresh
+    # install
+    echo_debug "Failed to run chef-client, trying with state \"installed\""
+    post_state $HOSTNAME "installed"
+
+    echo_debug "Syncing Time"
+    sync_time
+    echo_debug "Removing Chef Cache"
+    rm -rf /var/cache/chef/*
+    echo_debug "Checking Keys"
+    rm -f /etc/chef/client.pem
+
+    echo_verbose "Running Chef Client (try 3, pass 1) - password cleanup"
+    if log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
+	# it worked, cool, let's try again with "readying" state
+        post_state $HOSTNAME "readying"
+        echo_verbose "Running Chef Client (try 3, pass 2) - password cleanup"
+        if log_to chef chef-client $CHEF_CLIENT_OPTIONS; then
+            return
+        fi
+    fi
+
+    echo_error "chef-client run failed too many times, giving up."
+    printf "Our IP address is: %s\n" "$(ip addr show)" >&2
+    final_state="problem"
 }
 
 
