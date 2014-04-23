@@ -14,7 +14,9 @@
 # limitations under the License
 #
 
-package "syslinux"
+package "syslinux" do
+  options '--disableexcludes=all' if node[:platform] =~ /^(redhat|centos)$/
+end
 
 # Set up the OS images as well
 # Common to all OSes
