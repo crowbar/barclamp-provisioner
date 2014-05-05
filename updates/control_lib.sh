@@ -59,21 +59,22 @@ try_to() {
 }
 
 __post_state() {
+  local hostname=`echo $1 | awk -F. '{ print $1 }'`
   local curlargs=(--connect-timeout 60 -s -L -X POST \
-      --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
+      --data-binary "{ \"name\": \"${hostname}\", \"state\": \"${2}\" }" \
       -H "Accept: application/json" -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
   parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default")
+      "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default.json")
 }
 
 __get_state() {
-    # $1 = hostname
-    local curlargs=(--connect-timeout 60 -s -L -H "Accept: application/json" \
+  local hostname=`echo $1 | awk -F. '{ print $1 }'`
+  local curlargs=(--connect-timeout 60 -s -L -H "Accept: application/json" \
         -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest)
   parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/machines/1.0/show?name=$1")
+      "http://$ADMIN_IP:3000/crowbar/machines/1.0/show/${hostname}.json")
 }
 
 post_state() { try_to "$MAXTRIES" 15 __post_state "$@"; }

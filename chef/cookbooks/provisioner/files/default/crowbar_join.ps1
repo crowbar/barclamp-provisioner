@@ -35,8 +35,8 @@ function postState(){
     [string]$name,
     [string]$state
   )
-  # $cmd = 'C:\Crowbar\curl.exe -o "c:\Crowbar\Logs\'+$name+'-'+$state+'.json" --connect-timeout 60 -S -L -X POST --data-binary "{ \`"name\`": \`"'+$name+'\`", \`"state\`": \`"'+$state+'\`" }" -H "Accept: application/json" -H "Content-Type: application/json" --max-time 240 -u "'+$key+'" --digest --anyauth "'+$uri+'/crowbar/crowbar/1.0/transition/default"'
-  $cmd = 'C:\Crowbar\curl.exe -o "c:\Crowbar\Logs\'+$name+'-'+$state+'.json" --connect-timeout 60 -S -L -X POST --data-binary "{ \"name\": \"'+$name+'\", \"state\": \"'+$state+'\" }" -H "Accept: application/json" -H "Content-Type: application/json" --max-time 240 -u "'+$key+'" --digest --anyauth "'+$uri+'/crowbar/crowbar/1.0/transition/default"'
+  # $cmd = 'C:\Crowbar\curl.exe -o "c:\Crowbar\Logs\'+$name+'-'+$state+'.json" --connect-timeout 60 -S -L -X POST --data-binary "{ \`"name\`": \`"'+$name+'\`", \`"state\`": \`"'+$state+'\`" }" -H "Accept: application/json" -H "Content-Type: application/json" --max-time 240 -u "'+$key+'" --digest --anyauth "'+$uri+'/crowbar/crowbar/1.0/transition/default.json"'
+  $cmd = 'C:\Crowbar\curl.exe -o "c:\Crowbar\Logs\'+$name+'-'+$state+'.json" --connect-timeout 60 -S -L -X POST --data-binary "{ \"name\": \"'+$name+'\", \"state\": \"'+$state+'\" }" -H "Accept: application/json" -H "Content-Type: application/json" --max-time 240 -u "'+$key+'" --digest --anyauth "'+$uri+'/crowbar/crowbar/1.0/transition/default.json"'
   $ret=ExecCommand $cmd
   $exitcode=$ret[0]
   Add-Content -Path "c:\Crowbar\Logs\$name-$state.json" -Value $ret[1]
