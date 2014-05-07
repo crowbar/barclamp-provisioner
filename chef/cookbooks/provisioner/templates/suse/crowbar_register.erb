@@ -94,8 +94,8 @@ for nic in /sys/class/net/*; do
     [[ -f $nic/address && -f $nic/type && \
         $(cat "$nic/type") = 1 ]] || continue
     NICDEV="${nic##*/}"
-    ip addr show $NICDEV | grep -q " brd $ADMIN_BROADCAST "
-    if test $? -eq 0; then
+
+    if ip addr show $NICDEV | grep -q " brd $ADMIN_BROADCAST "; then
         test "x$NICDEV" == "x$DEFINEDDEV" && DEFINEDDEV_FOUND=1
         test -n "$NIC_CANDIDATES" && MULTIPLE_NICS=1
         NIC_CANDIDATES="$NIC_CANDIDATES $NICDEV"
