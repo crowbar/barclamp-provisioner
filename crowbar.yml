@@ -16,12 +16,12 @@
 #
 
 barclamp:
-  name: provisioner
-  display: Provisioner
-  description: The roles and recipes to set up the provisioning server and a base environment for all nodes
+  name: 'provisioner'
+  display: 'Provisioner'
+  description: 'The roles and recipes to set up the provisioning server and a base environment for all nodes'
   version: 0
   member:
-    - crowbar
+    - 'crowbar'
 
 crowbar:
   layout: 1
@@ -33,87 +33,87 @@ crowbar:
 debs:
   ubuntu-10.10:
     repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu maverick main
+      - 'deb http://ppa.launchpad.net/nginx/stable/ubuntu maverick main'
     pkgs:
       - portmap
   ubuntu-11.04:
     repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu natty main
+      - 'deb http://ppa.launchpad.net/nginx/stable/ubuntu natty main'
     pkgs:
       - portmap
   ubuntu-11.10:
     repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
+      - 'deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main'
     pkgs:
       - rpcbind
   ubuntu-12.04:
     repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu precise main
+      - 'deb http://ppa.launchpad.net/nginx/stable/ubuntu precise main'
     pkgs:
-      - rpcbind
+      - 'rpcbind'
   pkgs:
-    - dhcp3-server
-    - nfs-common
-    - nfs-kernel-server
-    - ipmitool
-    - syslinux
-    - tftpd-hpa
-    - nginx-light
+    - 'dhcp3-server'
+    - 'nfs-common'
+    - 'nfs-kernel-server'
+    - 'ipmitool'
+    - 'syslinux'
+    - 'tftpd-hpa'
+    - 'nginx-light'
   build_pkgs:
-    - build-essential
-    - make
+    - 'build-essential'
+    - 'make'
 
 rpms:
   redhat-5.6:
     repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
+      - 'bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/'
     pkgs:
-      - portmap
-      - OpenIPMI-tools
+      - 'portmap'
+      - 'OpenIPMI-tools'
   redhat-5.7:
     repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
+      - 'bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/'
     pkgs:
-      - portmap
-      - OpenIPMI-tools
+      - 'portmap'
+      - 'OpenIPMI-tools'
   centos-5.7:
     repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
+      - 'bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/'
     pkgs:
-      - portmap
-      - OpenIPMI-tools
+      - 'portmap'
+      - 'OpenIPMI-tools'
   redhat-6.4:
     repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
+      - 'bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/'
     pkgs:
-      - rpcbind
-      - ipmitool
+      - 'rpcbind'
+      - 'ipmitool'
     build_pkgs:
-      - tar
+      - 'tar'
   centos-6.4:
     repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
+      - 'bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/'
     pkgs:
-      - rpcbind
-      - ipmitool
+      - 'rpcbind'
+      - 'ipmitool'
     build_pkgs:
-      - tar
+      - 'tar'
   pkgs:
-    - dhcp
-    - dhclient
-    - nfs-utils
-    - syslinux
-    - tftp-server
-    - xinetd
-    - nginx
-    - curl
+    - 'dhcp'
+    - 'dhclient'
+    - 'nfs-utils'
+    - 'syslinux'
+    - 'tftp-server'
+    - 'xinetd'
+    - 'nginx'
+    - 'curl'
   build_pkgs:
-    - flex
-    - bison
-    - make
-    - kernel-devel
-    - gcc
-    - glibc-devel
+    - 'flex'
+    - 'bison'
+    - 'make'
+    - 'kernel-devel'
+    - 'gcc'
+    - 'glibc-devel'
 
 extra_files:
-  - http://downloads.sourceforge.net/project/elilo/elilo/elilo-3.14/elilo-3.14-all.tar.gz
+  - 'http://downloads.sourceforge.net/project/elilo/elilo/elilo-3.14/elilo-3.14-all.tar.gz'
