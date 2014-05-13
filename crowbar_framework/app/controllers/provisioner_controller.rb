@@ -23,4 +23,8 @@ class ProvisionerController < BarclampController
   def initialize_service
     @service_object = ProvisionerService.new logger
   end
+
+  def permitted_params
+    params.require(:provisioner)
+  end
 end
