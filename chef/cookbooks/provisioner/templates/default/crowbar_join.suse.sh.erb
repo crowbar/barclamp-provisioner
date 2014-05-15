@@ -85,7 +85,7 @@ wait_for_network() {
 
 wait_for_hostname() {
     # wait for hostname to become available
-    tries_left=120
+    tries_left=10
     while ! hostname -f > /dev/null; do
       HOSTNAME=$(hostname -f)
       exit_code=$?
