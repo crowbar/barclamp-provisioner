@@ -407,7 +407,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
             VALID_NTP_SERVERS="$VALID_NTP_SERVERS $NTP_SERVER"
         fi
     done
-    if -z "$VALID_NTP_SERVERS"; then
+    if [ -z "$VALID_NTP_SERVERS" ]; then
         echo_verbose "Cannot connect to NTP server(s), will skip time synchronization..."
     fi
 
