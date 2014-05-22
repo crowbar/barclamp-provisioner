@@ -1,4 +1,24 @@
 #!/bin/bash
+#
+# Copyright 2011-2013, Dell
+# Copyright 2013-2014, SUSE LINUX Products GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
+
+
 
 [[ $MAXTRIES ]] || export MAXTRIES=5
 
@@ -59,21 +79,22 @@ try_to() {
 }
 
 __post_state() {
+  local hostname=`echo $1 | awk -F. '{ print $1 }'`
   local curlargs=(--connect-timeout 60 -s -L -X POST \
-      --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
+      --data-binary "{ \"name\": \"${hostname}\", \"state\": \"${2}\" }" \
       -H "Accept: application/json" -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
   parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default")
+      "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default.json")
 }
 
 __get_state() {
-    # $1 = hostname
-    local curlargs=(--connect-timeout 60 -s -L -H "Accept: application/json" \
+  local hostname=`echo $1 | awk -F. '{ print $1 }'`
+  local curlargs=(--connect-timeout 60 -s -L -H "Accept: application/json" \
         -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest)
   parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/machines/1.0/show?name=$1")
+      "http://$ADMIN_IP:3000/crowbar/machines/1.0/show/${hostname}.json")
 }
 
 post_state() { try_to "$MAXTRIES" 15 __post_state "$@"; }

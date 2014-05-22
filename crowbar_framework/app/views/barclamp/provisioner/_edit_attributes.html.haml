@@ -1,10 +1,9 @@
-- register_javascripts "barclamps/provisioner/form"
 = attributes_for @proposal do
   .panel-sub
-    = header @dep_raw, true
+    = header dep_raw, true
 
   .panel-body
-    = text_field :access_keys, :size => "80x5"
+    = text_field :access_keys, size: "80x5"
     %span.help-block
       = t(".access_keys_hint")
 
@@ -12,5 +11,5 @@
       %legend
         = t(".serial_console")
 
-      = boolean_field :use_serial_console
+      = boolean_field :use_serial_console, data: { enabler: "true", enabler_target: "#serial_tty" }
       = string_field :serial_tty

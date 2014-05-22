@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 
 default[:dhcp][:interfaces] = [ "eth0" ]
 default[:dhcp][:options] = [

@@ -1,5 +1,7 @@
 # -*- encoding : utf-8 -*-
-# Copyright 2011, Dell
+#
+# Copyright 2011-2013, Dell
+# Copyright 2013-2014, SUSE LINUX Products GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +16,7 @@
 # limitations under the License.
 #
 
-actions :add, :remove
-
-attribute :name, :kind_of => String, :name_attribute => true
-attribute :options, :kind_of => Array, :default => []
-
+module Barclamp
+  module ProvisionerHelper
+  end
+end

@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 case node[:platform]
 when "suse"
   default[:provisioner][:root] = "/srv/tftpboot"

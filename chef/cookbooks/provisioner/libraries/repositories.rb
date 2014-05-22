@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 #
 # Copyright 2013-2014, SUSE LINUX Products GmbH
 #

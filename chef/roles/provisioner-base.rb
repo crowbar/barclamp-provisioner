@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 
 name "provisioner-base"
 description "Provisioner Base role - Apt and Networking"

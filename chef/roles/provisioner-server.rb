@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 
 name "provisioner-server"
 description "Provisioner Server role - Apt and Networking"

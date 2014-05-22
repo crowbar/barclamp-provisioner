@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 
 
 domain_name = node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain])
