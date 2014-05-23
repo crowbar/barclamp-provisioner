@@ -101,7 +101,23 @@ rpms:
       - ipmitool
     build_pkgs:
       - tar
+  redhat-6.5:
+    repos:
+      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
+    pkgs:
+      - rpcbind
+      - ipmitool
+    build_pkgs:
+      - tar
   centos-6.4:
+    repos:
+      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
+    pkgs:
+      - rpcbind
+      - ipmitool
+    build_pkgs:
+      - tar
+  centos-6.5:
     repos:
       - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
     pkgs:
