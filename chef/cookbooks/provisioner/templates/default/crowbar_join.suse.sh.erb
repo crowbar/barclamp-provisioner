@@ -85,7 +85,7 @@ wait_for_network() {
 
 wait_for_hostname() {
     # wait for hostname to become available
-    tries_left=120
+    tries_left=10
     while ! hostname -f > /dev/null; do
       HOSTNAME=$(hostname -f)
       exit_code=$?
@@ -378,15 +378,6 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     echo_verbose "Waiting on our network interface to come up..."
     wait_for_network
 
-    echo_verbose "Getting hostname..."
-    if ! wait_for_hostname; then
-        echo_error "Cannot get hostname..."
-        exit 1
-    fi
-
-    # Get our hostname
-    HOSTNAME=$(hostname -f)
-
     echo_verbose "Checking connectivity with administration server..."
     wait_for_admin_server
     if [ $? -ne 0 -a "$MODE" == "start" ]; then
@@ -399,6 +390,15 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
         echo_error "Cannot connect to chef-server..."
         exit 1
     fi
+
+    echo_verbose "Getting hostname..."
+    if ! wait_for_hostname; then
+        echo_error "Cannot get hostname..."
+        exit 1
+    fi
+
+    # Get our hostname
+    HOSTNAME=$(hostname -f)
 
     # We only run NTP-related bits if the NTP server(s) can be reached
     for NTP_SERVER in $NTP_SERVERS; do
