@@ -62,11 +62,22 @@ node.set["crowbar"]["ssh"]["access_keys"][node.name] = str
 node_modified = true
 
 # Add additional keys
-node["provisioner"]["access_keys"].strip.split("\n").each do |key|
-  key.strip!
-  if !key.empty?
-    nodename = key.split(" ")[2]
-    node.set["crowbar"]["ssh"]["access_keys"][nodename] = key
+if node["provisioner"]["access_keys"].is_a?(String)
+  node["provisioner"]["access_keys"].strip.split("\n").each do |key|
+    key.strip!
+    if !key.empty?
+      nodename = key.split(" ")[2]
+      node.set["crowbar"]["ssh"]["access_keys"][nodename] = key
+    end
+  end
+elsif node["provisioner"]["access_keys"].is_a?(Hash)
+  node["provisioner"]["access_keys"].each do |id, access_key|
+    key = access_key["key"]
+    key.strip!
+    if !key.empty?
+      nodename = key.split(" ")[2]
+      node.set["crowbar"]["ssh"]["access_keys"][nodename] = key
+    end
   end
 end
 
