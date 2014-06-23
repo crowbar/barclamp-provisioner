@@ -41,7 +41,7 @@
     %td
       = text_field_tag "record[key]", "{{key}}", :placeholder => t(".access_key"), "data-update" => "access_keys/{{name}}/key", "data-name" => "key", "data-type" => "string", :class => "form-control"
     %td
-      = link_to t(".key_remove"), "javascript:void(0);", :class => "btn btn-default btn-block", "data-remove" => "{{name}}"
+      = link_to t(".key_remove"), "#", :class => "btn btn-default btn-block", "data-remove" => "{{name}}"
   {{else}}
   %tr
     %td{ :colspan => 3 }
