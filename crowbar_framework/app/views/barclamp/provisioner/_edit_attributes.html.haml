@@ -3,9 +3,28 @@
     = header @dep_raw, true
 
   .panel-body
-    = text_field :access_keys, :size => "80x5"
-    %span.help-block
-      = t(".access_keys_hint")
+    %fieldset
+      %legend
+        = t(".access_keys")
+
+      %table.table.table-middle{ "data-dynamic" => "#key-entries", "data-namespace" => "access_keys", "data-optional" => "", "data-invalid" => t(".key_invalid"), "data-duplicate" => t(".key_duplicate") }
+        %thead
+          %tr
+            %th.zeropad
+            %th.col-sm-11
+              = t(".access_key")
+            %th.col-sm-1
+
+        %tbody
+
+        %tfoot
+          %tr
+            %td.zeropad
+              = hidden_field_tag "record[name]", "", "data-name" => "name", "data-type" => "string"
+            %td
+              = text_field_tag "record[key]", "", :placeholder => t(".access_key"), :class => "form-control", "data-name" => "key", "data-type" => "string"
+            %td
+              = link_to t(".key_add"), "#", :class => "btn btn-default btn-block", "data-add" => true
 
     %fieldset
       %legend
@@ -13,3 +32,19 @@
 
       = boolean_field :use_serial_console
       = string_field :serial_tty
+
+%script#key-entries{ :type => "text/x-handlebars-template" }
+  {{#each entries}}
+  %tr.edit
+    %td.zeropad
+      = hidden_field_tag "record[name]", "{{name}}", "data-name" => "name", "data-type" => "string"
+    %td
+      = text_field_tag "record[key]", "{{key}}", :placeholder => t(".access_key"), "data-update" => "access_keys/{{name}}/key", "data-name" => "key", "data-type" => "string", :class => "form-control"
+    %td
+      = link_to t(".key_remove"), "javascript:void(0);", :class => "btn btn-default btn-block", "data-remove" => "{{name}}"
+  {{else}}
+  %tr
+    %td{ :colspan => 3 }
+      .empty.alert.alert-info.text-center
+        = t(".no_keys")
+  {{/each}}
