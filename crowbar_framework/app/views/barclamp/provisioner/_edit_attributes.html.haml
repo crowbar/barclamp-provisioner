@@ -37,9 +37,9 @@
   {{#each entries}}
   %tr.edit
     %td.zeropad
-      = hidden_field_tag "record[name]", "{{name}}", "data-name" => "name", "data-type" => "string"
+      = hidden_field_tag "record[name]", "{{name}}", "data-name" => "name", "data-type" => "string", :disabled => "disabled"
     %td
-      = text_field_tag "record[key]", "{{key}}", :placeholder => t(".access_key"), "data-update" => "access_keys/{{name}}/key", "data-name" => "key", "data-type" => "string", :class => "form-control"
+      = text_field_tag "record[key]", "{{key}}", :placeholder => t(".access_key"), "data-update" => "access_keys/{{name}}/key", "data-name" => "key", "data-type" => "string", :class => "form-control", :disabled => "disabled"
     %td
       = link_to t(".key_remove"), "#", :class => "btn btn-default btn-block", "data-remove" => "{{name}}"
   {{else}}
