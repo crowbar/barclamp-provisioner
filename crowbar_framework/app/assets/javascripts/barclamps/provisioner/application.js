@@ -30,7 +30,7 @@ $(document).ready(function($) {
 
   $('input[data-name=key]').on('change', function() {
     var hash = md5($(this).val()).substring(0, 8);
-    var elm  = $(this.parentElement.parentElement).find('input[data-name=name]');
+    var elm  = $(this).parent().parent().find('input[data-name=name]');
     elm.val(hash);
   });
 });
