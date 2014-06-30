@@ -82,6 +82,7 @@
   "deployment": {
     "provisioner": {
       "crowbar-revision": 0,
+      "crowbar-applied": false,
       "schema-revision": 1,
       "element_states": {
         "provisioner-bootdisk-finder": [ "hardware-installing" ],
