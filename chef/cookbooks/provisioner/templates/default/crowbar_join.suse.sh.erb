@@ -166,19 +166,25 @@ do_setup() {
 
         cat >> /etc/chef/client.rb <<EOF
 require "/var/chef/handlers/reboot_handler"
+require "/var/chef/handlers/reboot_handler_reset"
 reboot_handler = RebootHandler.new
+reboot_handler_reset = RebootHandlerReset.new
 report_handlers << reboot_handler # these fire at the end of a successful run
+start_handlers << reboot_handler_reset # these fire at the start of a run
 EOF
 
     fi # edit /etc/chef/client.rb
 
+    mkdir -p /var/chef/handlers
     # create reboot handler
     if [ ! -f /var/chef/handlers/reboot_handler.rb ]; then
-        mkdir -p /var/chef/handlers
         cat > /var/chef/handlers/reboot_handler.rb <<EOF
 class RebootHandler < Chef::Handler
   def report
     if node.run_state[:reboot]
+      # remember reboot so crowbar can catch the reboot and wait until reboot finished
+      node[:crowbar_wall][:wait_for_reboot] = true
+      node.save
       Chef::Log.info("Reboot requested through node.run_state[:reboot]")
       system("/sbin/reboot")
     end
@@ -186,6 +192,21 @@ class RebootHandler < Chef::Handler
 end
 EOF
     fi # create reboot handler
+
+    # create reboot handler reset
+    if [ ! -f /var/chef/handlers/reboot_handler_reset.rb ]; then
+        cat > /var/chef/handlers/reboot_handler_reset.rb <<EOF
+class RebootHandlerReset < Chef::Handler
+  def report
+    if defined?(node[:crowbar_wall][:wait_for_reboot]) and node[:crowbar_wall][:wait_for_reboot]== true
+      node[:crowbar_wall][:wait_for_reboot] = false
+      node.save
+      Chef::Log.debug("node[:crowbar_wall][:wait_for_reboot] reset done")
+    end
+  end
+end
+EOF
+    fi # create reboot handler reset
 
     # install Chef
     if [[ ! -x /etc/init.d/chef-client ]]; then
