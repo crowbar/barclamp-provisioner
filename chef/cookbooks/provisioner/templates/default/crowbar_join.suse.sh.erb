@@ -160,53 +160,7 @@ do_setup() {
         test -f /etc/chef/client.rb && mv /etc/chef/client.rb /etc/chef/client.rb.bak
         echo "chef_server_url \"http://$IP:4000\"" >/etc/chef/client.rb
 
-        # add reboot handler to chef-client
-        # FIXME: there is a cleaner way of adding handlers:
-        # http://wiki.opscode.com/display/chef/Opscode+LWRP+Resources#OpscodeLWRPResources-chefhandler
-
-        cat >> /etc/chef/client.rb <<EOF
-require "/var/chef/handlers/reboot_handler"
-require "/var/chef/handlers/reboot_handler_reset"
-reboot_handler = RebootHandler.new
-reboot_handler_reset = RebootHandlerReset.new
-report_handlers << reboot_handler # these fire at the end of a successful run
-start_handlers << reboot_handler_reset # these fire at the start of a run
-EOF
-
     fi # edit /etc/chef/client.rb
-
-    mkdir -p /var/chef/handlers
-    # create reboot handler
-    if [ ! -f /var/chef/handlers/reboot_handler.rb ]; then
-        cat > /var/chef/handlers/reboot_handler.rb <<EOF
-class RebootHandler < Chef::Handler
-  def report
-    if node.run_state[:reboot]
-      # remember reboot so crowbar can catch the reboot and wait until reboot finished
-      node[:crowbar_wall][:wait_for_reboot] = true
-      node.save
-      Chef::Log.info("Reboot requested through node.run_state[:reboot]")
-      system("/sbin/reboot")
-    end
-  end
-end
-EOF
-    fi # create reboot handler
-
-    # create reboot handler reset
-    if [ ! -f /var/chef/handlers/reboot_handler_reset.rb ]; then
-        cat > /var/chef/handlers/reboot_handler_reset.rb <<EOF
-class RebootHandlerReset < Chef::Handler
-  def report
-    if defined?(node[:crowbar_wall][:wait_for_reboot]) and node[:crowbar_wall][:wait_for_reboot]== true
-      node[:crowbar_wall][:wait_for_reboot] = false
-      node.save
-      Chef::Log.debug("node[:crowbar_wall][:wait_for_reboot] reset done")
-    end
-  end
-end
-EOF
-    fi # create reboot handler reset
 
     # install Chef
     if [[ ! -x /etc/init.d/chef-client ]]; then
@@ -223,6 +177,77 @@ EOF
 
         log_to chef chkconfig -a chef-client
     fi # install chef
+}
+
+do_setup_chef_handlers() {
+    # FIXME: there is a cleaner way of adding handlers:
+    # http://wiki.opscode.com/display/chef/Opscode+LWRP+Resources#OpscodeLWRPResources-chefhandler
+
+    mkdir -p /var/chef/handlers
+    # create reboot handler
+    read -d '' reboot_handler_content <<"EOF"
+class RebootHandler < Chef::Handler
+  def report
+    if node.run_state[:reboot]
+      # remember reboot so crowbar can catch the reboot and wait until reboot finished
+      node[:crowbar_wall][:wait_for_reboot] = true
+      node.save
+      Chef::Log.info("Reboot requested through node.run_state[:reboot]")
+      system("/sbin/reboot")
+    end
+  end
+end
+EOF
+
+    if [ -f /var/chef/handlers/reboot_handler.rb ] ; then
+        # only update reboot_handler.rb if something changed
+        local reboot_handler_shasum_file=$(sha256sum /var/chef/handlers/reboot_handler.rb | cut -d ' ' -f 1)
+        local reboot_handler_shasum_new=$(echo "$reboot_handler_content" | sha256sum | cut -d ' ' -f 1)
+
+        if [ "$reboot_handler_shasum_file" != "$reboot_handler_shasum_new" ] ; then
+            echo "$reboot_handler_content" > /var/chef/handlers/reboot_handler.rb
+        fi
+    else
+        echo "$reboot_handler_content" > /var/chef/handlers/reboot_handler.rb
+    fi
+
+    # create reboot handler reset
+    read -d '' reboot_handler_reset_content <<"EOF"
+class RebootHandlerReset < Chef::Handler
+  def report
+    if defined?(node[:crowbar_wall][:wait_for_reboot]) and node[:crowbar_wall][:wait_for_reboot]== true
+      node[:crowbar_wall][:wait_for_reboot] = false
+      node.save
+      Chef::Log.debug("node[:crowbar_wall][:wait_for_reboot] reset done")
+    end
+  end
+end
+EOF
+    if [ -f /var/chef/handlers/reboot_handler_reset.rb ] ; then
+        # only update reboot_handler_reset.rb if something changed
+        local reboot_handler_reset_shasum_file=$(sha256sum /var/chef/handlers/reboot_handler_reset.rb | cut -d ' ' -f 1)
+        local reboot_handler_reset_shasum_new=$(echo "$reboot_handler_reset_content" | sha256sum | cut -d ' ' -f 1)
+
+        if [ "$reboot_handler_reset_shasum_file" != "$reboot_handler_reset_shasum_new" ] ; then
+            echo "$reboot_handler_reset_content" > /var/chef/handlers/reboot_handler_reset.rb
+        fi
+    else
+        echo "$reboot_handler_reset_content" > /var/chef/handlers/reboot_handler_reset.rb
+    fi
+
+    # add reboot handler as report_handler
+    for line in 'require "/var/chef/handlers/reboot_handler"' \
+        'reboot_handler = RebootHandler.new' \
+        'report_handlers << reboot_handler # these fire at the end of a successful run'; do
+        grep -q -e "^$line$" /etc/chef/client.rb || echo "$line" >> /etc/chef/client.rb
+    done
+
+    # add reboot handler reset as start_handler
+    for line in 'require "/var/chef/handlers/reboot_handler_reset"' \
+        'reboot_handler_reset = RebootHandlerReset.new' \
+        'start_handlers << reboot_handler_reset # these fire at the start of a run'; do
+        grep -q -e "^$line$" /etc/chef/client.rb || echo "$line" >> /etc/chef/client.rb
+    done
 }
 
 do_chef_client_after_setup() {
@@ -447,6 +472,8 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     final_state="ready"
 
     [ "$MODE" == "setup" ] && do_setup
+
+    do_setup_chef_handlers
 
     # Run Chef
     echo_verbose "Synchronizing time (pass 2)"
