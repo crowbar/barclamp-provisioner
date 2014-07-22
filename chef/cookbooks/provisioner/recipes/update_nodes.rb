@@ -176,8 +176,8 @@ if not nodes.nil? and not nodes.empty?
           recursive true
         end
 
-        if (mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"] rescue nil)
-          append << "BOOTIF=01-#{mnode[:crowbar_wall][:uefi][:boot]["LastNetBootMac"].gsub(':',"-")}"
+        if mnode["uefi"]["boot"]["last_mac"]
+          append << "BOOTIF=01-#{mnode["uefi"]["boot"]["last_mac"].gsub(':', "-")}"
         end
 
         case
@@ -211,7 +211,7 @@ if not nodes.nil? and not nodes.empty?
                       :node_name => mnode[:fqdn],
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :repos => node[:provisioner][:repositories][os],
-                      :uefi => (mnode[:crowbar_wall][:uefi] rescue nil),
+                      :uefi => mnode[:uefi],
                       :admin_web => install_url,
                       :timezone => timezone,
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
