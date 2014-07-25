@@ -176,7 +176,7 @@ if not nodes.nil? and not nodes.empty?
           recursive true
         end
 
-        if mnode["uefi"]["boot"]["last_mac"]
+        if mnode["uefi"] and mnode["uefi"]["boot"]["last_mac"]
           append << "BOOTIF=01-#{mnode["uefi"]["boot"]["last_mac"].gsub(':', "-")}"
         end
 
