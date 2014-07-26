@@ -217,10 +217,15 @@ EOF
 class RebootHandlerReset < Chef::Handler
   def report
     if defined?(node[:crowbar_wall][:wait_for_reboot]) and node[:crowbar_wall][:wait_for_reboot]== true
-      node[:crowbar_wall][:wait_for_reboot] = false
-      node[:crowbar_wall][:wait_for_reboot_requesttime] = 0
-      node.save
-      Chef::Log.debug("node[:crowbar_wall][:wait_for_reboot] reset done")
+      boottime =`echo $(($(date +%s) - $(cat /proc/uptime|cut -d " " -f 1|cut -d "." -f 1)))`.to_i
+      if boottime > node[:crowbar_wall][:wait_for_reboot_requesttime]
+        node[:crowbar_wall][:wait_for_reboot] = false
+        node[:crowbar_wall][:wait_for_reboot_requesttime] = 0
+        node.save
+        Chef::Log.debug("node[:crowbar_wall][:wait_for_reboot] reset done")
+      else
+        Chef::Log.debug("No reset of wait_for_reboot flag. boottime #{boottime} still <= reboot requesttime #{node[:crowbar_wall][:wait_for_reboot_requesttime]}.")
+      end
     end
   end
 end
