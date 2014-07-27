@@ -252,11 +252,17 @@ if not nodes.nil? and not nodes.empty?
         when os =~ /^(hyperv|windows)/
           os_dir_win = "#{tftproot}/#{os}"
           crowbar_key = ::File.read("/etc/crowbar.install.key").chomp.strip
-          case
-          when /^windows/ =~ os
+          case os
+          when "windows-6.3"
+            image_name = "Windows Server 2012 R2 SERVERSTANDARD"
+          when "windows-6.2"
             image_name = "Windows Server 2012 SERVERSTANDARD"
-          when /^hyperv/ =~ os
+          when "hyperv-6.3"
+            image_name = "Hyper-V Server 2012 R2 SERVERHYPERCORE"
+          when "hyperv-6.2"
             image_name = "Hyper-V Server 2012 SERVERHYPERCORE"
+	  else
+            raise "Unsupported version of Windows Server / Hyper-V Server"
           end
           template "#{os_dir_win}/unattend/unattended.xml" do
             mode 0644
