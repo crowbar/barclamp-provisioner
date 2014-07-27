@@ -431,7 +431,8 @@ node[:provisioner][:supported_oses].each do |os,params|
 end
 
 unless node[:provisioner][:supported_oses].keys.select{|os| /^(hyperv|windows)/ =~ os}.empty?
-  extra_dir="#{tftproot}/windows-common/extra"
+  common_dir="#{tftproot}/windows-common"
+  extra_dir="#{common_dir}/extra"
 
   directory "#{extra_dir}" do
     recursive true
@@ -490,6 +491,15 @@ unless node[:provisioner][:supported_oses].keys.select{|os| /^(hyperv|windows)/ 
     mode "0644"
     action :create
     source "curl.COPYING"
+  end
+
+  # Create tftp helper directory
+  directory "#{common_dir}/tftp" do
+    recursive true
+    mode 0755
+    owner "root"
+    group "root"
+    action :create
   end
 end
 

@@ -72,10 +72,12 @@ if not nodes.nil? and not nodes.empty?
     if boot_ip_hex
       pxefile = "#{pxecfg_dir}/#{boot_ip_hex}"
       uefifile = "#{uefi_dir}/#{boot_ip_hex}.conf"
+      windows_tftp_file = "#{tftproot}/windows-common/tftp/#{mnode["crowbar"]["boot_ip_hex"]}"
     else
       Chef::Log.warn("#{mnode[:fqdn]}: no boot IP known; PXE/UEFI boot files won't get updated!")
       pxefile = nil
       uefifile = nil
+      windows_tftp_file = nil
     end
 
     # needed for dhcp
@@ -96,7 +98,7 @@ if not nodes.nil? and not nodes.empty?
         end
       end
 
-      [pxefile,uefifile].each do |f|
+      [pxefile,uefifile,windows_tftp_file].each do |f|
         file f do
           action :delete
         end unless f.nil?
@@ -277,6 +279,15 @@ if not nodes.nil? and not nodes.empty?
                       :crowbar_key => crowbar_key,
                       :admin_pass => "crowbar",
                       :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]))
+          end
+
+          link windows_tftp_file do
+            action :create
+            # use a relative symlink, since tftpd will chroot and absolute path will be wrong
+            to "../../#{os}"
+            # Only for upgrade purpose: the directory is created in
+            # setup_base_images recipe, which is run later
+            only_if { ::File.exists? File.dirname(windows_tftp_file) }
           end
 
         else
