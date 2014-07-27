@@ -396,7 +396,6 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
   when /^(hyperv|windows)/ =~ os
-
     directory "#{tftproot}/adk-tools" do
       recursive true
       mode 0755
@@ -412,66 +411,6 @@ node[:provisioner][:supported_oses].each do |os,params|
       source "build_winpe_os.ps1.erb"
       variables(:os => os,
                 :admin_ip => admin_ip)
-    end
-
-    directory "#{os_dir}/extra" do
-      recursive true
-      mode 0755
-      owner "root"
-      group "root"
-      action :create
-    end
-
-    # Copy the crowbar_join script
-    cookbook_file "#{os_dir}/extra/crowbar_join.ps1" do
-      owner "root"
-      group "root"
-      mode "0644"
-      action :create
-      source "crowbar_join.ps1"
-    end
-
-    # Copy the script required for setting the hostname
-    cookbook_file "#{os_dir}/extra/set_hostname.ps1" do
-      owner "root"
-      group "root"
-      mode "0644"
-      action :create
-      source "set_hostname.ps1"
-    end
-
-    # Copy the script required for setting the installed state
-    template "#{os_dir}/extra/set_state.ps1" do
-      owner "root"
-      group "root"
-      mode "0644"
-      source "set_state.ps1.erb"
-      variables(:crowbar_key => crowbar_key,
-                :admin_ip => admin_ip,
-                :os => os)
-    end
-
-    # Also copy the required files to install chef-client and communicate with Crowbar
-    cookbook_file "#{os_dir}/extra/chef-client-11.4.4-2.windows.msi" do
-      owner "root"
-      group "root"
-      mode "0644"
-      action :create
-      source "chef-client-11.4.4-2.windows.msi"
-    end
-    cookbook_file "#{os_dir}/extra/curl.exe" do
-      owner "root"
-      group "root"
-      mode "0644"
-      action :create
-      source "curl.exe"
-    end
-    cookbook_file "#{os_dir}/extra/curl.COPYING" do
-      owner "root"
-      group "root"
-      mode "0644"
-      action :create
-      source "curl.COPYING"
     end
 
   end
@@ -490,5 +429,69 @@ node[:provisioner][:supported_oses].each do |os,params|
   node.set[:provisioner][:available_oses][os][:webserver] = admin_web
   node.set[:provisioner][:available_oses][os][:install_name] = role
 end
+
+unless node[:provisioner][:supported_oses].keys.select{|os| /^(hyperv|windows)/ =~ os}.empty?
+  extra_dir="#{tftproot}/windows-common/extra"
+
+  directory "#{extra_dir}" do
+    recursive true
+    mode 0755
+    owner "root"
+    group "root"
+    action :create
+  end
+
+  # Copy the crowbar_join script
+  cookbook_file "#{extra_dir}/crowbar_join.ps1" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "crowbar_join.ps1"
+  end
+
+  # Copy the script required for setting the hostname
+  cookbook_file "#{extra_dir}/set_hostname.ps1" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "set_hostname.ps1"
+  end
+
+  # Copy the script required for setting the installed state
+  template "#{extra_dir}/set_state.ps1" do
+    owner "root"
+    group "root"
+    mode "0644"
+    source "set_state.ps1.erb"
+    variables(:crowbar_key => crowbar_key,
+              :admin_ip => admin_ip)
+  end
+
+  # Also copy the required files to install chef-client and communicate with Crowbar
+  cookbook_file "#{extra_dir}/chef-client-11.4.4-2.windows.msi" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "chef-client-11.4.4-2.windows.msi"
+  end
+  cookbook_file "#{extra_dir}/curl.exe" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "curl.exe"
+  end
+  cookbook_file "#{extra_dir}/curl.COPYING" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "curl.COPYING"
+  end
+end
+
 # Save this node config.
 node.save
