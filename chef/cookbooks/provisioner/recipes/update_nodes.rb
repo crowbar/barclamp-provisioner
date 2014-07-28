@@ -153,7 +153,7 @@ if not nodes.nil? and not nodes.empty?
       end
 
       if new_group == "os_install"
-        # This eventaully needs to be conifgurable on a per-node basis
+        # This eventually needs to be configurable on a per-node basis
         # We select the os based on the target platform specified.
         os=mnode[:target_platform]
         if os.nil? or os.empty?
