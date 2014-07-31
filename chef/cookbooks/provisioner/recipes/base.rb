@@ -92,6 +92,13 @@ template "/root/.ssh/authorized_keys" do
   variables(:keys => node["crowbar"]["ssh"]["access_keys"])
 end
 
+template "/etc/sudo.conf" do
+  source "sudo.conf.erb"
+  owner "root"
+  group "root"
+  mode "0644"
+end
+
 # Also put authorized_keys in tftpboot path on the admin node so that discovered
 # nodes can use the same.
 if node.roles.include? "crowbar"
