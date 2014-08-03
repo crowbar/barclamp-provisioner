@@ -179,7 +179,10 @@ do_setup() {
     fi # install chef
 }
 
-do_setup_chef_handlers() {
+do_ensure_chef_configuration() {
+    # Disable reporting, which only works with Enterprise Chef
+    grep -q enable_reporting /etc/chef/client.rb || echo "enable_reporting false" >> /etc/chef/client.rb
+
     # FIXME: there is a cleaner way of adding handlers:
     # http://wiki.opscode.com/display/chef/Opscode+LWRP+Resources#OpscodeLWRPResources-chefhandler
 
@@ -480,7 +483,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
 
     [ "$MODE" == "setup" ] && do_setup
 
-    do_setup_chef_handlers
+    do_ensure_chef_configuration
 
     # Run Chef
     echo_verbose "Synchronizing time (pass 2)"
