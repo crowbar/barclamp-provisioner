@@ -21,6 +21,8 @@ en:
       edit_attributes:
         access_keys: 'Additional SSH keys'
         access_keys_hint: 'Each SSH key must be on its own line'
+        shell_prompt: 'Custom Shell Prompt'
+        shell_prompt_hint: 'You can use the placeholders USER, ALIAS, HOST, FQDN, CWD and SUFFIX to customize the shell prompt on all nodes. Add a \n for a new line within the prompt.'
         serial_console: 'Serial Console'
         use_serial_console: 'Enable Serial Console'
         serial_tty: 'Serial Console Device'
