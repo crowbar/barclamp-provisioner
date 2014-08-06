@@ -268,7 +268,12 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
 end
 
 aliaz = begin
-  node["crowbar"]["display"]["alias"]
+  display_alias = node["crowbar"]["display"]["alias"]
+  if display_alias && !display_alias.empty?
+    display_alias
+  else
+    node["hostname"]
+  end
 rescue
   node["hostname"]
 end
