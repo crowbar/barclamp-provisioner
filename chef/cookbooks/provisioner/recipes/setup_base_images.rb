@@ -254,6 +254,88 @@ unless default_os = node[:provisioner][:default_os]
   node.save
 end
 
+unless node[:provisioner][:supported_oses].keys.select{|os| /^(hyperv|windows)/ =~ os}.empty?
+  common_dir="#{tftproot}/windows-common"
+  extra_dir="#{common_dir}/extra"
+
+  directory "#{extra_dir}" do
+    recursive true
+    mode 0755
+    owner "root"
+    group "root"
+    action :create
+  end
+
+  # Copy the crowbar_join script
+  cookbook_file "#{extra_dir}/crowbar_join.ps1" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "crowbar_join.ps1"
+  end
+
+  # Copy the script required for setting the hostname
+  cookbook_file "#{extra_dir}/set_hostname.ps1" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "set_hostname.ps1"
+  end
+
+  # Copy the script required for setting the installed state
+  template "#{extra_dir}/set_state.ps1" do
+    owner "root"
+    group "root"
+    mode "0644"
+    source "set_state.ps1.erb"
+    variables(:crowbar_key => crowbar_key,
+              :admin_ip => admin_ip)
+  end
+
+  # Also copy the required files to install chef-client and communicate with Crowbar
+  cookbook_file "#{extra_dir}/chef-client-11.4.4-2.windows.msi" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "chef-client-11.4.4-2.windows.msi"
+  end
+
+  cookbook_file "#{extra_dir}/curl.exe" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "curl.exe"
+  end
+
+  cookbook_file "#{extra_dir}/curl.COPYING" do
+    owner "root"
+    group "root"
+    mode "0644"
+    action :create
+    source "curl.COPYING"
+  end
+
+  # Create tftp helper directory
+  directory "#{common_dir}/tftp" do
+    mode 0755
+    owner "root"
+    group "root"
+    action :create
+  end
+
+  # Ensure the adk-tools directory exists
+  directory "#{tftproot}/adk-tools" do
+    mode 0755
+    owner "root"
+    group "root"
+    action :create
+  end
+end
+
 node[:provisioner][:repositories] ||= Mash.new
 node[:provisioner][:supported_oses].each do |os,params|
 
@@ -396,14 +478,6 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
   when /^(hyperv|windows)/ =~ os
-    directory "#{tftproot}/adk-tools" do
-      recursive true
-      mode 0755
-      owner "root"
-      group "root"
-      action :create
-    end
-
     template "#{tftproot}/adk-tools/build_winpe_#{os}.ps1" do
       mode 0644
       owner "root"
@@ -448,79 +522,6 @@ node[:provisioner][:supported_oses].each do |os,params|
   end
   node.set[:provisioner][:available_oses][os][:webserver] = admin_web
   node.set[:provisioner][:available_oses][os][:install_name] = role
-end
-
-unless node[:provisioner][:supported_oses].keys.select{|os| /^(hyperv|windows)/ =~ os}.empty?
-  common_dir="#{tftproot}/windows-common"
-  extra_dir="#{common_dir}/extra"
-
-  directory "#{extra_dir}" do
-    recursive true
-    mode 0755
-    owner "root"
-    group "root"
-    action :create
-  end
-
-  # Copy the crowbar_join script
-  cookbook_file "#{extra_dir}/crowbar_join.ps1" do
-    owner "root"
-    group "root"
-    mode "0644"
-    action :create
-    source "crowbar_join.ps1"
-  end
-
-  # Copy the script required for setting the hostname
-  cookbook_file "#{extra_dir}/set_hostname.ps1" do
-    owner "root"
-    group "root"
-    mode "0644"
-    action :create
-    source "set_hostname.ps1"
-  end
-
-  # Copy the script required for setting the installed state
-  template "#{extra_dir}/set_state.ps1" do
-    owner "root"
-    group "root"
-    mode "0644"
-    source "set_state.ps1.erb"
-    variables(:crowbar_key => crowbar_key,
-              :admin_ip => admin_ip)
-  end
-
-  # Also copy the required files to install chef-client and communicate with Crowbar
-  cookbook_file "#{extra_dir}/chef-client-11.4.4-2.windows.msi" do
-    owner "root"
-    group "root"
-    mode "0644"
-    action :create
-    source "chef-client-11.4.4-2.windows.msi"
-  end
-  cookbook_file "#{extra_dir}/curl.exe" do
-    owner "root"
-    group "root"
-    mode "0644"
-    action :create
-    source "curl.exe"
-  end
-  cookbook_file "#{extra_dir}/curl.COPYING" do
-    owner "root"
-    group "root"
-    mode "0644"
-    action :create
-    source "curl.COPYING"
-  end
-
-  # Create tftp helper directory
-  directory "#{common_dir}/tftp" do
-    recursive true
-    mode 0755
-    owner "root"
-    group "root"
-    action :create
-  end
 end
 
 # Save this node config.
