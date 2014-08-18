@@ -413,6 +413,26 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :admin_ip => admin_ip)
     end
 
+    directory "#{os_dir}" do
+      mode 0755
+      owner "root"
+      group "root"
+      action :create
+    end
+
+    # Let's stay compatible with the old code and remove the per-version extra directory
+    if File.directory? "#{os_dir}/extra"
+      directory "#{os_dir}/extra" do
+        recursive true
+        action :delete
+      end
+    end
+
+    link "#{os_dir}/extra" do
+      action :create
+      to "../windows-common/extra"
+    end
+
   end
 
   node.set[:provisioner][:available_oses] ||= Mash.new
