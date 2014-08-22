@@ -29,14 +29,14 @@
   </general>
   <add-on>
     <add_on_products config:type="list">
-    <% for name, attrs in @repos %>
+    <% @repos.keys.sort.each do |name| %>
       <listentry>
         <name><%= name %></name>
         <product><%= name %></product>
         <product_dir>/</product_dir>
-        <media_url><%= attrs[:url] %></media_url>
+        <media_url><%= @repos[name][:url] %></media_url>
         <!-- See bnc#787157 for discussion on ask_on_error -->
-        <ask_on_error config:type="boolean"><%= attrs[:ask_on_error] || 'false' %></ask_on_error>
+        <ask_on_error config:type="boolean"><%= @repos[name][:ask_on_error] || 'false' %></ask_on_error>
       </listentry>
     <% end %>
     </add_on_products>
