@@ -49,6 +49,18 @@
           "kernel": "boot/pxeboot.0",
           "append": " ",
           "require_install_dir": false
+        },
+        "windows-6.3": {
+          "initrd": " ",
+          "kernel": "boot/pxeboot.0",
+          "append": " ",
+          "require_install_dir": false
+        },
+        "hyperv-6.3": {
+          "initrd": " ",
+          "kernel": "boot/pxeboot.0",
+          "append": " ",
+          "require_install_dir": false
         }
       },
       "timezone": "UTC",
@@ -84,7 +96,7 @@
     "provisioner": {
       "crowbar-revision": 0,
       "crowbar-applied": false,
-      "schema-revision": 10,
+      "schema-revision": 11,
       "element_states": {
         "provisioner-bootdisk-finder": [ "hardware-installing" ],
         "provisioner-server": [ "readying", "ready", "applying" ],
