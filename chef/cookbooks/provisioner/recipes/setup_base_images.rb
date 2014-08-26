@@ -408,7 +408,8 @@ node[:provisioner][:supported_oses].each do |os,params|
     end
 
     Provisioner::Repositories.inspect_repos(node)
-    repos = Provisioner::Repositories.get_repos(node, "suse")
+    target_platform_version = os.gsub(/^.*-/, "")
+    repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
 
     template "#{os_dir}/crowbar_register" do
       mode 0644
