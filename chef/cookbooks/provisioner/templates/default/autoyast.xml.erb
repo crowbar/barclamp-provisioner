@@ -150,7 +150,7 @@
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
 IP="<%= @admin_node_ip %>"
-HOSTNAME=$(hostname)
+HOSTNAME="<%= @node_name %>"
 
 key_re='crowbar\.install\.key=([^ ]+)'
 if [[ $(cat /proc/cmdline) =~ $key_re ]]; then
