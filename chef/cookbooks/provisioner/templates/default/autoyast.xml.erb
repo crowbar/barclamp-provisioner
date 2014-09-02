@@ -139,6 +139,13 @@
     <hwclock>UTC</hwclock>
     <timezone><%=@timezone%></timezone>
   </timezone>
+  <services-manager>
+    <services>
+      <enable config:type="list">
+        <service>sshd</service>
+      </enable>
+    </services>
+  </services-manager>
   <scripts>
     <chroot-scripts config:type="list">
         <script>
