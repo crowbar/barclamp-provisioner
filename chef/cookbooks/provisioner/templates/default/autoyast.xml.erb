@@ -139,6 +139,15 @@
     <hwclock>UTC</hwclock>
     <timezone><%=@timezone%></timezone>
   </timezone>
+  <% if @target_platform_version == "12.0" -%>
+  <services-manager>
+    <services>
+      <enable config:type="list">
+        <service>sshd</service>
+      </enable>
+    </services>
+  </services-manager>
+  <% end %>
   <scripts>
     <chroot-scripts config:type="list">
         <script>

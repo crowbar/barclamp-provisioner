@@ -248,6 +248,7 @@ if not nodes.nil? and not nodes.empty?
                       :raid_type => (mnode[:crowbar_wall][:raid_type] || "single"),
                       :raid_disks => (mnode[:crowbar_wall][:raid_disks] || []),
                       :node_name => mnode[:fqdn],
+                      :target_platform_version => target_platform_version,
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
 
