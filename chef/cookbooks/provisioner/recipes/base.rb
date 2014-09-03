@@ -251,7 +251,7 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
 
   if node["platform"] == "suse"
     ## make sure the repos are properly setup
-    repos = Provisioner::Repositories.get_repos(provisioner_server_node, "suse")
+    repos = Provisioner::Repositories.get_repos(provisioner_server_node, node["platform"], node["platform_version"])
     for name, attrs in repos
       url = %x{zypper --non-interactive repos #{name} 2> /dev/null | grep "^URI " | cut -d : -f 2-}
       url.strip!

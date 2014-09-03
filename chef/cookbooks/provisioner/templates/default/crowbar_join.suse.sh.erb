@@ -162,21 +162,7 @@ do_setup() {
 
     fi # edit /etc/chef/client.rb
 
-    # install Chef
-    if [[ ! -x /etc/init.d/chef-client ]]; then
-        echo_verbose "Installing Chef..."
-
-        while ! log_to zypper zypper -n refresh ; do
-            echo_verbose "Failed to do zypper refresh, wait and try again"
-            sleep 10
-        done
-        while ! log_to zypper zypper -n install rubygem-chef rubygem-ruby-shadow ; do
-            echo_verbose "Failed to do zypper install, wait and try again"
-            sleep 10
-        done
-
-        log_to chef chkconfig -a chef-client
-    fi # install chef
+    log_to chef chkconfig -a chef-client
 }
 
 do_ensure_chef_configuration() {

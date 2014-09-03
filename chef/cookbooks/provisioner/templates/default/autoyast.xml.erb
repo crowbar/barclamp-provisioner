@@ -159,7 +159,7 @@
 export PS4='${BASH_SOURCE}@${LINENO}(${FUNCNAME[0]}): '
 HTTP_SERVER="<%= @admin_node_ip %>:<%= @web_port %>"
 IP="<%= @admin_node_ip %>"
-HOSTNAME=$(hostname)
+HOSTNAME="<%= @node_name %>"
 
 key_re='crowbar\.install\.key=([^ ]+)'
 if [[ $(cat /proc/cmdline) =~ $key_re ]]; then
@@ -219,6 +219,7 @@ sync
       <package>autoyast2-installation</package>
       <package>biosdevname</package>
       <package>netcat</package>
+      <package>rubygem-chef</package>
       <package>rubygem-cstruct</package>
       <package>suse-cloud-release</package>
       <package>supportutils-plugin-susecloud</package>

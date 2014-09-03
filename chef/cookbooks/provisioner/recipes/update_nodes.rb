@@ -223,7 +223,8 @@ if not nodes.nil? and not nodes.empty?
           append << "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
 
           Provisioner::Repositories.inspect_repos(node)
-          repos = Provisioner::Repositories.get_repos(node, "suse")
+          target_platform_version = os.gsub(/^.*-/, "")
+          repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
           Chef::Log.info("repos: #{repos.inspect}")
 
           if node[:provisioner][:suse]
@@ -264,7 +265,7 @@ if not nodes.nil? and not nodes.empty?
             image_name = "Hyper-V Server 2012 R2 SERVERHYPERCORE"
           when "hyperv-6.2"
             image_name = "Hyper-V Server 2012 SERVERHYPERCORE"
-	  else
+          else
             raise "Unsupported version of Windows Server / Hyper-V Server"
           end
           template "#{os_dir_win}/unattend/unattended.xml" do
