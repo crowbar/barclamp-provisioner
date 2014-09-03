@@ -248,8 +248,12 @@ hostname "$HOSTNAME"
 export DOMAIN
 export HOSTNAME
 
-# Make sure date is up-to-date
+<% if @os == "suse-11.3" %>
 ntp="sntp -P no -r $NTP_SERVERS"
+<% else %>
+ntp="sntp -s $NTP_SERVERS"
+<% end %>
+# Make sure date is up-to-date
 until $ntp; do
   echo "Waiting for NTP server(s)"
   sleep 1
