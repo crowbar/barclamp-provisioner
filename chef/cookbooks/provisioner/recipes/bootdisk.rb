@@ -76,6 +76,17 @@ ruby_block "Find the fallback boot device" do
         node[:crowbar_wall][:boot_device] = "disk/by-id/#{bootdisk}"
       end
     end
+    # If we still have a /dev/disk/by-path name in boot_device here and the
+    # devices looks like a virtio device it is safer to use the base device
+    # name for bootdisk instead of the by-path name. According to:
+    #  https://www.mail-archive.com/systemd-devel@lists.freedesktop.org/msg20607.html
+    # the by-path names for virtio device are not stable and don't even exist
+    # anymore with newer udev releases, e.g. on SLES12
+    if File.dirname(node[:crowbar_wall][:boot_device]) == "disk/by-path" and
+        File.basename(node[:crowbar_wall][:boot_device]) =~ /-virtio-/
+      Chef::Log.debug("#{node[:crowbar_wall][:boot_device]} appears to be a virtio device, falling back to simple device name #{dev}")
+      node[:crowbar_wall][:boot_device] = dev
+    end
     disk = BarclampLibrary::Barclamp::Inventory::Disk.new(node,dev)
     disk.claim("Boot")
     node.save
