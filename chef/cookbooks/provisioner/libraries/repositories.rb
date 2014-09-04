@@ -91,8 +91,8 @@ class Provisioner
             repo_names = %w(
               SLE-Cloud
               SLE-Cloud-PTF
-              SUSE-Cloud-4-Pool
-              SUSE-Cloud-4-Updates
+              SUSE-Cloud-5-Pool
+              SUSE-Cloud-5-Updates
               SLES11-SP3-Pool
               SLES11-SP3-Updates
             )
