@@ -132,9 +132,12 @@ sync_time() {
 
     tries_left=120
 
-    # Warning! Newer sntp releases use different options (e.g. the one
-    # on openSUSE 12.1
-    while ! sntp -P no -r $VALID_NTP_SERVERS; do
+<% if @os == "suse-11.3" %>
+    SNTP_OPTS="-P no -r $VALID_NTP_SERVERS"
+<% else %>
+    SNTP_OPTS="-s $VALID_NTP_SERVERS"
+<% end %>
+    while ! sntp $SNTP_OPTS; do
         tries_left=$(($tries_left-1))
         if [ $tries_left -eq 0 ]; then
             VALID_NTP_SERVERS=""

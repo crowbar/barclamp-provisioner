@@ -404,7 +404,8 @@ node[:provisioner][:supported_oses].each do |os,params|
       source "crowbar_join.suse.sh.erb"
       variables(:admin_ip => admin_ip,
                 :web_port => web_port,
-                :ntp_servers_ips => ntp_servers_ips)
+                :ntp_servers_ips => ntp_servers_ips,
+                :os => os)
     end
 
     Provisioner::Repositories.inspect_repos(node)
