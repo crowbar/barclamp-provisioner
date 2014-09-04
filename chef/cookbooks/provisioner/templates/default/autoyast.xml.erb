@@ -221,7 +221,11 @@ sync
       <package>netcat</package>
       <package>rubygem-chef</package>
       <package>rubygem-cstruct</package>
+<% if @target_platform_version == "11.3" -%>
       <package>suse-cloud-release</package>
+<% else -%>
+      <package>suse-sle12-cloud-compute-release</package>
+<% end -%>
       <package>supportutils-plugin-susecloud</package>
     </packages>
     <patterns config:type="list">
