@@ -98,6 +98,10 @@ class Provisioner
             )
           when "12.0"
             repo_names = %w(
+              SLE12-Cloud-Compute
+              SLE12-Cloud-Compute-PTF
+              SLE12-Cloud-5-Compute-Pool
+              SLE12-Cloud-5-Compute-Updates
               SLES12-Pool
               SLES12-Updates
             )
