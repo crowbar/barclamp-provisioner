@@ -165,7 +165,11 @@ do_setup() {
 
     fi # edit /etc/chef/client.rb
 
+<% if @target_platform_version.to_f < 12.0 %>
     log_to chef chkconfig -a chef-client
+<% else %>
+    log_to chef systemctl enable chef-client
+<% end %>
 }
 
 do_ensure_chef_configuration() {
