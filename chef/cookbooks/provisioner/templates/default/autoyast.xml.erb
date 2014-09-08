@@ -204,6 +204,18 @@ sync
         </source>
       </script>
     </init-scripts>
+    <!-- bugfix bnc#886238: https://bugzilla.novell.com/show_bug.cgi?id=886238 -->
+    <post-scripts config:type="list">
+     <script>
+      <filename>autoyast_set_hostentries.sh</filename>
+      <source>
+       <![CDATA[
+       echo "<%= @node_ip %> <%= @node_name %> <%= @node_hostname %>" >> /etc/hosts 
+       ]]>
+      </source>
+     </script>
+    </post-scripts>
+    <!-- /bugfix bnc#886238: https://bugzilla.novell.com/show_bug.cgi?id=886238 -->
   </scripts>
   <software>
     <packages config:type="list">
