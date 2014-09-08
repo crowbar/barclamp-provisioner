@@ -132,7 +132,7 @@ sync_time() {
 
     tries_left=120
 
-<% if @os == "suse-11.3" %>
+<% if @target_platform_version.to_f < 12.0 %>
     SNTP_OPTS="-P no -r $VALID_NTP_SERVERS"
 <% else %>
     SNTP_OPTS="-s $VALID_NTP_SERVERS"

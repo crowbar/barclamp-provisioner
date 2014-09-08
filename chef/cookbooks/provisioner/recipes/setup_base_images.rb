@@ -397,6 +397,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     ntp_servers = search(:node, "roles:ntp-server")
     ntp_servers_ips = ntp_servers.map { |n| Chef::Recipe::Barclamp::Inventory.get_network_by_type(n, "admin").address }
 
+    target_platform_version = os.gsub(/^.*-/, "")
     template "#{os_dir}/crowbar_join.sh" do
       mode 0644
       owner "root"
@@ -405,11 +406,10 @@ node[:provisioner][:supported_oses].each do |os,params|
       variables(:admin_ip => admin_ip,
                 :web_port => web_port,
                 :ntp_servers_ips => ntp_servers_ips,
-                :os => os)
+                :target_platform_version => target_platform_version)
     end
 
     Provisioner::Repositories.inspect_repos(node)
-    target_platform_version = os.gsub(/^.*-/, "")
     repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
 
     template "#{os_dir}/crowbar_register" do
