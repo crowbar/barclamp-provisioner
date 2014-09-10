@@ -156,11 +156,19 @@ if node[:provisioner][:coredump]
     not_if "grep -q 'soft core unlimited' /etc/security/limits.conf"
   end
   if node[:platform] == "suse"
-    package "ulimit"
-    # Permanent core dumping (no reboot needed)
-    bash "Enable permanent core dumps (/etc/sysconfig/ulimit)" do
-      code 'sed -i s/SOFTCORELIMIT.*/SOFTCORELIMIT="unlimited"/ /etc/sysconfig/ulimit'
-      not_if "grep -q 'SOFTCORELIMIT=\"unlimited\"' /etc/sysconfig/ulimit"
+    if node[:platform_version].to_f < 12.0
+      package "ulimit"
+      # Permanent core dumping (no reboot needed)
+      bash "Enable permanent core dumps (/etc/sysconfig/ulimit)" do
+        code 'sed -i s/SOFTCORELIMIT.*/SOFTCORELIMIT="unlimited"/ /etc/sysconfig/ulimit'
+        not_if "grep -q '^SOFTCORELIMIT=\"unlimited\"' /etc/sysconfig/ulimit"
+      end
+    else
+      # Permanent core dumping (no reboot needed)
+      bash "Enable permanent core dumps (/etc/systemd/system.conf)" do
+        code 'sed -i s/^#*DefaultLimitCORE=.*/DefaultLimitCORE=infinity/ /etc/systemd/system.conf'
+        not_if "grep -q '^DefaultLimitCORE=infinity' /etc/systemd/system.conf"
+      end
     end
   end
 else
@@ -172,10 +180,17 @@ else
     only_if "grep -q '* soft core unlimited' /etc/security/limits.conf"
   end
   if node[:platform] == "suse"
-    package "ulimit"
-    bash "Disable permanent core dumps (/etc/sysconfig/ulimit)" do
-      code 'sed -i s/SOFTCORELIMIT.*/SOFTCORELIMIT="1"/ /etc/sysconfig/ulimit'
-      not_if "grep -q 'SOFTCORELIMIT=\"1\"' /etc/sysconfig/ulimit"
+    if node[:platform_version].to_f < 12.0
+      package "ulimit"
+      bash "Disable permanent core dumps (/etc/sysconfig/ulimit)" do
+        code 'sed -i s/SOFTCORELIMIT.*/SOFTCORELIMIT="1"/ /etc/sysconfig/ulimit'
+        not_if "grep -q '^SOFTCORELIMIT=\"1\"' /etc/sysconfig/ulimit"
+      end
+    else
+      bash "Disable permanent core dumps (/etc/sysconfig/ulimit)" do
+        code 'sed -i s/^DefaultLimitCORE=.*/#DefaultLimitCORE=/ /etc/systemd/system.conf'
+        not_if "grep -q '^#DefaultLimitCORE=' /etc/systemd/system.conf"
+      end
     end
   end
 end
