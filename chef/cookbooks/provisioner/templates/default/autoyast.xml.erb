@@ -206,6 +206,16 @@ sync
         </script>
     </chroot-scripts>
     <init-scripts config:type="list">
+      <!-- bugfix bnc#886238: https://bugzilla.novell.com/show_bug.cgi?id=886238 -->
+      <script>
+       <filename>autoyast_set_hostentries.sh</filename>
+       <source>
+        <![CDATA[
+        echo "<%= @node_ip %> <%= @node_fqdn %> <%= @node_hostname %>" >> /etc/hosts 
+        ]]>
+       </source>
+      </script>
+      <!-- /bugfix bnc#886238: https://bugzilla.novell.com/show_bug.cgi?id=886238 -->
       <script>
         <source>
 <![CDATA[

@@ -248,6 +248,7 @@ if not nodes.nil? and not nodes.empty?
                       :boot_device => (mnode[:crowbar_wall][:boot_device] rescue nil),
                       :raid_type => (mnode[:crowbar_wall][:raid_type] || "single"),
                       :raid_disks => (mnode[:crowbar_wall][:raid_disks] || []),
+                      :node_ip => mnode[:crowbar][:network][:admin][:address],
                       :node_fqdn => mnode[:fqdn],
                       :node_hostname => mnode[:hostname],
                       :target_platform_version => target_platform_version,
