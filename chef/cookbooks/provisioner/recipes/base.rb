@@ -42,7 +42,7 @@ if node["platform"] != "suse"
   end
 end
 
-node.set["crowbar"]["ssh"] = {} if node["crowbar"]["ssh"].nil?
+node.set["crowbar"]["ssh"] ||= {}
 
 # Start with a blank slate, to ensure that any keys removed from a
 # previously applied proposal will be removed.  It also means that any
