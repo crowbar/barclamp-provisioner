@@ -1,0 +1,12 @@
+[Unit]
+Description=Synchronize with Crowbar administration server
+After=network.target syslog.target remote-fs.target sshd.service neutron-ovs-cleanup.service xend.service libvirtd.service
+Before=chef-client.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/sbin/crowbar_join --start
+
+[Install]
+WantedBy=multi-user.target
