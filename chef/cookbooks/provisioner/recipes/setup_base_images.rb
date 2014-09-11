@@ -424,7 +424,8 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :os => os,
                 :crowbar_key => crowbar_key,
                 :domain => domain_name,
-                :repos => repos)
+                :repos => repos,
+                :target_platform_version => target_platform_version)
     end
 
   when /^(redhat|centos)/ =~ os

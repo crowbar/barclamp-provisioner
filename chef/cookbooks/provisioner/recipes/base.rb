@@ -221,7 +221,8 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     source "crowbar_join.suse.sh.erb"
     variables(:admin_ip => admin_ip,
               :web_port => web_port,
-              :ntp_servers_ips => ntp_servers_ips)
+              :ntp_servers_ips => ntp_servers_ips,
+              :target_platform_version => node["platform_version"] )
   end
 
   cookbook_file "/etc/init.d/crowbar_join" do
