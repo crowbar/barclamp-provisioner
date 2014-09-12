@@ -42,7 +42,7 @@ if node["platform"] != "suse"
   end
 end
 
-node.set["crowbar"]["ssh"] = {} if node["crowbar"]["ssh"].nil?
+node.set["crowbar"]["ssh"] ||= {}
 
 # Start with a blank slate, to ensure that any keys removed from a
 # previously applied proposal will be removed.  It also means that any
@@ -51,7 +51,6 @@ node.set["crowbar"]["ssh"] = {} if node["crowbar"]["ssh"].nil?
 node.set["crowbar"]["ssh"]["access_keys"] = {}
 
 # Build my key
-node_modified = false
 if ::File.exists?("/root/.ssh/id_rsa.pub") == false
   %x{ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""}
 end
@@ -59,7 +58,6 @@ end
 str = %x{cat /root/.ssh/id_rsa.pub}.chomp
 node.set["crowbar"]["ssh"]["root_pub_key"] = str
 node.set["crowbar"]["ssh"]["access_keys"][node.name] = str
-node_modified = true
 
 # Add additional keys
 node["provisioner"]["access_keys"].strip.split("\n").each do |key|
@@ -78,10 +76,9 @@ search(:node, "roles:provisioner-server AND provisioner_config_environment:#{nod
   pkey = n["crowbar"]["ssh"]["root_pub_key"] rescue nil
   if !pkey.nil? and pkey != node["crowbar"]["ssh"]["access_keys"][n.name]
     node.set["crowbar"]["ssh"]["access_keys"][n.name] = pkey
-    node_modified = true
   end
 end
-node.save if node_modified
+node.save
 
 template "/root/.ssh/authorized_keys" do
   owner "root"
