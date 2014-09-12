@@ -238,11 +238,6 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
       to "/etc/init.d/crowbar_join"
     end
 
-    bash "Enable crowbar service" do
-      code "/sbin/chkconfig crowbar_join on"
-      not_if "/sbin/chkconfig crowbar_join | grep -q on"
-    end
-
     # Make sure that any dependency change is taken into account
     bash "insserv crowbar_join service" do
       code "insserv crowbar_join"
@@ -265,10 +260,10 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
       action :nothing
       subscribes :run, resources(:cookbook_file=> "/etc/systemd/system/crowbar_join.service"), :immediately
     end
+  end
 
-    service "crowbar_join" do
-      action :enable
-    end
+  service "crowbar_join" do
+    action :enable
   end
 
   cookbook_file "/etc/logrotate.d/crowbar_join" do
