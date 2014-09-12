@@ -236,7 +236,6 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     link "/usr/sbin/rccrowbar_join" do
       action :create
       to "/etc/init.d/crowbar_join"
-      not_if "test -L /usr/sbin/rccrowbar_join"
     end
 
     bash "Enable crowbar service" do
@@ -283,7 +282,6 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
   # remove old crowbar_join.sh file
   file "/etc/init.d/crowbar_join.sh" do
     action :delete
-    only_if "test -f /etc/init.d/crowbar_join.sh"
   end
 
   if node["platform"] == "suse"
