@@ -222,30 +222,46 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
               :target_platform_version => node["platform_version"] )
   end
 
-  cookbook_file "/etc/init.d/crowbar_join" do
-    owner "root"
-    group "root"
-    mode "0755"
-    action :create
-    source "crowbar_join.init.suse"
+  if node["platform_version"].to_f < 12.0
+    cookbook_file "/etc/init.d/crowbar_join" do
+      owner "root"
+      group "root"
+      mode "0755"
+      action :create
+      source "crowbar_join.init.suse"
+    end
+
+    link "/usr/sbin/rccrowbar_join" do
+      action :create
+      to "/etc/init.d/crowbar_join"
+    end
+
+    # Make sure that any dependency change is taken into account
+    bash "insserv crowbar_join service" do
+      code "insserv crowbar_join"
+      action :nothing
+      subscribes :run, resources(:cookbook_file=> "/etc/init.d/crowbar_join"), :delayed
+    end
+  else
+    # Use a systemd .service file on SLE12
+    cookbook_file "/etc/systemd/system/crowbar_join.service" do
+      owner "root"
+      group "root"
+      mode "0644"
+      action :create
+      source "crowbar_join.service"
+    end
+
+    # Make sure that any dependency change is taken into account
+    bash "reload systemd after crowbar_join update" do
+      code "systemctl daemon-reload"
+      action :nothing
+      subscribes :run, resources(:cookbook_file=> "/etc/systemd/system/crowbar_join.service"), :immediately
+    end
   end
 
-  link "/usr/sbin/rccrowbar_join" do
-    action :create
-    to "/etc/init.d/crowbar_join"
-    not_if "test -L /usr/sbin/rccrowbar_join"
-  end
-
-  bash "Enable crowbar service" do
-    code "/sbin/chkconfig crowbar_join on"
-    not_if "/sbin/chkconfig crowbar_join | grep -q on"
-  end
-
-  # Make sure that any dependency change is taken into account
-  bash "insserv crowbar_join service" do
-    code "insserv crowbar_join"
-    action :nothing
-    subscribes :run, resources(:cookbook_file=> "/etc/init.d/crowbar_join"), :delayed
+  service "crowbar_join" do
+    action :enable
   end
 
   cookbook_file "/etc/logrotate.d/crowbar_join" do
@@ -259,7 +275,6 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
   # remove old crowbar_join.sh file
   file "/etc/init.d/crowbar_join.sh" do
     action :delete
-    only_if "test -f /etc/init.d/crowbar_join.sh"
   end
 
   if node["platform"] == "suse"
