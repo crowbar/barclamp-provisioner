@@ -140,7 +140,7 @@
     <hwclock>UTC</hwclock>
     <timezone><%=@timezone%></timezone>
   </timezone>
-  <% if @target_platform_version == "12.0" -%>
+  <% if @target_platform_version.to_f >= 12 -%>
   <services-manager>
     <services>
       <enable config:type="list">
@@ -150,6 +150,20 @@
   </services-manager>
   <% end %>
   <scripts>
+    <% if @target_platform_version.to_f >= 12 -%>
+      <pre-scripts config:type="list">
+        <script>
+            <debug config:type="boolean">true</debug>
+            <filename>filesystem_default</filename>
+            <source>
+<![CDATA[
+# Change the default FS YaST will use for partitions
+sed -i s/"^[[:space:]]*DEFAULT_FS=.*"/DEFAULT_FS=\"ext4\"/ /etc/sysconfig/storage
+]]>
+            </source>
+        </script>
+      </pre-scripts>
+    <% end %>
     <chroot-scripts config:type="list">
         <script>
             <chrooted config:type="boolean">false</chrooted>
