@@ -56,7 +56,7 @@ class Provisioner
             suse_optional_repos(version).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}")
+              missing ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}/repodata/repomd.xml")
             end
           end
 
