@@ -48,7 +48,7 @@ class Provisioner
           suse_optional_repos.each do |name|
             repos[name] ||= Mash.new
             next unless repos[name][:url].nil?
-            missing ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}")
+            missing ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}/repodata/repomd.xml")
           end
 
           # set an attribute about missing repos so that cookbooks and crowbar
