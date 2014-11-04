@@ -119,9 +119,9 @@ elif test "x$NIC_CANDIDATES" == "x"; then
     echo "Cannot find any good interface that would be on the admin network."
     echo "Did the node boot with DHCP on the admin network?"
     exit 1
-elif test $MULTIPLE_NICS -ne 0; then
+elif test $DEFINEDDEV_FOUND -ne 1 -a $MULTIPLE_NICS -ne 0; then
     echo "More than one potential interface can be used:"
-    echo "   $NIC_CANCIDATES"
+    echo "   $NIC_CANDIDATES"
     echo ""
     echo "Please define the one to use with the --interface option."
     exit 1
