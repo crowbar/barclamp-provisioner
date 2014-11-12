@@ -28,14 +28,16 @@ class Provisioner
         end
       end
 
-      def suse_get_repos_from_attributes(node)
+      def suse_get_repos_from_attributes(node,platform,version)
         repos = Mash.new
 
-        if node[:provisioner][:suse]
-          if node[:provisioner][:suse][:autoyast]
-            if node[:provisioner][:suse][:autoyast][:repos]
-              repos = node[:provisioner][:suse][:autoyast][:repos].to_hash
-            end
+        if node[:provisioner][:suse] && node[:provisioner][:suse][:autoyast] && node[:provisioner][:suse][:autoyast][:repos]
+          if node[:provisioner][:suse][:autoyast][:repos][:common]
+            repos = node[:provisioner][:suse][:autoyast][:repos][:common].to_hash
+          end
+          product = "#{platform}-#{version}"
+          if node[:provisioner][:suse][:autoyast][:repos][product]
+            repos.merge! node[:provisioner][:suse][:autoyast][:repos][product].to_hash
           end
         end
 
@@ -49,10 +51,11 @@ class Provisioner
 
         case node[:platform]
         when "suse"
-          repos = suse_get_repos_from_attributes(node)
-
+          repos = Mash.new
           missing = false
           %w(11.3 12.0).each do |version|
+            repos.merge! suse_get_repos_from_attributes(node,"suse",version)
+
             suse_optional_repos(version).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
@@ -84,7 +87,7 @@ class Provisioner
         case platform
         when "suse"
           repos = Mash.new
-          repos_from_attrs = suse_get_repos_from_attributes(provisioner_server_node)
+          repos_from_attrs = suse_get_repos_from_attributes(provisioner_server_node,platform,version)
 
           case version
           when "11.3"
@@ -107,6 +110,11 @@ class Provisioner
             )
           else
             raise "Unsupported version of SLE/openSUSE!"
+          end
+
+          # Add the new (not predefined) repositories from attributes
+          repos_from_attrs.each do |name,repo|
+            repo_names << name unless repo_names.include? name
           end
 
           # This needs to be done here rather than via deep-merge with static
