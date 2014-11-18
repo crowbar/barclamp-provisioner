@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # Copyright 2011-2013, Dell
 # Copyright 2013-2014, SUSE LINUX Products GmbH
@@ -24,7 +24,7 @@ MAGIC_DOT = '@@ESCAPED_DOT@@'
 
 #
 # Parsing options can be added by adding to this list before calling opt_parse
-# 
+#
 @options = [
     [ [ '--help', '-h', GetoptLong::NO_ARGUMENT ], "--help or -h - help" ],
     [ [ '--attribute', '-a', GetoptLong::REQUIRED_ARGUMENT ], "--attribute <attribute> or -a <attribute>  - Name of hash object to return.  Use . as sub-hash delimiter" ]
@@ -71,7 +71,7 @@ end
 
 def main()
   opt_parse
-  
+
   begin
     if (ARGV.length == 1)
       file = File.open(ARGV[0])
