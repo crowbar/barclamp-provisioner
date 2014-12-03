@@ -254,6 +254,11 @@ EOF
         'start_handlers << reboot_handler_reset # these fire at the start of a run'; do
         grep -q -e "^$line$" /etc/chef/client.rb || echo "$line" >> /etc/chef/client.rb
     done
+
+    # work around: https://tickets.opscode.com/browse/CHEF-3304
+    line='Encoding.default_external = Encoding::UTF_8 if RUBY_VERSION > "1.9"'
+    grep -q -e "^$line$" /etc/chef/client.rb || echo "$line" >> /etc/chef/client.rb
+
 }
 
 do_chef_client_after_setup() {
