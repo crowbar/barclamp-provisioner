@@ -189,8 +189,8 @@ class RebootHandler < Chef::Handler
   def report
     if node.run_state[:reboot]
       # remember reboot so crowbar can catch the reboot and wait until reboot finished
-      node[:crowbar_wall][:wait_for_reboot] = true
-      node[:crowbar_wall][:wait_for_reboot_requesttime] = `date +%s`.to_i
+      node.set[:crowbar_wall][:wait_for_reboot] = true
+      node.set[:crowbar_wall][:wait_for_reboot_requesttime] = `date +%s`.to_i
       node.save
       Chef::Log.info("Reboot requested through node.run_state[:reboot]")
       system("/sbin/reboot")
@@ -218,8 +218,8 @@ class RebootHandlerReset < Chef::Handler
     if defined?(node[:crowbar_wall][:wait_for_reboot]) and node[:crowbar_wall][:wait_for_reboot]== true
       boottime =`echo $(($(date +%s) - $(cat /proc/uptime|cut -d " " -f 1|cut -d "." -f 1)))`.to_i
       if boottime > node[:crowbar_wall][:wait_for_reboot_requesttime]
-        node[:crowbar_wall][:wait_for_reboot] = false
-        node[:crowbar_wall][:wait_for_reboot_requesttime] = 0
+        node.set[:crowbar_wall][:wait_for_reboot] = false
+        node.set[:crowbar_wall][:wait_for_reboot_requesttime] = 0
         node.save
         Chef::Log.debug("node[:crowbar_wall][:wait_for_reboot] reset done")
       else
