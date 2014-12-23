@@ -17,14 +17,24 @@
 class Provisioner
   class Repositories
     class << self
-      def suse_optional_repos(version)
-        case version
-        when "11.3"
-          %w(SLE11-HAE-SP3-Pool SLE11-HAE-SP3-Updates)
-        when "12.0"
-          []
-        else
-          []
+      def suse_optional_repos(version, type)
+        case type
+        when :hae
+          case version
+          when "11.3"
+            %w(SLE11-HAE-SP3-Pool SLE11-HAE-SP3-Updates)
+          when "12.0"
+            []
+          else
+            []
+          end
+        when :storage
+          case version
+          when "12.0"
+            %w(SUSE-Storage-1.0-Pool SUSE-Storage-1.0-Updates)
+          else
+            []
+          end
         end
       end
 
@@ -52,22 +62,41 @@ class Provisioner
         case node[:platform]
         when "suse"
           repos = Mash.new
-          missing = false
+          missing_hae = false
+          missing_storage = false
+
           %w(11.3 12.0).each do |version|
             repos.merge! suse_get_repos_from_attributes(node,"suse",version)
 
-            suse_optional_repos(version).each do |name|
+            # For pacemaker
+            suse_optional_repos(version, :hae).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}/repodata/repomd.xml")
+              missing_hae ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}/repodata/repomd.xml")
+            end
+
+            # For suse storage
+            suse_optional_repos(version, :storage).each do |name|
+              repos[name] ||= Mash.new
+              next unless repos[name][:url].nil?
+              missing_storage ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}/repodata/repomd.xml")
             end
           end
 
           # set an attribute about missing repos so that cookbooks and crowbar
           # know that HA cannot be used
+          # know that SUSE_Storage cannot be used
+          node_set = false
           node.set[:provisioner][:suse] ||= {}
-          if node[:provisioner][:suse][:missing_hae] != missing
-            node.set[:provisioner][:suse][:missing_hae] = missing
+          if node[:provisioner][:suse][:missing_hae] != missing_hae
+            node.set[:provisioner][:suse][:missing_hae] = missing_hae
+            node_set = true
+          end
+          if node[:provisioner][:suse][:missing_storage] != missing_storage
+            node.set[:provisioner][:suse][:missing_storage] = missing_storage
+            node_set = true
+          end
+          if node_set
             node.save
           end
         end
@@ -127,10 +156,12 @@ class Provisioner
 
           # optional repos
           unless provisioner_server_node[:provisioner][:suse].nil?
-            unless provisioner_server_node[:provisioner][:suse][:missing_hae]
-              suse_optional_repos(version).each do |name|
-                repos[name] = repos_from_attrs.fetch(name, Mash.new)
-                repos[name][:url] ||= default_repos_url + '/' + name
+            [[:hae, :missing_hae], [:storage, :missing_storage]].each do |optionalrepo|
+              unless provisioner_server_node[:provisioner][:suse][optionalrepo[1]]
+                suse_optional_repos(version, optionalrepo[0]).each do |name|
+                  repos[name] = repos_from_attrs.fetch(name, Mash.new)
+                  repos[name][:url] ||= default_repos_url + '/' + name
+                end
               end
             end
           end
