@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 node[:crowbar_wall] ||= Mash.new
 
 # Special code for crowbar_register:
