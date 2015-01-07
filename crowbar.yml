@@ -16,12 +16,13 @@
 #
 
 barclamp:
-  name: provisioner
-  display: Provisioner
-  description: The roles and recipes to set up the provisioning server and a base environment for all nodes
+  name: 'provisioner'
+  display: 'Provisioner'
+  description: 'The roles and recipes to set up the provisioning server and a base environment for all nodes'
   version: 0
+  user_managed: true
   member:
-    - crowbar
+    - 'crowbar'
 
 crowbar:
   layout: 1
@@ -29,91 +30,3 @@ crowbar:
   run_order: 1060
   chef_order: 1060
   proposal_schema_version: 3
-
-debs:
-  ubuntu-10.10:
-    repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu maverick main
-    pkgs:
-      - portmap
-  ubuntu-11.04:
-    repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu natty main
-    pkgs:
-      - portmap
-  ubuntu-11.10:
-    repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu oneiric main
-    pkgs:
-      - rpcbind
-  ubuntu-12.04:
-    repos: 
-      - deb http://ppa.launchpad.net/nginx/stable/ubuntu precise main
-    pkgs:
-      - rpcbind
-  pkgs:
-    - dhcp3-server
-    - nfs-common
-    - nfs-kernel-server
-    - ipmitool
-    - syslinux
-    - tftpd-hpa
-    - nginx-light
-  build_pkgs:
-    - build-essential
-    - make
-
-rpms:
-  redhat-5.6:
-    repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
-    pkgs:
-      - portmap
-      - OpenIPMI-tools
-  redhat-5.7:
-    repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
-    pkgs:
-      - portmap
-      - OpenIPMI-tools
-  centos-5.7:
-    repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/5/x86_64/
-    pkgs:
-      - portmap
-      - OpenIPMI-tools
-  redhat-6.4:
-    repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
-    pkgs:
-      - rpcbind
-      - ipmitool
-    build_pkgs:
-      - tar
-  centos-6.4:
-    repos:
-      - bare nginx 10 http://nginx.org/packages/rhel/6/x86_64/
-    pkgs:
-      - rpcbind
-      - ipmitool
-    build_pkgs:
-      - tar
-  pkgs:
-    - dhcp
-    - dhclient
-    - nfs-utils
-    - syslinux
-    - tftp-server
-    - xinetd
-    - nginx
-    - curl
-  build_pkgs:
-    - flex
-    - bison
-    - make
-    - kernel-devel
-    - gcc
-    - glibc-devel
-
-extra_files:
-  - http://downloads.sourceforge.net/project/elilo/elilo/elilo-3.14/elilo-3.14-all.tar.gz
