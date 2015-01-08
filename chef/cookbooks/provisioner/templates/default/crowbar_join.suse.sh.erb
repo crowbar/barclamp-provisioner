@@ -164,6 +164,7 @@ do_setup() {
        ! grep -q "^\s*chef_server_url\s*[\"\']http://$IP:4000[\"\']" $cfg; then
         test -f $cfg && mv $cfg $cfg.bak
         echo "chef_server_url \"http://$IP:4000\"" >$cfg
+        echo "zypper_check_gpg true" >> $cfg
     fi
 
 <% if @target_platform_version.to_f < 12.0 %>
