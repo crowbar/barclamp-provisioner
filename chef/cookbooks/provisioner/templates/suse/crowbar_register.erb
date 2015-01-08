@@ -174,18 +174,11 @@ PACKAGES_INSTALL="$PACKAGES_INSTALL openssh"
 
 # From autoyast profile
 PATTERNS_INSTALL="$PATTERNS_INSTALL Minimal base"
-<% if @target_platform_version == "11.3" -%>
-PACKAGES_INSTALL="$PACKAGES_INSTALL biosdevname netcat rubygem-chef rubygem-cstruct supportutils-plugin-susecloud"
-<% else -%>
 PACKAGES_INSTALL="$PACKAGES_INSTALL biosdevname netcat ruby2.1-rubygem-chef ruby2.1-rubygem-cstruct supportutils-plugin-susecloud"
-<% end -%>
 
 # From sleshammer
-<% if @target_platform_version == "11.3" -%>
-PACKAGES_INSTALL="$PACKAGES_INSTALL rubygem-chef rubygem-rest-client rubygem-cstruct rubygem-libxml-ruby rubygem-wsman rubygem-xml-simple parted lvm2 ipmitool curl tack nfs-client rsyslog ntp tcpdump"
-<% else -%>
-PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-chef ruby2.1-rubygem-rest-client ruby2.1-rubygem-cstruct ruby2.1-rubygem-libxml-ruby ruby2.1-rubygem-wsman ruby2.1-rubygem-xml-simple parted lvm2 ipmitool curl tack nfs-client rsyslog ntp tcpdump"
-<% end -%>
+PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-chef ruby2.1-rubygem-rest-client ruby2.1-rubygem-cstruct ruby2.1-rubygem-libxml-ruby ruby2.1-rubygem-wsman ruby2.1-rubygem-xml-simple"
+PACKAGES_INSTALL="$PACKAGES_INSTALL parted lvm2 ipmitool curl tack nfs-client rsyslog ntp tcpdump"
 
 zypper --non-interactive install -t pattern $PATTERNS_INSTALL
 # Auto-agree with the license since it was already agreed on for the admin server

@@ -244,13 +244,11 @@ sync
       <package>autoyast2-installation</package>
       <package>biosdevname</package>
       <package>netcat</package>
-<% if @target_platform_version == "11.3" -%>
-      <package>rubygem-chef</package>
-      <package>rubygem-cstruct</package>
-      <package>suse-cloud-release</package>
-<% else -%>
       <package>ruby2.1-rubygem-chef</package>
       <package>ruby2.1-rubygem-cstruct</package>
+<% if @target_platform_version == "11.3" -%>
+      <package>suse-cloud-release</package>
+<% else -%>
       <package>suse-sle12-cloud-compute-release</package>
 <% end -%>
       <package>supportutils-plugin-susecloud</package>
