@@ -159,14 +159,13 @@ do_setup() {
         "http://$HTTP_SERVER/validation.pem"
 
     # Make sure that the client knows how to talk to the server.
-    # "http://chef.example.com:4000" is part of the default config; if it's there,
-    # we can overwrite it
-    grep -q "^\s*chef_server_url\s*[\"\']http://chef.example.com:4000[\"\']" /etc/chef/client.rb 2> /dev/null
-    if [[ $? -eq 0 || ! -f /etc/chef/client.rb ]]; then
-        test -f /etc/chef/client.rb && mv /etc/chef/client.rb /etc/chef/client.rb.bak
-        echo "chef_server_url \"http://$IP:4000\"" >/etc/chef/client.rb
-
-    fi # edit /etc/chef/client.rb
+    local cfg=/etc/chef/client.rb
+    if ! [ -f $cfg ] || \
+       ! grep -q "^\s*chef_server_url\s*[\"\']http://$IP:4000[\"\']" $cfg; then
+        test -f $cfg && mv $cfg $cfg.bak
+        echo "chef_server_url \"http://$IP:4000\"" >$cfg
+        echo "zypper_check_gpg true" >> $cfg
+    fi
 
 <% if @target_platform_version.to_f < 12.0 %>
     log_to chef chkconfig -a chef-client
