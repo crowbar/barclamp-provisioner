@@ -132,8 +132,8 @@ class Provisioner
             repo_names = %w(
               SLE12-Cloud-Compute
               SLE12-Cloud-Compute-PTF
-              SLE12-Cloud-5-Compute-Pool
-              SLE12-Cloud-5-Compute-Updates
+              SLE-12-Cloud-Compute5-Pool
+              SLE-12-Cloud-Compute5-Updates
               SLES12-Pool
               SLES12-Updates
             )
