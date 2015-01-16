@@ -252,6 +252,13 @@ sync
 <% end -%>
       <package>supportutils-plugin-susecloud</package>
     </packages>
+<% if @target_platform_version == "11.3" -%>
+    <remove-packages config:type="list">
+      <package>puppet</package>
+      <package>facter</package>
+      <package>ruby</package>
+    </remove-packages>
+<% end -%>
     <patterns config:type="list">
       <pattern>Minimal</pattern>
       <pattern>base</pattern>
