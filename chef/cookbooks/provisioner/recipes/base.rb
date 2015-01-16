@@ -78,6 +78,15 @@ search(:node, "roles:provisioner-server AND provisioner_config_environment:#{nod
     node.set["crowbar"]["ssh"]["access_keys"][n.name] = pkey
   end
 end
+
+# Fix bug we had in stoney and earlier where we never saved the target_platform
+# of the node when the node was installed with the default target platform.
+# This only works because the default target platform didn't change between
+# stoney and tex.
+if node[:target_platform].nil? or node[:target_platform].empty?
+  node.set[:target_platform] = provisioner_server_node[:provisioner][:default_os]
+end
+
 node.save
 
 template "/root/.ssh/authorized_keys" do
