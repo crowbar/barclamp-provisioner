@@ -158,6 +158,9 @@ if not nodes.nil? and not nodes.empty?
         os=mnode[:target_platform]
         if os.nil? or os.empty?
           os = node[:provisioner][:default_os]
+          # save the target platform we'll use
+          mnode[:target_platform] = os
+          mnode.save
         end
 
         unless defined?(append) and append.include? node[:provisioner][:available_oses][os][:append_line]
