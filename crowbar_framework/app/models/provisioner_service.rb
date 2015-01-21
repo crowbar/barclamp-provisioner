@@ -28,7 +28,10 @@ class ProvisionerService < ServiceObject
         "provisioner-server" => {
           "unique" => false,
           "count" => 1,
-          "admin" => true
+          "admin" => true,
+          "exclude_platform" => {
+            "suse" => "12.0"
+          }
         },
         "provisioner-base" => {
           "unique" => false,
