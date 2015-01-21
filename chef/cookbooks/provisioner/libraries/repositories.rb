@@ -72,14 +72,14 @@ class Provisioner
             suse_optional_repos(version, :hae).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing_hae ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}/repodata/repomd.xml")
+              missing_hae ||= !(File.exists? "#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
             end
 
             # For suse storage
             suse_optional_repos(version, :storage).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing_storage ||= !(File.exists? "#{node[:provisioner][:root]}/repos/#{name}/repodata/repomd.xml")
+              missing_storage ||= !(File.exists? "#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
             end
           end
 
@@ -109,7 +109,7 @@ class Provisioner
         admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(provisioner_server_node, "admin").address
         web_port = provisioner_server_node[:provisioner][:web_port]
         provisioner_web = "http://#{admin_ip}:#{web_port}"
-        default_repos_url = "#{provisioner_web}/repos"
+        default_repos_url = "#{provisioner_web}/suse-#{version}/repos"
 
         repos = Mash.new
 
