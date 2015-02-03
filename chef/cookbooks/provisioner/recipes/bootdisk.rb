@@ -28,8 +28,8 @@ end
 # Unless some other barclamp has set it, that is.
 ruby_block "Find the fallback boot device" do
   block do
-    basedir="/dev/disk/by-path"
-    dev=nil
+    basedir = "/dev/disk/by-path"
+    dev = nil
     disk_by_path = nil
     ["-usb-", nil].each do |deviceignore|
       ::Dir.entries(basedir).sort.each do |path|
@@ -55,11 +55,11 @@ ruby_block "Find the fallback boot device" do
     # Turn the found device into its corresponding /dev/disk/by-id link.
     # This name should be more stable than the /dev/disk/by-path one.
 
-    basedir="/dev/disk/by-id"
+    basedir = "/dev/disk/by-id"
     # /dev/disk/by-id is unstable under VirtualBox so don't rely on it.
-    hardware=node[:dmi][:system][:product_name] rescue "unknown"
+    hardware = node[:dmi][:system][:product_name] rescue "unknown"
     if hardware !~ /VirtualBox/i && File.exists?(basedir)
-      bootdisks=::Dir.entries(basedir).sort.select do |m|
+      bootdisks = ::Dir.entries(basedir).sort.select do |m|
         f = File.join(basedir, m)
         File.symlink?(f) && (File.readlink(f).split('/')[-1] == dev)
       end
