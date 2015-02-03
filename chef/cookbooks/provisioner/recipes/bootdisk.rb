@@ -57,7 +57,8 @@ ruby_block "Find the fallback boot device" do
 
     basedir="/dev/disk/by-id"
     # /dev/disk/by-id is unstable under VirtualBox so don't rely on it.
-    if node[:dmi][:system][:product_name] !~ /VirtualBox/i && File.exists?(basedir)
+    hardware=node[:dmi][:system][:product_name] rescue "unknown"
+    if hardware !~ /VirtualBox/i && File.exists?(basedir)
       bootdisks=::Dir.entries(basedir).sort.select do |m|
         f = File.join(basedir, m)
         File.symlink?(f) && (File.readlink(f).split('/')[-1] == dev)
