@@ -122,6 +122,13 @@ class ProvisionerService < ServiceObject
       role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
       db = ProposalObject.find_proposal "provisioner", inst
       add_role_to_instance_and_node("provisioner",inst,name,db,role,"provisioner-bootdisk-finder")
+
+      # ensure target platform is set before we claim a disk for boot OS
+      node = NodeObject.find_node_by_name(name)
+      if node[:target_platform].nil? or node[:target_platform].empty?
+        node[:target_platform] = NodeObject.default_platform
+        node.save
+      end
     end
     # Remove roles not supported by the target operating system
     if state == "installing"
