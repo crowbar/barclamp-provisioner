@@ -193,8 +193,13 @@ zypper --non-interactive install $PACKAGES_INSTALL
 /sbin/SuSEfirewall2 off
 
 # SSH setup
+<% if @target_platform_version.to_f < 12.0 -%>
 chkconfig -a sshd
 service sshd start
+<% else -%>
+systemctl enable sshd.service
+systemctl start sshd.service
+<% end -%>
 
 mkdir -p /var/log/crowbar
 
@@ -249,11 +254,11 @@ hostname "$HOSTNAME"
 export DOMAIN
 export HOSTNAME
 
-<% if @target_platform_version.to_f < 12.0 %>
+<% if @target_platform_version.to_f < 12.0 -%>
 ntp="sntp -P no -r $NTP_SERVERS"
-<% else %>
+<% else -%>
 ntp="sntp -s $NTP_SERVERS"
-<% end %>
+<% end -%>
 # Make sure date is up-to-date
 until $ntp; do
   echo "Waiting for NTP server(s)"
@@ -311,7 +316,11 @@ sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 localhost.localdomain localhost/" /etc
 echo "$CROWBAR_KEY" > /etc/crowbar.install.key
 
 # normally done by crowbar_join, but only when chef is installed by crowbar_join
+<% if @target_platform_version.to_f < 12.0 -%>
 chkconfig -a chef-client
+<% else -%>
+systemctl enable chef-client.service
+<% end -%>
 
 curl -s -o /usr/sbin/crowbar_join $HTTP_SERVER/$CROWBAR_OS/crowbar_join.sh
 chmod +x /usr/sbin/crowbar_join
