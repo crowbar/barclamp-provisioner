@@ -155,7 +155,11 @@ zypper -n ar "<%= @repos[name][:url] %>" "<%= name %>"
 <% end %>
 
 # Cloud-PTF has an unknown key, and this is expected
+<% if @target_platform_version.to_f < 12.0 -%>
 zypper -n --gpg-auto-import-keys refresh -r SLE-Cloud-PTF
+<% else -%>
+zypper -n --gpg-auto-import-keys refresh -r SLE12-Cloud-Compute-PTF
+<% end -%>
 
 ZYPPER_REF_OPT=
 test $CROWBAR_AUTO_IMPORT_KEYS -eq 1 && ZYPPER_REF_OPT=--gpg-auto-import-keys
@@ -177,12 +181,19 @@ PATTERNS_INSTALL="$PATTERNS_INSTALL Minimal base"
 PACKAGES_INSTALL="$PACKAGES_INSTALL biosdevname netcat ruby2.1-rubygem-chef supportutils-plugin-susecloud"
 
 # From sleshammer
-PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-chef ruby2.1-rubygem-rest-client ruby2.1-rubygem-cstruct ruby2.1-rubygem-libxml-ruby ruby2.1-rubygem-wsman ruby2.1-rubygem-xml-simple"
+PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-chef ruby2.1-rubygem-rest-client ruby2.1-rubygem-cstruct"
+<% if @target_platform_version.to_f < 12.0 -%>
+PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-libxml-ruby ruby2.1-rubygem-wsman ruby2.1-rubygem-xml-simple"
+<% end -%>
 PACKAGES_INSTALL="$PACKAGES_INSTALL parted lvm2 ipmitool curl tack nfs-client rsyslog ntp tcpdump"
 
 zypper --non-interactive install -t pattern $PATTERNS_INSTALL
 # Auto-agree with the license since it was already agreed on for the admin server
+<% if @target_platform_version.to_f < 12.0 -%>
 zypper --non-interactive install --auto-agree-with-licenses suse-cloud-release
+<% else -%>
+zypper --non-interactive install --auto-agree-with-licenses suse-sle12-cloud-compute-release
+<% end -%>
 zypper --non-interactive install $PACKAGES_INSTALL
 
 
