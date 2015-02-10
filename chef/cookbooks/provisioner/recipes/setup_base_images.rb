@@ -336,7 +336,9 @@ unless node[:provisioner][:supported_oses].keys.select{|os| /^(hyperv|windows)/ 
   end
 end
 
-node[:provisioner][:repositories] ||= Mash.new
+node.set[:provisioner][:repositories] = Mash.new
+node.set[:provisioner][:available_oses] = Mash.new
+
 node[:provisioner][:supported_oses].each do |os,params|
 
   web_path = "#{provisioner_web}/#{os}"
@@ -345,6 +347,7 @@ node[:provisioner][:supported_oses].each do |os,params|
   os_dir="#{tftproot}/#{os}"
   os_codename=node[:lsb][:codename]
   role="#{os}_install"
+  missing_files = false
   append = params["append"]
   initrd = params["initrd"]
   kernel = params["kernel"]
@@ -428,6 +431,8 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :target_platform_version => target_platform_version)
     end
 
+    missing_files = ! File.exists?("#{os_dir}/install/boot/x86_64/common")
+
   when /^(redhat|centos)/ =~ os
     # Add base OS install repo for redhat/centos
     if ::File.exists? "#{tftproot}/#{os}/install/repodata"
@@ -510,9 +515,9 @@ node[:provisioner][:supported_oses].each do |os,params|
       to "../windows-common/extra"
     end
 
+    missing_files = ! File.exists?("#{os_dir}/boot/bootmgr.exe")
   end
 
-  node.set[:provisioner][:available_oses] ||= Mash.new
   node.set[:provisioner][:available_oses][os] ||= Mash.new
   if /^(hyperv|windows)/ =~ os
     node.set[:provisioner][:available_oses][os][:kernel] = "../#{os}/#{kernel}"
@@ -523,6 +528,7 @@ node[:provisioner][:supported_oses].each do |os,params|
     node.set[:provisioner][:available_oses][os][:initrd] = "../#{os}/install/#{initrd}"
     node.set[:provisioner][:available_oses][os][:append_line] = append
   end
+  node.set[:provisioner][:available_oses][os][:disabled] = missing_files
   node.set[:provisioner][:available_oses][os][:webserver] = admin_web
   node.set[:provisioner][:available_oses][os][:install_name] = role
 end
