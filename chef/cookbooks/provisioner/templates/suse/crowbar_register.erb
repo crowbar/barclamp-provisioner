@@ -179,6 +179,18 @@ get_nodes_allow_fail() {
   curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/"
 }
 
+get_node_allow_fail() {
+  # --fail is important here as we rely on the failure for 404
+  local curlargs=(--connect-timeout 60 -s --fail \
+                  -L
+                  -H "Accept: application/json" \
+                  --max-time 240)
+
+  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+
+  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/$HOSTNAME"
+}
+
 post_allocate() {
   local curlargs=(--connect-timeout 60 -s \
                   -L -X POST --data-binary "{ \"name\": \"$1\" }" \
@@ -209,6 +221,23 @@ nodes=$(get_nodes_allow_fail || echo "")
 if test -z "$nodes"; then
   echo "Failed to contact the administration server."
   echo "Is the administration server up?"
+  exit 1
+fi
+
+# Copied from sledgehammer
+MAC=$(cat /sys/class/net/$BOOTDEV/address)
+if test $KEEP_EXISTING_HOSTNAME -ne 1; then
+  HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+else
+  HOSTNAME=$(cat /etc/HOSTNAME)
+  if ! echo "$HOSTNAME" | grep -q -o "$DOMAIN$"; then
+    echo "The fully qualified domain name did not contain the cloud domain."
+    exit 1
+  fi
+fi
+
+if get_node_allow_fail > /dev/null; then
+  echo "This node seems to be already registered."
   exit 1
 fi
 
@@ -303,16 +332,8 @@ fi
 # Steps from sledgehammer
 # -----------------------
 
-MAC=$(cat /sys/class/net/$BOOTDEV/address)
 if test $KEEP_EXISTING_HOSTNAME -ne 1; then
-  HOSTNAME="d${MAC//:/-}.${DOMAIN}"
   echo "$HOSTNAME" > /etc/HOSTNAME
-else
-  HOSTNAME=$(cat /etc/HOSTNAME)
-  if ! echo "$HOSTNAME" | grep -q -o "$DOMAIN$"; then
-    echo "The fully qualified domain name did not contain the cloud domain."
-    exit 1
-  fi
 fi
 sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
 hostname "$HOSTNAME"
