@@ -166,6 +166,19 @@ ARCH=`uname -m`
 # Helper functions
 # ----------------
 
+get_nodes_allow_fail() {
+  # --fail is important here as we rely on the failure to know if we can
+  # communicate with the admin server
+  local curlargs=(--connect-timeout 60 -s --fail \
+                  -L
+                  -H "Accept: application/json" \
+                  --max-time 240)
+
+  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+
+  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/"
+}
+
 post_allocate() {
   local curlargs=(--connect-timeout 60 -s \
                   -L -X POST --data-binary "{ \"name\": \"$1\" }" \
@@ -187,6 +200,17 @@ post_state() {
 
   curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
 }
+
+
+# Check that we can really register this node
+# -------------------------------------------
+
+nodes=$(get_nodes_allow_fail || echo "")
+if test -z "$nodes"; then
+  echo "Failed to contact the administration server."
+  echo "Is the administration server up?"
+  exit 1
+fi
 
 
 # Setup the repos
