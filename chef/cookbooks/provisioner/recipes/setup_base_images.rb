@@ -209,14 +209,23 @@ end
 if node[:platform] == "suse"
   service "tftp" do
     # just enable, don't start (xinetd takes care of it)
-    enabled true
-    action [ :enable ]
+    enabled node[:provisioner][:enable_pxe] ? true : false
+    action node[:provisioner][:enable_pxe] ? "enable" : "disable"
+  end
+
+  # NOTE(toabctl): stop for tftp does not really help. the process gets started
+  # by xinetd and has a default timeout of 900 seconds which triggers when no
+  # new connections start in this period. So kill the process here
+  execute "kill in.tftpd process" do
+    command "pkill in.tftpd"
+    not_if { node[:provisioner][:enable_pxe] }
+    returns [0, 1]
   end
 
   service "xinetd" do
-    running true
-    enabled true
-    action [ :enable, :start ]
+    running node[:provisioner][:enable_pxe] ? true : false
+    enabled node[:provisioner][:enable_pxe] ? true : false
+    action node[:provisioner][:enable_pxe] ? ["enable", "start"] : ["disable", "stop"]
     supports :reload => true
     subscribes :reload, resources(:service => "tftp"), :immediately
   end
