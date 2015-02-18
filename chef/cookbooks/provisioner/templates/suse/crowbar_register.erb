@@ -295,6 +295,12 @@ zypper --non-interactive install --auto-agree-with-licenses suse-sle12-cloud-com
 <% end -%>
 zypper --non-interactive install $PACKAGES_INSTALL
 
+# Fail early if we know we can't succeed because of a missing chef-client
+if ! which chef-client &> /dev/null; then
+  echo "chef-client is not available."
+  exit 1
+fi
+
 
 # Some initial setup
 # ------------------
