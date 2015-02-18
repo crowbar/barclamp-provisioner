@@ -177,6 +177,7 @@ wait_for_pxe() {
         fi
 
         if [ $wantedexit = $ret ] ; then
+            echo # \n after "echo -n"
             if [ -n "$state" ]; then
                 echo "pxe file now contains: $state"
             else
@@ -188,6 +189,7 @@ wait_for_pxe() {
             echo -n "."
             let count=count+1
             [ $count -gt 30 ] && {
+                echo # \n after "echo -n"
                 if [ -n "$state" ]; then
                     echo "Warning: pxe file still contains $state. giving up."
                 else
