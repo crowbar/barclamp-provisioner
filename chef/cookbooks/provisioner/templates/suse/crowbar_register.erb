@@ -163,6 +163,32 @@ fi
 ARCH=`uname -m`
 
 
+# Helper functions
+# ----------------
+
+post_allocate() {
+  local curlargs=(--connect-timeout 60 -s \
+                  -L -X POST --data-binary "{ \"name\": \"$1\" }" \
+                  -H "Accept: application/json" -H "Content-Type: application/json" \
+                  --max-time 240)
+
+  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+
+  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/allocate/0"
+}
+
+post_state() {
+  local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
+                  -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
+                  -H "Accept: application/json" -H "Content-Type: application/json" \
+                  --max-time 240)
+
+  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+
+  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
+}
+
+
 # Setup the repos
 # ---------------
 
@@ -248,32 +274,6 @@ else
     cat /root/.ssh/authorized_keys.wget >> /root/.ssh/authorized_keys
     rm -f /root/.ssh/authorized_keys.wget
 fi
-
-
-# Helper functions
-# ----------------
-
-post_allocate() {
-  local curlargs=(--connect-timeout 60 -s \
-                  -L -X POST --data-binary "{ \"name\": \"$1\" }" \
-                  -H "Accept: application/json" -H "Content-Type: application/json" \
-                  --max-time 240)
-
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/allocate/0"
-}
-
-post_state() {
-  local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
-                  -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
-                  -H "Accept: application/json" -H "Content-Type: application/json" \
-                  --max-time 240)
-
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
-}
 
 
 # Steps from sledgehammer
