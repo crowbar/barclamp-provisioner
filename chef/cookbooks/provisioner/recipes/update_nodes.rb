@@ -160,11 +160,8 @@ if not nodes.nil? and not nodes.empty?
           os = node[:provisioner][:default_os]
         end
 
-        unless defined?(append) and append.include? node[:provisioner][:available_oses][os][:append_line]
-          append << node[:provisioner][:available_oses][os][:append_line]
-        end
-
         append << node[:provisioner][:available_oses][os][:append_line]
+
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
         node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
         os_url="#{provisioner_web}/#{os}"
