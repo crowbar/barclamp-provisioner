@@ -67,7 +67,10 @@ ruby_block "Find the fallback boot device" do
         # SLE11 SP3 generates so-called "MSFT compatibility links"
         # that start with scsi-1. Skip those, as those are less
         # reusable than the normal links.
-        bootdisk = bootdisks.find{|b|b =~ /^scsi-[^1]/} ||
+        # Note: this find construct should match the code in
+        # barclamp/libraries/barclamp_library.rb (from deployer)
+        bootdisk = bootdisks.find{|b|b =~ /^scsi-[a-zA-Z]/} ||
+          bootdisks.find{|b|b =~ /^scsi-[^1]/} ||
           bootdisks.find{|b|b =~ /^scsi-/} ||
           bootdisks.find{|b|b =~ /^ata-/} ||
           bootdisks.find{|b|b =~ /^cciss-/} ||
