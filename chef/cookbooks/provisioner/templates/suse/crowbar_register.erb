@@ -153,6 +153,10 @@ if test "x$MD5_ADMIN" != "x$MD5_LOCAL"; then
 fi
 
 
+#we need to know an architecture we are running on
+ARCH=`uname -m`
+
+
 # Setup the repos
 # ---------------
 
@@ -184,7 +188,7 @@ PACKAGES_INSTALL="$PACKAGES_INSTALL openssh"
 
 # From autoyast profile
 PATTERNS_INSTALL="$PATTERNS_INSTALL Minimal base"
-PACKAGES_INSTALL="$PACKAGES_INSTALL biosdevname netcat ruby2.1-rubygem-chef supportutils-plugin-susecloud"
+PACKAGES_INSTALL="$PACKAGES_INSTALL netcat ruby2.1-rubygem-chef supportutils-plugin-susecloud"
 
 # From sleshammer
 PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-chef ruby2.1-rubygem-rest-client ruby2.1-rubygem-cstruct"
@@ -192,6 +196,10 @@ PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-chef ruby2.1-rubygem-rest-cl
 PACKAGES_INSTALL="$PACKAGES_INSTALL ruby2.1-rubygem-libxml-ruby ruby2.1-rubygem-wsman ruby2.1-rubygem-xml-simple"
 <% end -%>
 PACKAGES_INSTALL="$PACKAGES_INSTALL parted lvm2 ipmitool curl tack nfs-client rsyslog ntp tcpdump"
+
+case $ARCH in
+    x86_64) PACKAGES_INSTALL+=" biosdevname";;
+esac
 
 zypper --non-interactive install -t pattern $PATTERNS_INSTALL
 # Auto-agree with the license since it was already agreed on for the admin server
