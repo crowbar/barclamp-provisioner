@@ -189,7 +189,9 @@ zypper --non-interactive install $PACKAGES_INSTALL
 # ------------------
 
 # Disable firewall
-/sbin/SuSEfirewall2 off
+if [ -x /sbin/SuSEfirewall2 ] ; then
+    /sbin/SuSEfirewall2 off
+fi
 
 # SSH setup
 chkconfig -a sshd
