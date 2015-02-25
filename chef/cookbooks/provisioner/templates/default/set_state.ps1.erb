@@ -1,3 +1,6 @@
+#Loading windows forms for MessageBox popup
+[System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
+
 Param(
   [string]$CrowbarAdminIP = "<%= @admin_ip %>",
   [string]$CrowbarKey = "<%= @crowbar_key %>"
@@ -13,6 +16,9 @@ foreach ($card in $cards)
     $hostname = "d$($hostname.ToLower())"
     break
   }
+}
+if (!$hostname) {
+   [System.Windows.Forms.MessageBox]::Show("DHCPServer Not Found $CrowbarAdminIP", "Error", 0, 16)
 }
 
 $uri =  "http://"+$CrowbarAdminIP+":3000"
