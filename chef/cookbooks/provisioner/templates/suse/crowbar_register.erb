@@ -299,8 +299,13 @@ curl -L -o /etc/chef/validation.pem \
     --connect-timeout 60 -s \
     "$HTTP_SERVER/validation.pem"
 
+TMP_ATTRIBUTES=$(mktemp --suffix .json)
+
+# Make sure that we have the right target platform
+echo "{ \"target_platform\": \"$CROWBAR_OS\" }" > "$TMP_ATTRIBUTES"
+
 post_state $HOSTNAME "discovering"
-chef-client -S http://$ADMIN_IP:4000/ -N "$HOSTNAME"
+chef-client -S http://$ADMIN_IP:4000/ -N "$HOSTNAME" --json-attributes "$TMP_ATTRIBUTES"
 post_state $HOSTNAME "discovered"
 # TODO need to find way of knowing that chef run is over on server side
 sleep 30
@@ -308,7 +313,6 @@ sleep 30
 post_allocate $HOSTNAME
 
 # Cheat to make sure that the bootdisk finder attribute will claim the right disks
-TMP_ATTRIBUTES=$(mktemp --suffix .json)
 echo '{ "crowbar_wall": { "registering": true } }' > "$TMP_ATTRIBUTES"
 
 rm -f /etc/chef/client.pem
