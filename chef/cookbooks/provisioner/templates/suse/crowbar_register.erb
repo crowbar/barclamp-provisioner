@@ -97,6 +97,9 @@ CROWBAR_KEY="<%= @crowbar_key %>"
 DOMAIN="<%= @domain %>"
 NTP_SERVERS="<%= @ntp_servers_ips.join(" ") %>"
 
+# we need to know an architecture we are running on
+ARCH=`uname -m`
+
 
 # Make sure we know which interface to use as a basis
 # ---------------------------------------------------
@@ -157,10 +160,6 @@ if test "x$MD5_ADMIN" != "x$MD5_LOCAL"; then
     echo "Please download $HTTP_SERVER/$CROWBAR_OS/crowbar_register and use it."
     exit 1
 fi
-
-
-#we need to know an architecture we are running on
-ARCH=`uname -m`
 
 
 # Helper functions
