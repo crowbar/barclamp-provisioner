@@ -51,7 +51,30 @@
          <forename/>
          <surname/>
       </user>
+      <user>
+        <username>qemu</username>
+        <user_password>!</user_password>
+        <encrypted config:type="boolean">true</encrypted>
+        <uid>484</uid>
+        <gid>484</gid>
+        <home>/</home>
+        <shell>/sbin/nologin</shell>
+      </user>
   </users>
+  <groups config:type="list">
+    <group>
+      <gid>484</gid>
+      <groupname>qemu</groupname>
+      <group_password>x</group_password>
+      <userlist/>
+    </group>
+    <group>
+      <gid>485</gid>
+      <groupname>kvm</groupname>
+      <group_password>x</group_password>
+      <userlist>qemu</userlist>
+    </group>
+  </groups>
   <networking>
     <keep_install_network config:type="boolean">true</keep_install_network>
     <dns>
