@@ -19,6 +19,7 @@
             "access_keys": { "type": "str", "required": true },
             "shell_prompt": { "type": "str", "required": true },
             "web_port": { "type": "int", "required": true },
+            "keep_existing_hostname": { "type": "bool", "required": true },
             "timezone": { "type": "str", "required": true },
 	    "default_os": { "type": "str", "required": false },
 	    "supported_oses": {

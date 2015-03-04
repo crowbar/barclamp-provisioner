@@ -22,7 +22,7 @@
 
 usage () {
     cat <<EOF
-`basename $0` [-h|--help] [-v|--verbose] [-f|--force] [--gpg-auto-import-keys] [--no-gpg-checks] [--interface IF]
+`basename $0` [-h|--help] [-v|--verbose] [-f|--force] [--gpg-auto-import-keys] [-k|--keep-existing-hostname] [--no-gpg-checks] [--interface IF]
 
 Register node in Crowbar.
 EOF
@@ -34,6 +34,11 @@ CROWBAR_AUTO_IMPORT_KEYS=0
 CROWBAR_NO_GPG_CHECKS=0
 CROWBAR_FORCE=0
 CROWBAR_VERBOSE=0
+<% if !node[:provisioner][:keep_existing_hostname] -%>
+KEEP_EXISTING_HOSTNAME=0
+<% else %>
+KEEP_EXISTING_HOSTNAME=1
+<% end %>
 DEFINEDDEV=
 
 while test $# -gt 0; do
@@ -41,6 +46,7 @@ while test $# -gt 0; do
         -h|--help|--usage|-\?) usage ;;
         -v|--verbose) CROWBAR_VERBOSE=1 ;;
         -f|--force) CROWBAR_FORCE=1 ;;
+        -k|--keep-existing-hostname) KEEP_EXISTING_HOSTNAME=1 ;;
         --gpg-auto-import-keys) CROWBAR_AUTO_IMPORT_KEYS=1 ;;
         --no-gpg-checks) CROWBAR_NO_GPG_CHECKS=1 ;;
         --interface)
@@ -274,9 +280,17 @@ post_state() {
 # -----------------------
 
 MAC=$(cat /sys/class/net/$BOOTDEV/address)
-HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+if test $KEEP_EXISTING_HOSTNAME -ne 1; then
+  HOSTNAME="d${MAC//:/-}.${DOMAIN}"
+  echo "$HOSTNAME" > /etc/HOSTNAME
+else
+  HOSTNAME=$(cat /etc/HOSTNAME)
+  if ! echo "$HOSTNAME" | grep -q -o "$DOMAIN$"; then
+    echo "The fully qualified domain name did not contain the cloud domain."
+    exit 1
+  fi
+fi
 sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $HOSTNAME ${HOSTNAME%%.*} localhost.localdomain localhost/" /etc/hosts
-echo "$HOSTNAME" > /etc/HOSTNAME
 hostname "$HOSTNAME"
 export DOMAIN
 export HOSTNAME
