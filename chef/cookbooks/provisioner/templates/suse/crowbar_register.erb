@@ -165,49 +165,42 @@ fi
 # Helper functions
 # ----------------
 
+get_common_curl_args() {
+  local curlargs=(--connect-timeout 60 -s -L --max-time 240)
+
+  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+
+  echo ${curlargs[@]}
+}
+
 get_nodes_allow_fail() {
   # --fail is important here as we rely on the failure to know if we can
   # communicate with the admin server
-  local curlargs=(--connect-timeout 60 -s --fail \
-                  -L
-                  -H "Accept: application/json" \
-                  --max-time 240)
-
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+  local curlargs=($(get_common_curl_args) --fail -H "Accept: application/json")
 
   curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/"
 }
 
 get_node_allow_fail() {
   # --fail is important here as we rely on the failure for 404
-  local curlargs=(--connect-timeout 60 -s --fail \
-                  -L
-                  -H "Accept: application/json" \
-                  --max-time 240)
-
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+  local curlargs=($(get_common_curl_args) --fail -H "Accept: application/json")
 
   curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/$HOSTNAME"
 }
 
 post_allocate() {
-  local curlargs=(--connect-timeout 60 -s \
-                  -L -X POST --data-binary "{ \"name\": \"$1\" }" \
-                  -H "Accept: application/json" -H "Content-Type: application/json" \
-                  --max-time 240)
-
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+  local curlargs=($(get_common_curl_args) \
+                  -X POST --data-binary "{ \"name\": \"$1\" }" \
+                  -H "Accept: application/json" -H "Content-Type: application/json")
 
   curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/allocate/0"
 }
 
 post_state() {
-  local curlargs=(-o "/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
-                  -L -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
-                  -H "Accept: application/json" -H "Content-Type: application/json" \
-                  --max-time 240)
-
-  [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
+  local curlargs=($(get_common_curl_args) \
+                  -o "/var/log/crowbar/$1-$2.json"
+                  -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
+                  -H "Accept: application/json" -H "Content-Type: application/json")
 
   curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
 }
