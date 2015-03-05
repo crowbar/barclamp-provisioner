@@ -7,6 +7,7 @@
       "default_password_hash": "$1$BDC3UwFr$/VqOWN1Wi6oM0jiMOjaPb.",
       "access_keys": "",
       "shell_prompt": "USER@HOST:CWD SUFFIX",
+      "enable_pxe": true,
       "supported_oses": {
 	"ubuntu-12.04": {
 	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
@@ -102,7 +103,7 @@
     "provisioner": {
       "crowbar-revision": 0,
       "crowbar-applied": false,
-      "schema-revision": 20,
+      "schema-revision": 21,
       "element_states": {
         "provisioner-bootdisk-finder": [ "hardware-installing" ],
         "provisioner-server": [ "readying", "ready", "applying" ],

@@ -164,6 +164,6 @@ service "dhcp3-server" do
     end
   end
   supports :restart => true, :status => true, :reload => true
-  action :enable
+  action node[:provisioner][:enable_pxe] ? ["enable", "start"] : ["disable", "stop"]
 end
 
