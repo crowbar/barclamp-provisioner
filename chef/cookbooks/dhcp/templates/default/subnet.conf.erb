@@ -1,4 +1,5 @@
 # File managed by Crowbar
+<% if node[:provisioner][:enable_pxe] -%>
 
 subnet <%= @network["subnet"] %> netmask <%= @network["netmask"]%> {
 <% if @network["router"] -%>
@@ -18,3 +19,5 @@ subnet <%= @network["subnet"] %> netmask <%= @network["netmask"]%> {
    }
 <% end -%>
 }
+
+<% end -%>
