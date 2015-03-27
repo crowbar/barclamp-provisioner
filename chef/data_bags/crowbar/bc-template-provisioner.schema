@@ -76,6 +76,7 @@
             "use_local_security": { "type": "bool", "required": true },
             "use_serial_console": { "type": "bool", "required": true },
             "serial_tty": { "type": "str",  "required": true },
+            "admin_pass": { "type": "str",  "required": true },
             "dhcp": {
               "type": "map",
               "required": true,
