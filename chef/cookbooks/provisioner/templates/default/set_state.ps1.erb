@@ -26,7 +26,7 @@ $process.StartInfo.UseShellExecute = $false
 $process.StartInfo.RedirectStandardOutput = $true
 $process.StartInfo.RedirectStandardError = $true
 $process.StartInfo.CreateNoWindow = $true
-$process.StartInfo.FileName = '\\'+$CrowbarAdminIP+'\reminst\windows-common\extra\curl.exe'
+$process.StartInfo.FileName = '\\'+$CrowbarAdminIP+'\reminst\windows-common\<%= @architecture %>\extra\curl.exe'
 $process.StartInfo.Arguments = $args
 $started = $process.Start()
 

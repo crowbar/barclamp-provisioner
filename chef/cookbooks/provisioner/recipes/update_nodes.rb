@@ -159,8 +159,9 @@ if not nodes.nil? and not nodes.empty?
         if os.nil? or os.empty?
           os = node[:provisioner][:default_os]
         end
+        arch = mnode[:kernel][:machine]
 
-        append << node[:provisioner][:available_oses][os][:append_line]
+        append << node[:provisioner][:available_oses][os][arch][:append_line]
 
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
         node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
@@ -221,7 +222,7 @@ if not nodes.nil? and not nodes.empty?
 
           Provisioner::Repositories.inspect_repos(node)
           target_platform_version = os.gsub(/^.*-/, "")
-          repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
+          repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version, arch)
           Chef::Log.info("repos: #{repos.inspect}")
 
           if node[:provisioner][:suse]
@@ -249,6 +250,7 @@ if not nodes.nil? and not nodes.empty?
                       :node_fqdn => mnode[:fqdn],
                       :node_hostname => mnode[:hostname],
                       :target_platform_version => target_platform_version,
+                      :architecture => arch,
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
 
@@ -279,7 +281,8 @@ if not nodes.nil? and not nodes.empty?
                       :admin_name => node[:hostname],
                       :crowbar_key => crowbar_key,
                       :admin_pass => "crowbar",
-                      :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]))
+                      :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]),
+                      :architecture => arch)
           end
 
           link windows_tftp_file do
@@ -303,9 +306,9 @@ if not nodes.nil? and not nodes.empty?
             group "root"
             source t[:src]
             variables(:append_line => append.join(' '),
-                      :install_name => node[:provisioner][:available_oses][os][:install_name],
-                      :initrd => node[:provisioner][:available_oses][os][:initrd],
-                      :kernel => node[:provisioner][:available_oses][os][:kernel])
+                      :install_name => node[:provisioner][:available_oses][os][arch][:install_name],
+                      :initrd => node[:provisioner][:available_oses][os][arch][:initrd],
+                      :kernel => node[:provisioner][:available_oses][os][arch][:kernel])
           end unless t[:file].nil?
         end
 

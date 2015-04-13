@@ -120,19 +120,19 @@
                     <Order>9</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\extra\chef-client-11.4.4-2.windows.msi c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\<%= @architecture %>\extra\chef-client-11.4.4-2.windows.msi c:\Crowbar\</CommandLine>
                     <Order>10</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\extra\crowbar_join.ps1 c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\noarch\extra\crowbar_join.ps1 c:\Crowbar\</CommandLine>
                     <Order>11</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\extra\set_hostname.ps1 c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\noarch\extra\set_hostname.ps1 c:\Crowbar\</CommandLine>
                     <Order>12</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\extra\curl.* c:\Crowbar\</CommandLine>
+                    <CommandLine>cmd /c copy \\<%=@admin_ip%>\reminst\windows-common\<%= @architecture %>\extra\curl.* c:\Crowbar\</CommandLine>
                     <Order>13</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
