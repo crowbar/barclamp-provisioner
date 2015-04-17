@@ -10,63 +10,90 @@
       "enable_pxe": true,
       "supported_oses": {
 	"ubuntu-12.04": {
-	   "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
-	   "kernel": "install/netboot/ubuntu-installer/amd64/linux",
-	   "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=root=/dev/ram rw quiet"
+          "x86_64": {
+	    "initrd": "install/netboot/ubuntu-installer/amd64/initrd.gz",
+	    "kernel": "install/netboot/ubuntu-installer/amd64/linux",
+	    "append": "debian-installer/locale=en_US.utf8 console-setup/layoutcode=us keyboard-configuration/layoutcode=us netcfg/dhcp_timeout=120 netcfg/choose_interface=auto netcfg/get_hostname=root=/dev/ram rw quiet"
+          }
 	},
 	"redhat-6.2": {
-     	  "initrd": "images/pxeboot/initrd.img",
-	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "ksdevice=bootif"
+          "x86_64": {
+            "initrd": "images/pxeboot/initrd.img",
+            "kernel": "images/pxeboot/vmlinuz",
+            "append": "ksdevice=bootif"
+          }
 	},
         "redhat-6.4": {
-          "initrd": "images/pxeboot/initrd.img",
-	  "kernel": "images/pxeboot/vmlinuz",
-          "append": "ksdevice=bootif"
+          "x86_64": {
+            "initrd": "images/pxeboot/initrd.img",
+            "kernel": "images/pxeboot/vmlinuz",
+            "append": "ksdevice=bootif"
+          }
 	},
         "centos-6.2": {
-     	  "initrd": "images/pxeboot/initrd.img",
-	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "ksdevice=bootif"
+          "x86_64": {
+            "initrd": "images/pxeboot/initrd.img",
+            "kernel": "images/pxeboot/vmlinuz",
+            "append": "ksdevice=bootif"
+          }
 	},
         "centos-6.4": {
-     	  "initrd": "images/pxeboot/initrd.img",
-	  "kernel": "images/pxeboot/vmlinuz",
-	  "append": "ksdevice=bootif"
+          "x86_64": {
+            "initrd": "images/pxeboot/initrd.img",
+            "kernel": "images/pxeboot/vmlinuz",
+            "append": "ksdevice=bootif"
+          }
 	},
         "suse-11.3": {
-          "initrd": "boot/x86_64/loader/initrd",
-          "kernel": "boot/x86_64/loader/linux",
-          "append": " "
+          "x86_64": {
+            "initrd": "boot/x86_64/loader/initrd",
+            "kernel": "boot/x86_64/loader/linux",
+            "append": " "
+          }
         },
         "suse-12.0": {
-          "initrd": "boot/x86_64/loader/initrd",
-          "kernel": "boot/x86_64/loader/linux",
-          "append": " "
+          "x86_64": {
+            "initrd": "boot/x86_64/loader/initrd",
+            "kernel": "boot/x86_64/loader/linux",
+            "append": " "
+          },
+          "ppc64le": {
+            "initrd": "boot/ppc64le/initrd",
+            "kernel": "boot/ppc64le/linux",
+            "append": " "
+          }
         },
         "windows-6.2": {
-          "initrd": " ",
-          "kernel": "boot/pxeboot.0",
-          "append": " ",
-          "require_install_dir": false
+          "x86_64": {
+            "initrd": " ",
+            "kernel": "boot/pxeboot.0",
+            "append": " ",
+            "require_install_dir": false
+          }
         },
         "hyperv-6.2": {
-          "initrd": " ",
-          "kernel": "boot/pxeboot.0",
-          "append": " ",
-          "require_install_dir": false
+          "x86_64": {
+            "initrd": " ",
+            "kernel": "boot/pxeboot.0",
+            "append": " ",
+            "require_install_dir": false
+          }
         },
         "windows-6.3": {
-          "initrd": " ",
-          "kernel": "boot/pxeboot.0",
-          "append": " ",
-          "require_install_dir": false
+          "x86_64": {
+            "initrd": " ",
+            "kernel": "boot/pxeboot.0",
+            "append": " ",
+            "require_install_dir": false
+          }
         },
         "hyperv-6.3": {
-          "initrd": " ",
-          "kernel": "boot/pxeboot.0",
-          "append": " ",
-          "require_install_dir": false
+          "x86_64": {
+            "initrd": " ",
+            "kernel": "boot/pxeboot.0",
+            "append": " ",
+            "require_install_dir": false
+          }
         }
       },
       "keep_existing_hostname": false,
@@ -103,7 +130,7 @@
     "provisioner": {
       "crowbar-revision": 0,
       "crowbar-applied": false,
-      "schema-revision": 22,
+      "schema-revision": 23,
       "element_states": {
         "provisioner-bootdisk-finder": [ "hardware-installing" ],
         "provisioner-server": [ "readying", "ready", "applying" ],

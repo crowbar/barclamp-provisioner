@@ -31,10 +31,16 @@
 	          "type": "map",
 	          "required": true,
 	          "mapping": {
-		    "append": { "type": "str", "required": true },
-		    "kernel": { "type": "str", "required": true },
-		    "initrd": { "type": "str", "required": true },
-		    "require_install_dir": { "type": "bool", "required": false }
+                    =: {
+                      "type": "map",
+                      "required": true,
+                      "mapping": {
+                        "append": { "type": "str", "required": true },
+                        "kernel": { "type": "str", "required": true },
+                        "initrd": { "type": "str", "required": true },
+                        "require_install_dir": { "type": "bool", "required": false }
+                      }
+                    }
 	          }
                 }
               }
@@ -61,8 +67,14 @@
                               "type": "map",
                               "required": false,
                               "mapping": {
-                                "url":          { "type": "str",  "required": false },
-                                "ask_on_error": { "type": "bool", "required": false }
+                                =: {
+                                  "type": "map",
+                                  "required": false,
+                                  "mapping": {
+                                    "url":          { "type": "str",  "required": false },
+                                    "ask_on_error": { "type": "bool", "required": false }
+                                  }
+                                }
                               }
                             }
                           }

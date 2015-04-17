@@ -18,6 +18,7 @@ tftproot = node["provisioner"]["root"]
 timezone = (node["provisioner"]["timezone"] rescue "UTC") || "UTC"
 pxecfg_dir = "#{tftproot}/discovery/pxelinux.cfg"
 uefi_dir = "#{tftproot}/discovery"
+powernv_dir = "#{tftproot}/discovery/powernv/pxelinux.cfg"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 web_port = node[:provisioner][:web_port]
 provisioner_web = "http://#{admin_ip}:#{web_port}"
@@ -72,11 +73,13 @@ if not nodes.nil? and not nodes.empty?
     if boot_ip_hex
       pxefile = "#{pxecfg_dir}/#{boot_ip_hex}"
       uefifile = "#{uefi_dir}/#{boot_ip_hex}.conf"
+      powernvfile = "#{powernv_dir}/#{boot_ip_hex}"
       windows_tftp_file = "#{tftproot}/windows-common/tftp/#{mnode["crowbar"]["boot_ip_hex"]}"
     else
       Chef::Log.warn("#{mnode[:fqdn]}: no boot IP known; PXE/UEFI boot files won't get updated!")
       pxefile = nil
       uefifile = nil
+      powernvfile = nil
       windows_tftp_file = nil
     end
 
@@ -98,7 +101,7 @@ if not nodes.nil? and not nodes.empty?
         end
       end
 
-      [pxefile,uefifile,windows_tftp_file].each do |f|
+      [pxefile,uefifile,powernvfile,windows_tftp_file].each do |f|
         file f do
           action :delete
         end unless f.nil?
@@ -142,6 +145,9 @@ if not nodes.nil? and not nodes.empty?
         filename = "discovery/bootx64.efi";
      } else if option arch = 00:09 {
         filename = "discovery/bootx64.efi";
+     } else if option arch = 00:0e {
+        option path-prefix "discovery/powernv/";
+        filename = "";
      } else {
         filename = "discovery/pxelinux.0";
      }',
@@ -159,8 +165,9 @@ if not nodes.nil? and not nodes.empty?
         if os.nil? or os.empty?
           os = node[:provisioner][:default_os]
         end
+        arch = mnode[:kernel][:machine]
 
-        append << node[:provisioner][:available_oses][os][:append_line]
+        append << node[:provisioner][:available_oses][os][arch][:append_line]
 
         node_cfg_dir="#{tftproot}/nodes/#{mnode[:fqdn]}"
         node_url="#{provisioner_web}/nodes/#{mnode[:fqdn]}"
@@ -221,7 +228,7 @@ if not nodes.nil? and not nodes.empty?
 
           Provisioner::Repositories.inspect_repos(node)
           target_platform_version = os.gsub(/^.*-/, "")
-          repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
+          repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version, arch)
           Chef::Log.info("repos: #{repos.inspect}")
 
           if node[:provisioner][:suse]
@@ -249,6 +256,7 @@ if not nodes.nil? and not nodes.empty?
                       :node_fqdn => mnode[:fqdn],
                       :node_hostname => mnode[:hostname],
                       :target_platform_version => target_platform_version,
+                      :architecture => arch,
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
 
@@ -279,7 +287,8 @@ if not nodes.nil? and not nodes.empty?
                       :admin_name => node[:hostname],
                       :crowbar_key => crowbar_key,
                       :admin_pass => "crowbar",
-                      :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]))
+                      :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]),
+                      :architecture => arch)
           end
 
           link windows_tftp_file do
@@ -296,22 +305,24 @@ if not nodes.nil? and not nodes.empty?
         end
 
         [{:file => pxefile, :src => "default.erb"},
-         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+         {:file => uefifile, :src => "default.elilo.erb"},
+         {:file => powernvfile, :src => "default.erb"}].each do |t|
           template t[:file] do
             mode 0644
             owner "root"
             group "root"
             source t[:src]
             variables(:append_line => append.join(' '),
-                      :install_name => node[:provisioner][:available_oses][os][:install_name],
-                      :initrd => node[:provisioner][:available_oses][os][:initrd],
-                      :kernel => node[:provisioner][:available_oses][os][:kernel])
+                      :install_name => node[:provisioner][:available_oses][os][arch][:install_name],
+                      :initrd => node[:provisioner][:available_oses][os][arch][:initrd],
+                      :kernel => node[:provisioner][:available_oses][os][arch][:kernel])
           end unless t[:file].nil?
         end
 
       else
         [{:file => pxefile, :src => "default.erb"},
-         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+         {:file => uefifile, :src => "default.elilo.erb"},
+         {:file => powernvfile, :src => "default.erb"}].each do |t|
           template t[:file] do
             mode 0644
             owner "root"

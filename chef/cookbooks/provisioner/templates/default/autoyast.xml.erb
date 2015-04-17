@@ -265,7 +265,9 @@ sync
   <software>
     <packages config:type="list">
       <package>autoyast2-installation</package>
+<% if @architecture == "x86_64" -%>
       <package>biosdevname</package>
+<% end -%>
       <package>netcat</package>
       <package>ruby2.1-rubygem-chef</package>
 <% if @target_platform_version == "11.3" -%>
