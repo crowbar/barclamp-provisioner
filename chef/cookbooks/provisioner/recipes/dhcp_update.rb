@@ -12,6 +12,9 @@ pool_opts = {
       filename = "discovery/bootx64.efi";
    } else if option arch = 00:09 {
       filename = "discovery/bootx64.efi";
+   } else if option arch = 00:0e {
+      option path-prefix "discovery/powernv/";
+      filename = "";
    } else {
       filename = "discovery/pxelinux.0";
    }',

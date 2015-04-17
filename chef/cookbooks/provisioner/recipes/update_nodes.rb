@@ -18,6 +18,7 @@ tftproot = node["provisioner"]["root"]
 timezone = (node["provisioner"]["timezone"] rescue "UTC") || "UTC"
 pxecfg_dir = "#{tftproot}/discovery/pxelinux.cfg"
 uefi_dir = "#{tftproot}/discovery"
+powernv_dir = "#{tftproot}/discovery/powernv/pxelinux.cfg"
 admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").address
 web_port = node[:provisioner][:web_port]
 provisioner_web = "http://#{admin_ip}:#{web_port}"
@@ -72,11 +73,13 @@ if not nodes.nil? and not nodes.empty?
     if boot_ip_hex
       pxefile = "#{pxecfg_dir}/#{boot_ip_hex}"
       uefifile = "#{uefi_dir}/#{boot_ip_hex}.conf"
+      powernvfile = "#{powernv_dir}/#{boot_ip_hex}"
       windows_tftp_file = "#{tftproot}/windows-common/tftp/#{mnode["crowbar"]["boot_ip_hex"]}"
     else
       Chef::Log.warn("#{mnode[:fqdn]}: no boot IP known; PXE/UEFI boot files won't get updated!")
       pxefile = nil
       uefifile = nil
+      powernvfile = nil
       windows_tftp_file = nil
     end
 
@@ -98,7 +101,7 @@ if not nodes.nil? and not nodes.empty?
         end
       end
 
-      [pxefile,uefifile,windows_tftp_file].each do |f|
+      [pxefile,uefifile,powernvfile,windows_tftp_file].each do |f|
         file f do
           action :delete
         end unless f.nil?
@@ -142,6 +145,9 @@ if not nodes.nil? and not nodes.empty?
         filename = "discovery/bootx64.efi";
      } else if option arch = 00:09 {
         filename = "discovery/bootx64.efi";
+     } else if option arch = 00:0e {
+        option path-prefix "discovery/powernv/";
+        filename = "";
      } else {
         filename = "discovery/pxelinux.0";
      }',
@@ -299,7 +305,8 @@ if not nodes.nil? and not nodes.empty?
         end
 
         [{:file => pxefile, :src => "default.erb"},
-         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+         {:file => uefifile, :src => "default.elilo.erb"},
+         {:file => powernvfile, :src => "default.erb"}].each do |t|
           template t[:file] do
             mode 0644
             owner "root"
@@ -314,7 +321,8 @@ if not nodes.nil? and not nodes.empty?
 
       else
         [{:file => pxefile, :src => "default.erb"},
-         {:file => uefifile, :src => "default.elilo.erb"}].each do |t|
+         {:file => uefifile, :src => "default.elilo.erb"},
+         {:file => powernvfile, :src => "default.erb"}].each do |t|
           template t[:file] do
             mode 0644
             owner "root"
