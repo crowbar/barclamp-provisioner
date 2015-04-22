@@ -11,7 +11,9 @@
     %span.help-block
       = t(".shell_prompt_hint")
 
-    = password_field :admin_pass
+    = password_field %w(windows admin_password)
+    %span.help-block
+      = t(".windows.admin_password_hint")
 
     %fieldset
       %legend
