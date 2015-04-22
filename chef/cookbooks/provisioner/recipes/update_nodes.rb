@@ -278,7 +278,7 @@ if not nodes.nil? and not nodes.empty?
                       :admin_ip => admin_ip,
                       :admin_name => node[:hostname],
                       :crowbar_key => crowbar_key,
-                      :admin_pass => "crowbar",
+                      :admin_pass => node[:provisioner][:admin_pass],
                       :domain_name => node[:dns].nil? ? node[:domain] : (node[:dns][:domain] || node[:domain]))
           end
 

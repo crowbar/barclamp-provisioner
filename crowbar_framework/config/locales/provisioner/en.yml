@@ -26,3 +26,4 @@ en:
         serial_console: 'Serial Console'
         use_serial_console: 'Enable Serial Console'
         serial_tty: 'Serial Console Device'
+        admin_pass: 'Administrator Password'
