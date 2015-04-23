@@ -76,7 +76,9 @@
       "use_local_security": true,
       "use_serial_console": false,
       "serial_tty": "ttyS0,115200n8",
-      "admin_pass": "crowbar",
+      "windows": {
+        "admin_password": "crowbar"
+      },
       "dhcp": {
         "lease-time": 60,
         "state_machine": {

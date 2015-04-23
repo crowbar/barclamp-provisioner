@@ -1,9 +1,9 @@
 def upgrade ta, td, a, d
-  a['admin_pass'] = ta['admin_pass']
+  a['windows'] = ta['windows']
   return a, d
 end
 
 def downgrade ta, td, a, d
-  a.delete('admin_pass')
+  a.delete('windows')
   return a, d
 end

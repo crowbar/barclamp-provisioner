@@ -136,11 +136,11 @@
                     <Order>13</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /sc ONSTART /TN crowbar_join /TR "powershell -ExecutionPolicy RemoteSigned C:\Crowbar\crowbar_join.ps1"</CommandLine>
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_password%> /sc ONSTART /TN crowbar_join /TR "powershell -ExecutionPolicy RemoteSigned C:\Crowbar\crowbar_join.ps1"</CommandLine>
                     <Order>14</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_pass%> /SC MINUTE /MO 12 /ST 00:00 /TN chef-client /TR "C:\opscode\chef\bin\chef-client.bat"</CommandLine>
+                    <CommandLine>cmd /c schtasks.exe /Create /RU administrator /RP <%=@admin_password%> /SC MINUTE /MO 12 /ST 00:00 /TN chef-client /TR "C:\opscode\chef\bin\chef-client.bat"</CommandLine>
                     <Order>15</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
@@ -154,13 +154,13 @@
             </FirstLogonCommands>
             <UserAccounts>
                 <AdministratorPassword>
-                    <Value><%=@admin_pass%></Value>
+                    <Value><%=@admin_password%></Value>
                     <PlainText>true</PlainText>
                 </AdministratorPassword>
             </UserAccounts>
             <AutoLogon>
                 <Password>
-                    <Value><%=@admin_pass%></Value>
+                    <Value><%=@admin_password%></Value>
                     <PlainText>true</PlainText>
                 </Password>
                 <Enabled>true</Enabled>
