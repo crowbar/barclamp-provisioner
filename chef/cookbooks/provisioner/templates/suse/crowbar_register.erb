@@ -22,7 +22,11 @@
 
 usage () {
     cat <<EOF
-`basename $0` [-h|--help] [-v|--verbose] [-f|--force] [--gpg-auto-import-keys] [-k|--keep-existing-hostname] [--no-gpg-checks] [--interface IF]
+<% if !node[:provisioner][:keep_existing_hostname] -%>
+`basename $0` [-h|--help] [-v|--verbose] [-f|--force] [--gpg-auto-import-keys] [--keep-existing-hostname] [--no-gpg-checks] [--interface IF]
+<% else -%>
+`basename $0` [-h|--help] [-v|--verbose] [-f|--force] [--gpg-auto-import-keys] [--no-gpg-checks] [--interface IF]
+<% end -%>
 
 Register node in Crowbar.
 EOF
@@ -36,9 +40,9 @@ CROWBAR_FORCE=0
 CROWBAR_VERBOSE=0
 <% if !node[:provisioner][:keep_existing_hostname] -%>
 KEEP_EXISTING_HOSTNAME=0
-<% else %>
+<% else -%>
 KEEP_EXISTING_HOSTNAME=1
-<% end %>
+<% end -%>
 DEFINEDDEV=
 
 while test $# -gt 0; do
@@ -46,7 +50,9 @@ while test $# -gt 0; do
         -h|--help|--usage|-\?) usage ;;
         -v|--verbose) CROWBAR_VERBOSE=1 ;;
         -f|--force) CROWBAR_FORCE=1 ;;
-        -k|--keep-existing-hostname) KEEP_EXISTING_HOSTNAME=1 ;;
+        <% if !node[:provisioner][:keep_existing_hostname] -%>
+        --keep-existing-hostname) KEEP_EXISTING_HOSTNAME=1 ;;
+        <% end -%>
         --gpg-auto-import-keys) CROWBAR_AUTO_IMPORT_KEYS=1 ;;
         --no-gpg-checks) CROWBAR_NO_GPG_CHECKS=1 ;;
         --interface)
@@ -251,8 +257,11 @@ if test $KEEP_EXISTING_HOSTNAME -ne 1; then
   HOSTNAME="d${MAC//:/-}.${DOMAIN}"
 else
   HOSTNAME=$(cat /etc/HOSTNAME)
-  if ! echo "$HOSTNAME" | grep -q -o "$DOMAIN$"; then
-    echo "The fully qualified domain name did not contain the cloud domain."
+  if ! echo "$HOSTNAME" | grep -q "\.$DOMAIN$"; then
+    echo "The fully qualified domain name did not contain the $DOMAIN cloud domain."
+    exit 1
+  elif echo "${HOSTNAME%%.$DOMAIN}" | grep -q "\."; then
+    echo "The hostname is not a fully qualified domain name."
     exit 1
   fi
 fi
