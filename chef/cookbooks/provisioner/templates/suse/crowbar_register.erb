@@ -142,7 +142,7 @@ add_user() {
   uid=$(getent passwd $1 | cut -f 3 -d ":")
   gid=$(getent passwd $1 | cut -f 4 -d ":")
   if [[ -z "$uid" ]]; then
-    useradd --system --shell /sbin/nologin --home-dir / --gid $2 --uid $2 --groups $3 $1
+    useradd --system --shell /sbin/nologin -d / --gid $2 --uid $2 --groups $3 $1
   elif [[ "$uid" != $2 ]] || [[ "$gid" != $2 ]]; then
     echo "User $1 does not have uid/gid $2."
     exit 1
