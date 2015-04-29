@@ -261,7 +261,7 @@ else
     echo "The fully qualified domain name did not contain the $DOMAIN cloud domain."
     exit 1
   elif echo "${HOSTNAME%%.$DOMAIN}" | grep -q "\."; then
-    echo "The hostname is not a fully qualified domain name."
+    echo "The hostname is in a subdomain of the $DOMAIN cloud domain."
     exit 1
   fi
 fi
