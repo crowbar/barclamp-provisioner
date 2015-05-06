@@ -66,7 +66,7 @@ class ProvisionerService < ServiceObject
     #
     if state == "discovered"
       @logger.debug("Provisioner transition: discovered state for #{name} for #{state}")
-      db = ProposalObject.find_proposal "provisioner", inst
+      db = Proposal.where(barclamp: "provisioner", name: inst).first
 
       #
       # Add the first node as the provisioner server
@@ -76,7 +76,7 @@ class ProvisionerService < ServiceObject
         add_role_to_instance_and_node("provisioner", inst, name, db, role, "provisioner-server")
 
         # Reload the roles
-        db = ProposalObject.find_proposal "provisioner", inst
+        db = db.reload
         role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
       end
 
@@ -120,7 +120,7 @@ class ProvisionerService < ServiceObject
     end
     if state == "hardware-installing"
       role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
-      db = ProposalObject.find_proposal "provisioner", inst
+      db = Proposal.where(barclamp: "provisioner", name: inst).first
       add_role_to_instance_and_node("provisioner",inst,name,db,role,"provisioner-bootdisk-finder")
 
       # ensure target platform is set before we claim a disk for boot OS
@@ -143,7 +143,7 @@ class ProvisionerService < ServiceObject
         else
           node_barclamp = node_role
         end
-        bc_databag = ProposalObject.find_data_bag_item("barclamps/#{node_barclamp}")
+        bc_databag = Chef::DataBag.load("barclamps/#{node_barclamp}")
         target_platform = node[:target_platform].to_s
         if !bc_databag.nil?
           if !bc_databag["unsupported_platform"].nil?
