@@ -319,9 +319,9 @@ esac
 zypper --non-interactive install -t pattern $PATTERNS_INSTALL
 # Auto-agree with the license since it was already agreed on for the admin server
 <% if @target_platform_version.to_f < 12.0 -%>
-zypper --non-interactive install --auto-agree-with-licenses suse-cloud-release
+zypper --non-interactive install --auto-agree-with-licenses suse-openstack-cloud-sle11-release
 <% else -%>
-zypper --non-interactive install --auto-agree-with-licenses suse-sle12-cloud-compute-release
+zypper --non-interactive install --auto-agree-with-licenses suse-openstack-cloud-release
 <% end -%>
 zypper --non-interactive install $PACKAGES_INSTALL
 
