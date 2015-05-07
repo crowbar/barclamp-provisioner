@@ -143,7 +143,7 @@ class ProvisionerService < ServiceObject
         else
           node_barclamp = node_role
         end
-        bc_databag = Chef::DataBag.load("barclamps/#{node_barclamp}")
+        bc_databag = Chef::DataBag.load("barclamps/#{node_barclamp}") rescue nil
         target_platform = node[:target_platform].to_s
         if !bc_databag.nil?
           if !bc_databag["unsupported_platform"].nil?
