@@ -123,17 +123,17 @@ class Provisioner
             repo_names = %w(
               SLE-Cloud
               SLE-Cloud-PTF
-              SUSE-Cloud-5-Pool
-              SUSE-Cloud-5-Updates
+              SUSE-OpenStack-Cloud-SLE11-6-Pool
+              SUSE-OpenStack-Cloud-SLE11-6-Updates
               SLES11-SP3-Pool
               SLES11-SP3-Updates
             )
           when "12.0"
             repo_names = %w(
-              SLE12-Cloud-Compute
-              SLE12-Cloud-Compute-PTF
-              SLE-12-Cloud-Compute5-Pool
-              SLE-12-Cloud-Compute5-Updates
+              SLE-Cloud
+              SLE-Cloud-PTF
+              SUSE-OpenStack-Cloud-6-Pool
+              SUSE-OpenStack-Cloud-6-Updates
               SLES12-Pool
               SLES12-Updates
             )
