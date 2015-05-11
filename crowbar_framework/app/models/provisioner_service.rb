@@ -66,7 +66,7 @@ class ProvisionerService < ServiceObject
     #
     if state == "discovered"
       @logger.debug("Provisioner transition: discovered state for #{name} for #{state}")
-      db = ProposalObject.find_proposal "provisioner", inst
+      db = Proposal.where(barclamp: "provisioner", name: inst).first
 
       #
       # Add the first node as the provisioner server
@@ -76,7 +76,7 @@ class ProvisionerService < ServiceObject
         add_role_to_instance_and_node("provisioner", inst, name, db, role, "provisioner-server")
 
         # Reload the roles
-        db = ProposalObject.find_proposal "provisioner", inst
+        db.reload
         role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
       end
 
@@ -120,7 +120,7 @@ class ProvisionerService < ServiceObject
     end
     if state == "hardware-installing"
       role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
-      db = ProposalObject.find_proposal "provisioner", inst
+      db = Proposal.where(barclamp: "provisioner", name: inst).first
       add_role_to_instance_and_node("provisioner",inst,name,db,role,"provisioner-bootdisk-finder")
 
       # ensure target platform is set before we claim a disk for boot OS
@@ -128,39 +128,6 @@ class ProvisionerService < ServiceObject
       if node[:target_platform].nil? or node[:target_platform].empty?
         node[:target_platform] = NodeObject.default_platform
         node.save
-      end
-    end
-    # Remove roles not supported by the target operating system
-    if state == "installing"
-      node = NodeObject.find_node_by_name(name)
-      @logger.debug("Node #{name} Removing roles not supported by the target operating system")
-      crowbar_role = RoleObject.find_role_by_name("crowbar-#{name.gsub(".","_")}")
-      @logger.debug("Node #{name} Main role: crowbar-#{name.gsub(".","_")}")
-      crowbar_role.run_list.each do |node_role_ext|
-        node_role=node_role_ext.to_s[node_role_ext.to_s.index('[')+1,node_role_ext.to_s.index(']')-node_role_ext.to_s.index('[')-1]
-        if node_role.include? "-"
-          node_barclamp = node_role[0,node_role.index('-')]
-        else
-          node_barclamp = node_role
-        end
-        bc_databag = ProposalObject.find_data_bag_item("barclamps/#{node_barclamp}")
-        target_platform = node[:target_platform].to_s
-        if !bc_databag.nil?
-          if !bc_databag["unsupported_platform"].nil?
-            barclamp_unsupported_platform=bc_databag["unsupported_platform"].to_s
-            node_platform = if target_platform.include?('-')
-                              target_platform[0,target_platform.index('-')]
-                            else
-                              target_platform
-                            end
-            if barclamp_unsupported_platform.include?(node_platform)
-              node.delete_from_run_list(node_role)
-              @logger.debug("Node #{name}: barclamp #{node_barclamp} not supported on #{node[:target_platform]}")
-            else
-              @logger.debug("Node #{name}: barclamp #{node_barclamp} supported on #{node[:target_platform]}")
-            end
-          end
-        end
       end
     end
 
