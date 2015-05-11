@@ -130,39 +130,6 @@ class ProvisionerService < ServiceObject
         node.save
       end
     end
-    # Remove roles not supported by the target operating system
-    if state == "installing"
-      node = NodeObject.find_node_by_name(name)
-      @logger.debug("Node #{name} Removing roles not supported by the target operating system")
-      crowbar_role = RoleObject.find_role_by_name("crowbar-#{name.gsub(".","_")}")
-      @logger.debug("Node #{name} Main role: crowbar-#{name.gsub(".","_")}")
-      crowbar_role.run_list.each do |node_role_ext|
-        node_role=node_role_ext.to_s[node_role_ext.to_s.index('[')+1,node_role_ext.to_s.index(']')-node_role_ext.to_s.index('[')-1]
-        if node_role.include? "-"
-          node_barclamp = node_role[0,node_role.index('-')]
-        else
-          node_barclamp = node_role
-        end
-        bc_databag = Chef::DataBag.load("barclamps/#{node_barclamp}") rescue nil
-        target_platform = node[:target_platform].to_s
-        if !bc_databag.nil?
-          if !bc_databag["unsupported_platform"].nil?
-            barclamp_unsupported_platform=bc_databag["unsupported_platform"].to_s
-            node_platform = if target_platform.include?('-')
-                              target_platform[0,target_platform.index('-')]
-                            else
-                              target_platform
-                            end
-            if barclamp_unsupported_platform.include?(node_platform)
-              node.delete_from_run_list(node_role)
-              @logger.debug("Node #{name}: barclamp #{node_barclamp} not supported on #{node[:target_platform]}")
-            else
-              @logger.debug("Node #{name}: barclamp #{node_barclamp} supported on #{node[:target_platform]}")
-            end
-          end
-        end
-      end
-    end
 
     if state == "reset"
       node = NodeObject.find_node_by_name(name)
