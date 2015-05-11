@@ -76,7 +76,7 @@ class ProvisionerService < ServiceObject
         add_role_to_instance_and_node("provisioner", inst, name, db, role, "provisioner-server")
 
         # Reload the roles
-        db = db.reload
+        db.reload
         role = RoleObject.find_role_by_name "provisioner-config-#{inst}"
       end
 
