@@ -8,7 +8,9 @@
 # port.  The latter is the best behaved, but frankly strikes me as messy.
 # So until I come up with something better, here we go:
 Listen <%=@port%>
+<%- if node[:apache][:version].to_f < 2.4 %>
 NameVirtualHost *:<%=@port%>
+<%- end %>
 
 <VirtualHost *:<%=@port%>>
 
@@ -22,15 +24,23 @@ NameVirtualHost *:<%=@port%>
     <Directory />
         Options None
         AllowOverride None
+        <%- if node[:apache][:version].to_f < 2.4 %>
         Order deny,allow
         Deny from all
+        <%- else %>
+        Require all denied
+        <%- end %>
     </Directory>
 
     <Directory <%= @docroot %>/>
         Options Indexes FollowSymLinks
         AllowOverride None
+        <%- if node[:apache][:version].to_f < 2.4 %>
         Order allow,deny
         allow from all
+        <%- else %>
+        Require all granted
+        <%- end %>
     </Directory>
 
 </VirtualHost>
