@@ -24,7 +24,7 @@ class Provisioner
           when "11.3"
             %w(SLE11-HAE-SP3-Pool SLE11-HAE-SP3-Updates)
           when "12.0"
-            []
+            %w(SLE12-HA-Pool SLE12-HA-Updates)
           else
             []
           end
