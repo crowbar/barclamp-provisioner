@@ -424,6 +424,8 @@ node[:provisioner][:supported_oses].each do |os,params|
     Provisioner::Repositories.inspect_repos(node)
     repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
 
+    packages = node[:provisioner][:packages][os] || []
+
     template "#{os_dir}/crowbar_register" do
       mode 0644
       owner "root"
@@ -437,6 +439,7 @@ node[:provisioner][:supported_oses].each do |os,params|
                 :crowbar_key => crowbar_key,
                 :domain => domain_name,
                 :repos => repos,
+                :packages => packages,
                 :target_platform_version => target_platform_version)
     end
 
