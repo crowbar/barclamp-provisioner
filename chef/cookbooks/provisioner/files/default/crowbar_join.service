@@ -7,6 +7,7 @@ Before=chef-client.service
 Type=oneshot
 RemainAfterExit=true
 ExecStart=/usr/sbin/crowbar_join --start
+ExecStop=/usr/sbin/crowbar_join --stop
 
 [Install]
 WantedBy=multi-user.target
