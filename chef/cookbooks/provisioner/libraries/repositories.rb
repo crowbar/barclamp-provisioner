@@ -19,6 +19,25 @@ class Provisioner
     class << self
       def suse_optional_repos(version, type)
         case type
+        when :cloud
+          case version
+          when "11.3"
+            %w(
+              SLE-Cloud
+              SLE-Cloud-PTF
+              SUSE-OpenStack-Cloud-SLE11-6-Pool
+              SUSE-OpenStack-Cloud-SLE11-6-Updates
+            )
+          when "12.0"
+            %w(
+              SLE12-Cloud-Compute
+              SLE12-Cloud-Compute-PTF
+              SUSE-OpenStack-Cloud-6-Pool
+              SUSE-OpenStack-Cloud-6-Updates
+            )
+          else
+            []
+          end
         when :hae
           case version
           when "11.3"
@@ -62,11 +81,19 @@ class Provisioner
         case node[:platform]
         when "suse"
           repos = Mash.new
+          missing_cloud = false
           missing_hae = false
           missing_storage = false
 
           %w(11.3 12.0).each do |version|
             repos.merge! suse_get_repos_from_attributes(node,"suse",version)
+
+            # For cloud
+            suse_optional_repos(version, :cloud).each do |name|
+              repos[name] ||= Mash.new
+              next unless repos[name][:url].nil?
+              missing_cloud ||= !(File.exists? "#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
+            end
 
             # For pacemaker
             suse_optional_repos(version, :hae).each do |name|
@@ -88,6 +115,10 @@ class Provisioner
           # know that SUSE_Storage cannot be used
           node_set = false
           node.set[:provisioner][:suse] ||= {}
+          if node[:provisioner][:suse][:missing_cloud] != missing_cloud
+            node.set[:provisioner][:suse][:missing_cloud] = missing_cloud
+            node_set = true
+          end
           if node[:provisioner][:suse][:missing_hae] != missing_hae
             node.set[:provisioner][:suse][:missing_hae] = missing_hae
             node_set = true
@@ -121,19 +152,11 @@ class Provisioner
           case version
           when "11.3"
             repo_names = %w(
-              SLE-Cloud
-              SLE-Cloud-PTF
-              SUSE-OpenStack-Cloud-SLE11-6-Pool
-              SUSE-OpenStack-Cloud-SLE11-6-Updates
               SLES11-SP3-Pool
               SLES11-SP3-Updates
             )
           when "12.0"
             repo_names = %w(
-              SLE-Cloud
-              SLE-Cloud-PTF
-              SUSE-OpenStack-Cloud-6-Pool
-              SUSE-OpenStack-Cloud-6-Updates
               SLES12-Pool
               SLES12-Updates
             )
@@ -156,7 +179,7 @@ class Provisioner
 
           # optional repos
           unless provisioner_server_node[:provisioner][:suse].nil?
-            [[:hae, :missing_hae], [:storage, :missing_storage]].each do |optionalrepo|
+            [[:cloud, :missing_cloud], [:hae, :missing_hae], [:storage, :missing_storage]].each do |optionalrepo|
               unless provisioner_server_node[:provisioner][:suse][optionalrepo[1]]
                 suse_optional_repos(version, optionalrepo[0]).each do |name|
                   repos[name] = repos_from_attrs.fetch(name, Mash.new)

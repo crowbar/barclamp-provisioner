@@ -250,6 +250,8 @@ if not nodes.nil? and not nodes.empty?
                       :node_fqdn => mnode[:fqdn],
                       :node_hostname => mnode[:hostname],
                       :target_platform_version => target_platform_version,
+                      :is_ses => node[:provisioner][:suse] &&
+                        node[:provisioner][:suse][:missing_cloud] && !node[:provisioner][:suse][:missing_storage],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
 
