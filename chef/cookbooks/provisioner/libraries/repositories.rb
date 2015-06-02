@@ -30,8 +30,8 @@ class Provisioner
             )
           when "12.0"
             %w(
-              SLE12-Cloud-Compute
-              SLE12-Cloud-Compute-PTF
+              SLE-Cloud
+              SLE-Cloud-PTF
               SUSE-OpenStack-Cloud-6-Pool
               SUSE-OpenStack-Cloud-6-Updates
             )
