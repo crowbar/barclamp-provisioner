@@ -280,7 +280,7 @@ zypper -n ar "<%= @repos[name][:url] %>" "<%= name %>"
 <% end %>
 
 # Cloud-PTF has an unknown key, and this is expected
-zypper -n --gpg-auto-import-keys refresh -r SLE-Cloud-PTF
+zypper -n --gpg-auto-import-keys refresh -r Cloud-PTF
 
 ZYPPER_REF_OPT=
 test $CROWBAR_AUTO_IMPORT_KEYS -eq 1 && ZYPPER_REF_OPT=--gpg-auto-import-keys
