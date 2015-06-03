@@ -30,8 +30,8 @@ class Provisioner
             )
           when "12.0"
             %w(
-              SLE12-Cloud-Compute
-              SLE12-Cloud-Compute-PTF
+              SLE-Cloud
+              SLE-Cloud-PTF
               SUSE-OpenStack-Cloud-6-Pool
               SUSE-OpenStack-Cloud-6-Updates
             )
@@ -92,7 +92,9 @@ class Provisioner
             suse_optional_repos(version, :cloud).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing_cloud ||= !(File.exists? "#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
+              path_name = name.sub(/^SLE-Cloud/, 'Cloud')
+              missing_cloud ||= !(File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{path_name}/repodata/repomd.xml") ||
+                                  File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{path_name}/suse/repodata/repomd.xml"))
             end
 
             # For pacemaker
