@@ -23,15 +23,15 @@ class Provisioner
           case version
           when "11.3"
             %w(
-              SLE-Cloud
-              SLE-Cloud-PTF
+              Cloud
+              Cloud-PTF
               SUSE-OpenStack-Cloud-SLE11-6-Pool
               SUSE-OpenStack-Cloud-SLE11-6-Updates
             )
           when "12.0"
             %w(
-              SLE-Cloud
-              SLE-Cloud-PTF
+              Cloud
+              Cloud-PTF
               SUSE-OpenStack-Cloud-6-Pool
               SUSE-OpenStack-Cloud-6-Updates
             )
@@ -92,9 +92,8 @@ class Provisioner
             suse_optional_repos(version, :cloud).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              path_name = name.sub(/^SLE-Cloud/, 'Cloud')
-              missing_cloud ||= !(File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{path_name}/repodata/repomd.xml") ||
-                                  File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{path_name}/suse/repodata/repomd.xml"))
+              missing_cloud ||= !(File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml") ||
+                                  File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/suse/repodata/repomd.xml"))
             end
 
             # For pacemaker
@@ -175,8 +174,7 @@ class Provisioner
           # JSON due to the dynamic nature of the default value.
           repo_names.each do |name|
             repos[name] = repos_from_attrs.fetch(name, Mash.new)
-            suffix = name.sub(/^SLE-Cloud/, 'Cloud')
-            repos[name][:url] ||= default_repos_url + '/' + suffix
+            repos[name][:url] ||= default_repos_url + '/' + name
           end
 
           # optional repos
