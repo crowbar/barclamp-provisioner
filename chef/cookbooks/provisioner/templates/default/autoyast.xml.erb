@@ -278,6 +278,9 @@ sync
   <% end -%>
       <package>supportutils-plugin-susecloud</package>
 <% end -%>
+<% @packages.each do |package| -%>
+      <package><%= package %></package>
+<% end -%>
     </packages>
     <patterns config:type="list">
       <pattern>Minimal</pattern>

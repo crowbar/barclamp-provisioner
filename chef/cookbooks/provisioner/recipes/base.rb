@@ -301,6 +301,11 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
         %x{zypper --non-interactive addrepo --refresh #{attrs[:url]} #{name}}
       end
     end
+    # install additional packages
+    os = "#{node[:platform]}-#{node[:platform_version]}"
+    if node[:provisioner][:packages][os]
+      node[:provisioner][:packages][os].each { |p| package p }
+    end
   end
 end
 

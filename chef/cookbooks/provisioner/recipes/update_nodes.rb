@@ -232,6 +232,8 @@ if not nodes.nil? and not nodes.empty?
             end
           end
 
+          packages = node[:provisioner][:packages][os] || []
+
           template "#{node_cfg_dir}/autoyast.xml" do
             mode 0644
             source "autoyast.xml.erb"
@@ -240,6 +242,7 @@ if not nodes.nil? and not nodes.empty?
             variables(
                       :admin_node_ip => admin_ip,
                       :web_port => web_port,
+                      :packages => packages,
                       :repos => repos,
                       :rootpw_hash => node[:provisioner][:root_password_hash] || "",
                       :timezone => timezone,
