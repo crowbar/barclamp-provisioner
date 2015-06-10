@@ -303,8 +303,10 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     end
     # install additional packages
     os = "#{node[:platform]}-#{node[:platform_version]}"
-    if node[:provisioner][:packages][os]
-      node[:provisioner][:packages][os].each { |p| package p }
+    if node[:provisioner][:packages]
+      if node[:provisioner][:packages][os]
+        node[:provisioner][:packages][os].each { |p| package p }
+      end
     end
   end
 end

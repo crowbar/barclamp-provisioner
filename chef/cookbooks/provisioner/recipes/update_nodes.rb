@@ -232,7 +232,10 @@ if not nodes.nil? and not nodes.empty?
             end
           end
 
-          packages = node[:provisioner][:packages][os] || []
+          packages = []
+          if node[:provisioner][:packages]
+            packages = node[:provisioner][:packages][os] || []
+          end
 
           template "#{node_cfg_dir}/autoyast.xml" do
             mode 0644
