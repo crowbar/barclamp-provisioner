@@ -75,7 +75,7 @@
             },
             "packages": {
               "type": "map",
-              "required": false,
+              "required": true,
               "mapping": {
                 =: {
                   "type": "seq",
