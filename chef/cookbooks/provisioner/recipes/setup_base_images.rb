@@ -424,7 +424,10 @@ node[:provisioner][:supported_oses].each do |os,params|
     Provisioner::Repositories.inspect_repos(node)
     repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
 
-    packages = node[:provisioner][:packages][os] || []
+    packages = []
+    if node[:provisioner][:packages]
+      packages = node[:provisioner][:packages][os] || []
+    end
 
     template "#{os_dir}/crowbar_register" do
       mode 0644
