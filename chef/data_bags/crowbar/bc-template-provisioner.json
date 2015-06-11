@@ -73,6 +73,7 @@
       "timezone": "UTC",
       "web_port": 8091,
       "coredump": false,
+      "packages": {},
       "use_local_security": true,
       "use_serial_console": false,
       "serial_tty": "ttyS0,115200n8",
