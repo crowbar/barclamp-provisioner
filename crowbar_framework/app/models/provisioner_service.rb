@@ -51,6 +51,14 @@ class ProvisionerService < ServiceObject
   end
 
   def validate_proposal_after_save proposal
+    proposal["attributes"]["provisioner"]["packages"].each do |platform, packages|
+      packages.each do |package|
+        unless Crowbar::Validator::PackageNameValidator.new.validate(package)
+          validation_error("Package \"#{package}\" for \"#{platform}\" did not pass name validation.")
+        end
+      end
+    end
+
     validate_one_for_role proposal, "provisioner-server"
 
     super

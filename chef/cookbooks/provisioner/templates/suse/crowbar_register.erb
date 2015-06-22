@@ -297,11 +297,6 @@ PACKAGES_INSTALL=
 # Obvious dependencies
 PACKAGES_INSTALL="$PACKAGES_INSTALL openssh"
 
-<% unless @packages.empty? -%>
-# Additional packages
-PACKAGES_INSTALL="$PACKAGES_INSTALL <%= @packages.join(' ') %>"
-<% end -%>
-
 # From autoyast profile
 PATTERNS_INSTALL="$PATTERNS_INSTALL Minimal base"
 PACKAGES_INSTALL="$PACKAGES_INSTALL netcat ruby2.1-rubygem-chef supportutils-plugin-susecloud"
@@ -317,7 +312,7 @@ zypper --non-interactive install --auto-agree-with-licenses suse-sle11-openstack
 <% else -%>
 zypper --non-interactive install --auto-agree-with-licenses suse-openstack-cloud-release
 <% end -%>
-zypper --non-interactive install $PACKAGES_INSTALL
+zypper --non-interactive install $PACKAGES_INSTALL<%= " '#{@packages.join("' '")}'" unless @packages.empty? %>
 
 # Fail early if we know we can't succeed because of a missing chef-client
 if ! which chef-client &> /dev/null; then
