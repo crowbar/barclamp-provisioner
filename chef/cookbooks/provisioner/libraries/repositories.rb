@@ -81,9 +81,9 @@ class Provisioner
         case node[:platform]
         when "suse"
           repos = Mash.new
-          missing_cloud = false
-          missing_hae = false
-          missing_storage = false
+          cloud_available = false
+          hae_available = false
+          storage_available = false
 
           %w(11.3 12.0).each do |version|
             repos.merge! suse_get_repos_from_attributes(node,"suse",version)
@@ -92,40 +92,41 @@ class Provisioner
             suse_optional_repos(version, :cloud).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing_cloud ||= !(File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml") ||
-                                  File.exists?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/suse/repodata/repomd.xml"))
+              cloud_available ||= File.exist?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml") ||
+                                File.exist?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/suse/repodata/repomd.xml")
             end
 
             # For pacemaker
             suse_optional_repos(version, :hae).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing_hae ||= !(File.exists? "#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
+              hae_available ||= File.exist?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
             end
 
             # For suse storage
             suse_optional_repos(version, :storage).each do |name|
               repos[name] ||= Mash.new
               next unless repos[name][:url].nil?
-              missing_storage ||= !(File.exists? "#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
+              storage_available ||= File.exist?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
             end
           end
 
-          # set an attribute about missing repos so that cookbooks and crowbar
-          # know that HA cannot be used
-          # know that SUSE_Storage cannot be used
+          # set an attribute about available repos so that cookbooks and crowbar
+          # know that HA can be used
+          # know that SUSE_Storage can be used
+          # know that OpenStack can be used
           node_set = false
           node.set[:provisioner][:suse] ||= {}
-          if node[:provisioner][:suse][:missing_cloud] != missing_cloud
-            node.set[:provisioner][:suse][:missing_cloud] = missing_cloud
+          if node[:provisioner][:suse][:cloud_available] != cloud_available
+            node.set[:provisioner][:suse][:cloud_available] = cloud_available
             node_set = true
           end
-          if node[:provisioner][:suse][:missing_hae] != missing_hae
-            node.set[:provisioner][:suse][:missing_hae] = missing_hae
+          if node[:provisioner][:suse][:hae_available] != hae_available
+            node.set[:provisioner][:suse][:hae_available] = hae_available
             node_set = true
           end
-          if node[:provisioner][:suse][:missing_storage] != missing_storage
-            node.set[:provisioner][:suse][:missing_storage] = missing_storage
+          if node[:provisioner][:suse][:storage_available] != storage_available
+            node.set[:provisioner][:suse][:storage_available] = storage_available
             node_set = true
           end
           if node_set
@@ -179,8 +180,8 @@ class Provisioner
 
           # optional repos
           unless provisioner_server_node[:provisioner][:suse].nil?
-            [[:cloud, :missing_cloud], [:hae, :missing_hae], [:storage, :missing_storage]].each do |optionalrepo|
-              unless provisioner_server_node[:provisioner][:suse][optionalrepo[1]]
+            [[:cloud, :cloud_available], [:hae, :hae_available], [:storage, :storage_available]].each do |optionalrepo|
+              if provisioner_server_node[:provisioner][:suse][optionalrepo[1]]
                 suse_optional_repos(version, optionalrepo[0]).each do |name|
                   repos[name] = repos_from_attrs.fetch(name, Mash.new)
                   repos[name][:url] ||= default_repos_url + '/' + name
