@@ -268,7 +268,7 @@ sync
       <package>biosdevname</package>
       <package>netcat</package>
       <package>ruby2.1-rubygem-chef</package>
-<% if @is_ses -%>
+<% if @is_ses and @target_platform_version == "12.0" -%>
       <package>ses-release</package>
 <% else -%>
   <% if @target_platform_version == "11.3" -%>
