@@ -4,7 +4,7 @@ node[:crowbar_wall] ||= Mash.new
 # We claim all devices that are in use.
 if node["crowbar_wall"]["registering"]
   Chef::Log.info("Using crowbar_register mode to claim devices...")
-  unclaimed_disks = BarclampLibrary::Barclamp::Inventory::Disk.unclaimed(node)
+  unclaimed_disks = BarclampLibrary::Barclamp::Inventory::Disk.unclaimed(node, true)
   unclaimed_disks.each do |d|
     # Make sure to claim disks that are used for mount points
     %x{lsblk #{d.name.gsub(/!/, "/")} --noheadings --output MOUNTPOINT | grep -q ^/$}
