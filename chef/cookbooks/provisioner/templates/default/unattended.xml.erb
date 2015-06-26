@@ -151,6 +151,10 @@
                     <CommandLine>shutdown /r /t 0</CommandLine>
                     <Order>17</Order>
                 </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>netsh advfirewall firewall set rule name="File and Printer Sharing (SMB-In)" new enable=yes</CommandLine>
+                    <Order>18</Order>
+                </SynchronousCommand>
             </FirstLogonCommands>
             <UserAccounts>
                 <AdministratorPassword>
