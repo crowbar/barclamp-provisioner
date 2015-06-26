@@ -39,6 +39,11 @@
           "kernel": "boot/x86_64/loader/linux",
           "append": " "
         },
+        "suse-11.4": {
+          "initrd": "boot/x86_64/loader/initrd",
+          "kernel": "boot/x86_64/loader/linux",
+          "append": " "
+        },
         "suse-12.0": {
           "initrd": "boot/x86_64/loader/initrd",
           "kernel": "boot/x86_64/loader/linux",

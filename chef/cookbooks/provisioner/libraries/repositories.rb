@@ -21,7 +21,7 @@ class Provisioner
         case type
         when :cloud
           case version
-          when "11.3"
+          when /^11\.[34]$/
             %w(
               Cloud
               Cloud-PTF
@@ -42,6 +42,8 @@ class Provisioner
           case version
           when "11.3"
             %w(SLE11-HAE-SP3-Pool SLE11-HAE-SP3-Updates)
+          when "11.4"
+            %w(SLE11-HAE-SP4-Pool SLE11-HAE-SP4-Updates)
           when "12.0"
             %w(SLE12-HA-Pool SLE12-HA-Updates)
           else
@@ -85,7 +87,7 @@ class Provisioner
           hae_available = false
           storage_available = false
 
-          %w(11.3 12.0).each do |version|
+          %w(11.3 11.4 12.0).each do |version|
             repos.merge! suse_get_repos_from_attributes(node,"suse",version)
 
             # For cloud
@@ -156,6 +158,11 @@ class Provisioner
             repo_names = %w(
               SLES11-SP3-Pool
               SLES11-SP3-Updates
+            )
+          when "11.4"
+            repo_names = %w(
+              SLES11-SP4-Pool
+              SLES11-SP4-Updates
             )
           when "12.0"
             repo_names = %w(
