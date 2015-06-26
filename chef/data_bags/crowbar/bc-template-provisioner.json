@@ -73,6 +73,7 @@
       "timezone": "UTC",
       "web_port": 8091,
       "coredump": false,
+      "packages": {},
       "use_local_security": true,
       "use_serial_console": false,
       "serial_tty": "ttyS0,115200n8",
@@ -106,7 +107,7 @@
     "provisioner": {
       "crowbar-revision": 0,
       "crowbar-applied": false,
-      "schema-revision": 23,
+      "schema-revision": 24,
       "element_states": {
         "provisioner-bootdisk-finder": [ "hardware-installing" ],
         "provisioner-server": [ "readying", "ready", "applying" ],

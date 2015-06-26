@@ -274,6 +274,9 @@ sync
       <package>suse-sle12-cloud-compute-release</package>
 <% end -%>
       <package>supportutils-plugin-susecloud</package>
+<% @packages.each do |package| -%>
+      <package><%= package %></package>
+<% end -%>
     </packages>
     <patterns config:type="list">
       <pattern>Minimal</pattern>

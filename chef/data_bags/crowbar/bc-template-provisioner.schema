@@ -73,6 +73,17 @@
                 }
               }
             },
+            "packages": {
+              "type": "map",
+              "required": true,
+              "mapping": {
+                =: {
+                  "type": "seq",
+                  "required": false,
+                  "sequence": [ { "type": "str" } ]
+                }
+              }
+            },
             "use_local_security": { "type": "bool", "required": true },
             "use_serial_console": { "type": "bool", "required": true },
             "serial_tty": { "type": "str",  "required": true },

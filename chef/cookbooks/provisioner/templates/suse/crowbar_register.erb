@@ -323,7 +323,7 @@ zypper --non-interactive install --auto-agree-with-licenses suse-cloud-release
 <% else -%>
 zypper --non-interactive install --auto-agree-with-licenses suse-sle12-cloud-compute-release
 <% end -%>
-zypper --non-interactive install $PACKAGES_INSTALL
+zypper --non-interactive install $PACKAGES_INSTALL<%= " '#{@packages.join("' '")}'" unless @packages.empty? %>
 
 # Fail early if we know we can't succeed because of a missing chef-client
 if ! which chef-client &> /dev/null; then
