@@ -54,7 +54,7 @@ class ProvisionerService < ServiceObject
     proposal["attributes"]["provisioner"]["packages"].each do |platform, packages|
       packages.each do |package|
         unless Crowbar::Validator::PackageNameValidator.new.validate(package)
-          validation_error("Package \"#{package}\" for \"#{platform}\" did not pass name validation.")
+          validation_error("Package \"#{package}\" for \"#{platform}\" is not a valid package name.")
         end
       end
     end
