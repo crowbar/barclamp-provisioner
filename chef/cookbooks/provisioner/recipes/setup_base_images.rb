@@ -37,6 +37,12 @@ else
   crowbar_key = ""
 end
 
+directory "#{tftproot}/discovery" do
+  mode 0755
+  owner "root"
+  group "root"
+  action :create
+end
 
 ["share","lib"].each do |d|
   next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
