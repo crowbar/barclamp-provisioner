@@ -37,41 +37,6 @@ else
   crowbar_key = ""
 end
 
-directory "#{tftproot}/discovery" do
-  mode 0755
-  owner "root"
-  group "root"
-  action :create
-end
-
-["share","lib"].each do |d|
-  next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
-  bash "Install pxelinux.0" do
-    code "cp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery/"
-    not_if "cmp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery/pxelinux.0"
-  end
-  break
-end
-
-if node[:platform] != "suse"
-  bash "Install elilo as UEFI netboot loader" do
-    code <<EOC
-cd #{uefi_dir}
-tar xzf '#{tftproot}/files/elilo-3.14-all.tar.gz'
-mv elilo-3.14-x86_64.efi bootx64.efi
-mv elilo-3.14-ia32.efi bootia32.efi
-mv elilo-3.14-ia64.efi bootia64.efi
-rm elilo*.efi elilo*.tar.gz || :
-EOC
-    not_if "test -f '#{uefi_dir}/bootx64.efi'"
-  end
-else
-  bash "Install bootx64.efi" do
-    code "cp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
-    not_if "cmp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
-  end
-end
-
 
 # FIXME: What is the purpose of this, really? If pxecfg_default does not exist
 # the root= parameters will not get appended to the kernel commandline. (Luckily
@@ -98,6 +63,24 @@ end
 append_line = append_line.split.join(' ')
 node.set[:provisioner][:sledgehammer_append_line] = append_line
 
+
+directory "#{tftproot}/discovery" do
+  mode 0755
+  owner "root"
+  group "root"
+  action :create
+end
+
+# PXE config
+["share","lib"].each do |d|
+  next unless ::File.exists?("/usr/#{d}/syslinux/pxelinux.0")
+  bash "Install pxelinux.0" do
+    code "cp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery/"
+    not_if "cmp /usr/#{d}/syslinux/pxelinux.0 #{tftproot}/discovery/pxelinux.0"
+  end
+  break
+end
+
 directory pxecfg_dir do
   recursive true
   mode 0755
@@ -116,6 +99,27 @@ template pxecfg_default do
             :initrd => "initrd0.img",
             :kernel => "vmlinuz0")
 end
+
+# UEFI config
+if node[:platform] != "suse"
+  bash "Install elilo as UEFI netboot loader" do
+    code <<EOC
+cd #{uefi_dir}
+tar xzf '#{tftproot}/files/elilo-3.14-all.tar.gz'
+mv elilo-3.14-x86_64.efi bootx64.efi
+mv elilo-3.14-ia32.efi bootia32.efi
+mv elilo-3.14-ia64.efi bootia64.efi
+rm elilo*.efi elilo*.tar.gz || :
+EOC
+    not_if "test -f '#{uefi_dir}/bootx64.efi'"
+  end
+else
+  bash "Install bootx64.efi" do
+    code "cp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
+    not_if "cmp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
+  end
+end
+
 template "#{uefi_dir}/elilo.conf" do
   mode 0644
   owner "root"
@@ -126,6 +130,7 @@ template "#{uefi_dir}/elilo.conf" do
             :initrd => "initrd0.img",
             :kernel => "vmlinuz0")
 end
+
 
 if node[:platform] == "suse"
 
