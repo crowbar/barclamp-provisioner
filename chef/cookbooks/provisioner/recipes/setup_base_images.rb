@@ -101,6 +101,8 @@ template pxecfg_default do
 end
 
 # UEFI config
+use_elilo = true
+
 if node[:platform] != "suse"
   bash "Install elilo as UEFI netboot loader" do
     code <<EOC
@@ -114,21 +116,50 @@ EOC
     not_if "test -f '#{uefi_dir}/bootx64.efi'"
   end
 else
-  bash "Install bootx64.efi" do
-    code "cp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
-    not_if "cmp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
+  if node["platform_version"].to_f < 12.0
+    bash "Install bootx64.efi" do
+      code "cp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
+      not_if "cmp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
+    end
+  else
+    # we use grub2; steps taken from
+    # https://github.com/openSUSE/kiwi/wiki/Setup-PXE-boot-with-EFI-using-grub2
+    use_elilo = false
+
+    package "grub2-x86_64-efi"
+
+    template "#{uefi_dir}/grub.conf" do
+      mode 0644
+      owner "root"
+      group "root"
+      source "grub.conf.erb"
+      variables(:append_line => "#{append_line} crowbar.state=discovery",
+                :install_name => "Crowbar Discovery Image",
+                :admin_ip => admin_ip,
+                :initrd => "initrd0.img",
+                :kernel => "vmlinuz0")
+    end
+
+    bash "Build UEFI netboot loader with grub" do
+      cwd uefi_dir
+      code "grub2-mkstandalone -d /usr/lib/grub2/x86_64-efi/ -O x86_64-efi --fonts=\"unicode\" -o bootx64.efi grub.cfg"
+      action :nothing
+      subscribes :run, resources("template[#{uefi_dir}/grub.conf]"), :immediately
+    end
   end
 end
 
-template "#{uefi_dir}/elilo.conf" do
-  mode 0644
-  owner "root"
-  group "root"
-  source "default.elilo.erb"
-  variables(:append_line => "#{append_line} crowbar.state=discovery",
-            :install_name => "discovery",
-            :initrd => "initrd0.img",
-            :kernel => "vmlinuz0")
+if use_elilo
+  template "#{uefi_dir}/elilo.conf" do
+    mode 0644
+    owner "root"
+    group "root"
+    source "default.elilo.erb"
+    variables(:append_line => "#{append_line} crowbar.state=discovery",
+              :install_name => "discovery",
+              :initrd => "initrd0.img",
+              :kernel => "vmlinuz0")
+  end
 end
 
 

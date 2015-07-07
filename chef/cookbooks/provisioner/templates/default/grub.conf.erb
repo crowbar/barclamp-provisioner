@@ -1,0 +1,27 @@
+set timeout=20
+
+menuentry '<%= @install_name %>' --class os {
+     insmod net
+     insmod efinet
+     insmod tftp
+     insmod gzio
+     insmod part_gpt
+     insmod efi_gop
+     insmod efi_uga
+
+     # dhcp, tftp server in my network
+     set net_default_server=<%= @admin_ip %>
+
+     net_bootp
+
+     echo 'Network status: '
+     net_ls_cards
+     net_ls_addr
+     net_ls_routes
+
+     echo 'Loading Linux ...'
+     linux (tftp)/discovery/<%= @kernel %> <%= @append_line %>
+
+     echo 'Loading initial ramdisk ...'
+     initrd (tftp)/discovery/<%= @initrd %>
+}
