@@ -225,14 +225,32 @@ if not nodes.nil? and not nodes.empty?
           repos = Provisioner::Repositories.get_repos(node, "suse", target_platform_version)
           Chef::Log.info("repos: #{repos.inspect}")
 
+          packages = node[:provisioner][:packages][os] || []
+          packages.push("autoyast2-installation")
+          packages.push("biosdevname")
+          packages.push("netcat")
+          packages.push("ruby2.1-rubygem-chef")
+
           if node[:provisioner][:suse]
             if node[:provisioner][:suse][:autoyast]
               ssh_password = node[:provisioner][:suse][:autoyast][:ssh_password]
               append << "UseSSH=1 SSHPassword=#{ssh_password}" if ssh_password
             end
-          end
 
-          packages = node[:provisioner][:packages][os] || []
+            if node[:provisioner][:suse][:cloud_available]
+              packages.push("supportutils-plugin-susecloud")
+
+              if target_platform_version == "11.3"
+                packages.push("use-sle11-openstack-cloud-release")
+              else
+                packages.push("suse-openstack-cloud-release")
+              end
+            end
+
+            if node[:provisioner][:suse][:storage_available]
+              packages.push("ses-release") if target_platform_version == "12.0"
+            end
+          end
 
           template "#{node_cfg_dir}/autoyast.xml" do
             mode 0644
@@ -253,8 +271,6 @@ if not nodes.nil? and not nodes.empty?
                       :node_fqdn => mnode[:fqdn],
                       :node_hostname => mnode[:hostname],
                       :target_platform_version => target_platform_version,
-                      :is_ses => node[:provisioner][:suse] &&
-                        !node[:provisioner][:suse][:cloud_available] && node[:provisioner][:suse][:storage_available],
                       :crowbar_join => "#{os_url}/crowbar_join.sh")
           end
 

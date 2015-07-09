@@ -264,20 +264,6 @@ sync
   </scripts>
   <software>
     <packages config:type="list">
-      <package>autoyast2-installation</package>
-      <package>biosdevname</package>
-      <package>netcat</package>
-      <package>ruby2.1-rubygem-chef</package>
-<% if @is_ses -%>
-      <package>ses-release</package>
-<% else -%>
-  <% if @target_platform_version == "11.3" -%>
-      <package>suse-sle11-openstack-cloud-release</package>
-  <% else -%>
-      <package>suse-openstack-cloud-release</package>
-  <% end -%>
-      <package>supportutils-plugin-susecloud</package>
-<% end -%>
 <% @packages.each do |package| -%>
       <package><%= package %></package>
 <% end -%>
