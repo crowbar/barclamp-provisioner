@@ -131,7 +131,7 @@ bash "Disable Strict Host Key checking" do
 end
 
 bash "Set EDITOR=vi environment variable" do
-  code "echo \"EDITOR=vi\" > /etc/profile.d/editor.sh"
+  code "echo \"export EDITOR=vi\" > /etc/profile.d/editor.sh"
   not_if "export | grep -q EDITOR="
 end
 
