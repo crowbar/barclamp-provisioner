@@ -19,6 +19,8 @@ class Provisioner
     class << self
       def suse_optional_repos(version, type)
         case type
+        when :common
+          %w(PTF)
         when :cloud
           case version
           when /^11\.[34]$/
@@ -83,12 +85,20 @@ class Provisioner
         case node[:platform]
         when "suse"
           repos = Mash.new
+          common_available = false
           cloud_available = false
           hae_available = false
           storage_available = false
 
           %w(11.3 11.4 12.0).each do |version|
             repos.merge! suse_get_repos_from_attributes(node,"suse",version)
+
+            # Common optional repos (regardless of cloud vs. storage)
+            suse_optional_repos(version, :common).each do |name|
+              repos[name] ||= Mash.new
+              next unless repos[name][:url].nil?
+              common_available ||= File.exist?("#{node[:provisioner][:root]}/suse-#{version}/repos/#{name}/repodata/repomd.xml")
+            end
 
             # For cloud
             suse_optional_repos(version, :cloud).each do |name|
@@ -119,6 +129,10 @@ class Provisioner
           # know that OpenStack can be used
           node_set = false
           node.set[:provisioner][:suse] ||= {}
+          if node[:provisioner][:suse][:common_available] != common_available
+            node.set[:provisioner][:suse][:common_available] = common_available
+            node_set = true
+          end
           if node[:provisioner][:suse][:cloud_available] != cloud_available
             node.set[:provisioner][:suse][:cloud_available] = cloud_available
             node_set = true
@@ -187,7 +201,10 @@ class Provisioner
 
           # optional repos
           unless provisioner_server_node[:provisioner][:suse].nil?
-            [[:cloud, :cloud_available], [:hae, :hae_available], [:storage, :storage_available]].each do |optionalrepo|
+            [[:common, :common_available],
+             [:cloud, :cloud_available],
+             [:hae, :hae_available],
+             [:storage, :storage_available]].each do |optionalrepo|
               if provisioner_server_node[:provisioner][:suse][optionalrepo[1]]
                 suse_optional_repos(version, optionalrepo[0]).each do |name|
                   repos[name] = repos_from_attrs.fetch(name, Mash.new)
