@@ -24,12 +24,12 @@
 #
 
 #
-# We are a net install. 
+# We are a net install.
 #
 
 <% @repos.keys.sort.each do |repo|
      @repos[repo].keys.sort.each do |url|
-       case repo 
+       case repo
        when "base" -%>
 echo "deb <%=url%> <%= @os_codename %> main restricted" > \
     /target/etc/apt/sources.list.d/00-base.list
@@ -82,7 +82,7 @@ post_state() {
       -H "Accept: application/json" -H "Content-Type: application/json" \
       --max-time 240)
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-  curl "${curlargs[@]}" "http://<%=@admin_ip%>:3000/crowbar/crowbar/1.0/transition/default"
+  curl "${curlargs[@]}" "http://<%=@admin_ip%>/crowbar/crowbar/1.0/transition/default"
 }
 
 HOSTNAME=$(hostname -f)

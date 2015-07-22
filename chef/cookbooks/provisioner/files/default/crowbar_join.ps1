@@ -96,7 +96,7 @@ function syncTime(){
 
 $CrowbarKey=(Get-ItemProperty "HKLM:\SOFTWARE\Crowbar" -Name Key).Key 
 $CrowbarIP=(Get-ItemProperty "HKLM:\SOFTWARE\Crowbar" -Name Address).Address 
-$CrowbarUri= "http://"+$CrowbarIP+":3000"
+$CrowbarUri= "http://"+$CrowbarIP
 $CrowbarMain="C:\Crowbar"
 $CrowbarLogsFolder="$CrowbarMain\Logs"
 $CrowbarLogFile="$CrowbarLogsFolder\crowbar.log"
