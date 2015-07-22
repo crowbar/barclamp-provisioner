@@ -56,10 +56,12 @@ service rpcService do
   action [ :enable, :start ]
 end
 
-directory "/var/log/crowbar/sledgehammer" do
-  owner "root"
-  group "root"
-  mode 0755
+["/var/log/crowbar/sledgehammer", "/updates"].each do |nfs_dir|
+  directory nfs_dir do
+    owner "root"
+    group "root"
+    mode 0755
+  end
 end
 
 service "nfs-kernel-server" do
