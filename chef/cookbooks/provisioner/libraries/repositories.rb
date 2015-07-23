@@ -26,14 +26,12 @@ class Provisioner
           when /^11\.[34]$/
             %w(
               Cloud
-              Cloud-PTF
               SUSE-OpenStack-Cloud-SLE11-6-Pool
               SUSE-OpenStack-Cloud-SLE11-6-Updates
             )
           when "12.0"
             %w(
               Cloud
-              Cloud-PTF
               SUSE-OpenStack-Cloud-6-Pool
               SUSE-OpenStack-Cloud-6-Updates
             )
