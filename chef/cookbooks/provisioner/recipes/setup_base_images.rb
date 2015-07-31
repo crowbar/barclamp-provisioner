@@ -117,6 +117,8 @@ EOC
   end
 else
   if node["platform_version"].to_f < 12.0
+    package "elilo"
+
     bash "Install bootx64.efi" do
       code "cp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
       not_if "cmp /usr/lib64/efi/elilo.efi #{uefi_dir}/bootx64.efi"
