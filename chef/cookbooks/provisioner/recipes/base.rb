@@ -267,6 +267,11 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
       action :nothing
       subscribes :run, resources(:cookbook_file=> "/etc/systemd/system/crowbar_join.service"), :immediately
     end
+
+    link "/usr/sbin/rccrowbar_join" do
+      action :create
+      to "service"
+    end
   end
 
   service "crowbar_join" do
