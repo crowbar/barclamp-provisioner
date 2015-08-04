@@ -11,5 +11,5 @@ service tftp
        flags                   = IPv6 IPv4
        user                    = root
        server                  = /usr/sbin/in.tftpd
-       server_args             = -m /etc/tftpd.conf -s <%=@tftproot%>
+       server_args             = -u tftp -m /etc/tftpd.conf -s <%=@tftproot%>
 }
