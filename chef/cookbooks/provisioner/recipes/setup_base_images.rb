@@ -240,6 +240,15 @@ when "redhat","centos"
   package "tftp-server"
 when "suse"
   package "tftp"
+
+  # work around change in bnc#813226 which breaks
+  # read permissions for nobody and wwwrun user
+  directory tftproot do
+    recursive true
+    mode 0755
+    owner "root"
+    group "root"
+  end
 end
 
 cookbook_file "/etc/tftpd.conf" do
