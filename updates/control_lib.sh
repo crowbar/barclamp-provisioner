@@ -53,7 +53,7 @@ parse_node_data() {
         echo ${node_data}
     fi
     echo "Local IP addresses:"
-    ifconfig | awk ' /127.0.0.1/ { next; } /inet addr:/ { print } '
+    ip a | awk '/127.0.0./ { next; } /inet / { print }'
     return $res
 }
 
