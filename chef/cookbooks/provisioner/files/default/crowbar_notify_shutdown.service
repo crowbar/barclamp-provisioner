@@ -1,0 +1,14 @@
+[Unit]
+Description=Synchronize with Crowbar administration server (shutdown/reboot notify)
+After=network.target syslog.target remote-fs.target sshd.service neutron-ovs-cleanup.service xend.service libvirtd.service
+Before=crowbar_join.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/bin/true
+ExecStop=/usr/sbin/crowbar_join --stop
+ExecStopPost=/usr/bin/echo "crowbar_join --stop done"
+
+[Install]
+WantedBy=multi-user.target
