@@ -71,7 +71,7 @@ post_state() {
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
   oldumask=`umask`
   umask 077
-  curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
+  curl "${curlargs[@]}" "http://$IP/crowbar/crowbar/1.0/transition/default"
   umask $oldumask
 }
 

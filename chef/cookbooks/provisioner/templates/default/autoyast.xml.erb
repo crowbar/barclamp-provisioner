@@ -214,7 +214,7 @@ local curlargs=(-o "/mnt/var/log/crowbar/$1-$2.json" --connect-timeout 60 -s \
   -H "Accept: application/json" -H "Content-Type: application/json" \
   --max-time 240)
 [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
-curl "${curlargs[@]}" "http://$IP:3000/crowbar/crowbar/1.0/transition/default"
+curl "${curlargs[@]}" "http://$IP/crowbar/crowbar/1.0/transition/default"
 }
 
 mkdir -p /mnt/root/.ssh
@@ -248,7 +248,7 @@ sync
        <filename>autoyast_set_hostentries.sh</filename>
        <source>
         <![CDATA[
-        echo "<%= @node_ip %> <%= @node_fqdn %> <%= @node_hostname %>" >> /etc/hosts 
+        echo "<%= @node_ip %> <%= @node_fqdn %> <%= @node_hostname %>" >> /etc/hosts
         ]]>
        </source>
       </script>

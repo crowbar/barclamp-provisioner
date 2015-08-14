@@ -107,14 +107,14 @@ get_nodes_allow_fail() {
   # communicate with the admin server
   local curlargs=($(get_common_curl_args) --fail -H "Accept: application/json")
 
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/"
+  curl "${curlargs[@]}" "http://$ADMIN_IP/crowbar/machines/1.0/"
 }
 
 get_node_allow_fail() {
   # --fail is important here as we rely on the failure for 404
   local curlargs=($(get_common_curl_args) --fail -H "Accept: application/json")
 
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/$HOSTNAME"
+  curl "${curlargs[@]}" "http://$ADMIN_IP/crowbar/machines/1.0/$HOSTNAME"
 }
 
 post_allocate() {
@@ -122,7 +122,7 @@ post_allocate() {
                   -X POST --data-binary "{ \"name\": \"$1\" }" \
                   -H "Accept: application/json" -H "Content-Type: application/json")
 
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/machines/1.0/allocate/0"
+  curl "${curlargs[@]}" "http://$ADMIN_IP/crowbar/machines/1.0/allocate/0"
 }
 
 post_state() {
@@ -131,7 +131,7 @@ post_state() {
                   -X POST --data-binary "{ \"name\": \"$1\", \"state\": \"$2\" }" \
                   -H "Accept: application/json" -H "Content-Type: application/json")
 
-  curl "${curlargs[@]}" "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default"
+  curl "${curlargs[@]}" "http://$ADMIN_IP/crowbar/crowbar/1.0/transition/default"
 }
 
 add_group() {

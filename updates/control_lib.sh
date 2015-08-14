@@ -80,7 +80,7 @@ __post_state() {
       -H "Accept: application/json" -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest --anyauth)
   parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/crowbar/1.0/transition/default")
+      "http://$ADMIN_IP/crowbar/crowbar/1.0/transition/default")
 }
 
 __get_state() {
@@ -89,7 +89,7 @@ __get_state() {
         -H "Content-Type: application/json")
   [[ $CROWBAR_KEY ]] && curlargs+=(-u "$CROWBAR_KEY" --digest)
   parse_node_data < <(curl "${curlargs[@]}" \
-      "http://$ADMIN_IP:3000/crowbar/machines/1.0/show?name=$1")
+      "http://$ADMIN_IP/crowbar/machines/1.0/show?name=$1")
 }
 
 post_state() { try_to "$MAXTRIES" 15 __post_state "$@"; }
