@@ -282,6 +282,13 @@ sync
       <package><%= package %></package>
 <% end -%>
     </packages>
+<% if @target_platform_version == "11.3" -%>
+    <remove-packages config:type="list">
+      <package>puppet</package>
+      <package>facter</package>
+      <package>ruby</package>
+    </remove-packages>
+<% end -%>
     <patterns config:type="list">
       <pattern>Minimal</pattern>
       <pattern>base</pattern>
