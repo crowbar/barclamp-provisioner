@@ -253,6 +253,14 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     end
   else
     # Use a systemd .service file on SLE12
+    cookbook_file "/etc/systemd/system/crowbar_notify_shutdown.service" do
+      owner "root"
+      group "root"
+      mode "0644"
+      action :create
+      source "crowbar_notify_shutdown.service"
+    end
+
     cookbook_file "/etc/systemd/system/crowbar_join.service" do
       owner "root"
       group "root"
@@ -265,12 +273,17 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     bash "reload systemd after crowbar_join update" do
       code "systemctl daemon-reload"
       action :nothing
+      subscribes :run, resources(:cookbook_file=> "/etc/systemd/system/crowbar_notify_shutdown.service"), :immediately
       subscribes :run, resources(:cookbook_file=> "/etc/systemd/system/crowbar_join.service"), :immediately
     end
 
     link "/usr/sbin/rccrowbar_join" do
       action :create
       to "service"
+    end
+
+    service "crowbar_notify_shutdown" do
+      action :enable
     end
   end
 
