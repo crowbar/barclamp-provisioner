@@ -11,10 +11,10 @@ originally developed by the [Dell CloudEdge Solutions Team](http://dell.com/open
 
 ## Badges
 
-[![Build Status](https://travis-ci.org/crowbar/crowbar-core.svg?branch=master)](https://travis-ci.org/crowbar/crowbar-core)
-[![Code Climate](https://codeclimate.com/github/crowbar/crowbar-core/badges/gpa.svg)](https://codeclimate.com/github/crowbar/crowbar-core)
-[![Test Coverage](https://codeclimate.com/github/crowbar/crowbar-core/badges/coverage.svg)](https://codeclimate.com/github/crowbar/crowbar-core)
-[![Dependency Status](https://gemnasium.com/crowbar/crowbar-core.svg)](https://gemnasium.com/crowbar/crowbar-core)
+[![Build Status](https://travis-ci.org/crowbar/barclamp-provisioner.svg?branch=release/tex/master)](https://travis-ci.org/crowbar/barclamp-provisioner)
+[![Code Climate](https://codeclimate.com/github/crowbar/barclamp-provisioner/badges/gpa.svg)](https://codeclimate.com/github/crowbar/barclamp-provisioner)
+[![Test Coverage](https://codeclimate.com/github/crowbar/barclamp-provisioner/badges/coverage.svg)](https://codeclimate.com/github/crowbar/barclamp-provisioner)
+[![Dependency Status](https://gemnasium.com/crowbar/barclamp-provisioner.svg)](https://gemnasium.com/crowbar/barclamp-provisioner)
 [![Join the chat at https://gitter.im/crowbar/crowbar](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/crowbar/crowbar)
 
 ## Contact
