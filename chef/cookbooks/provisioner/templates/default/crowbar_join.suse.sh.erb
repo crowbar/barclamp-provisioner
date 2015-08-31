@@ -457,9 +457,14 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     HOSTNAME=$(hostname -f)
 
     # stop ntpd before we run ntpdate, and start it again afterwards.
+<% if @target_platform_version.to_f < 12.0 then %>
+    NTP_SERVICE=ntp
+<% else %>
+    NTP_SERVICE=ntpd
+<% end %>
     NTP_START=0
-    if service ntp status > /dev/null; then
-        log_to time service ntp stop
+    if service $NTP_SERVICE status > /dev/null; then
+        log_to time service $NTP_SERVICE stop
         NTP_START=1
     fi
 
@@ -498,7 +503,7 @@ if [ "$MODE" == "setup" -o "$MODE" == "start" ]; then
     # make sure to keep hostname
     [ "$MODE" == "setup" ] && echo $HOSTNAME > /etc/HOSTNAME
 
-    [ $NTP_START -eq 1 ] && log_to time service ntp start
+    [ $NTP_START -eq 1 ] && log_to time service $NTP_SERVICE start
     [ "$MODE" == "setup" ] && log_to chef service chef-client start
 
     [ $final_state == "ready" ] || EXVAL=1
