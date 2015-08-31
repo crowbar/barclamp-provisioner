@@ -283,7 +283,7 @@ if node["platform"] == "suse" && !node.roles.include?("provisioner-server")
     end
 
     service "crowbar_notify_shutdown" do
-      action :enable
+      action [:enable, :start]
     end
   end
 
