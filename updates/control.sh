@@ -179,6 +179,8 @@ nuke_everything() {
         [[ -b /dev/$name && -w /dev/$name && $name != name ]] || continue
         [[ $name = loop* ]] && continue
         [[ $name = dm* ]] && continue
+        # wipe out RAID signatures
+        wipefs -a /dev/$name
         if (( blocks >= 2048)); then
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048"
             dd "if=/dev/zero" "of=/dev/$name" "bs=512" "count=2048" "seek=$(($blocks - 2048))"
