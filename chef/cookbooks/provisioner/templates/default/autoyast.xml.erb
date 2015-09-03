@@ -27,6 +27,12 @@
     </signature-handling>
     <storage/>
   </general>
+  <global>
+    <activate>true</activate>
+    <boot_boot>true</boot_boot>
+    <boot_mbr>false</boot_mbr>
+    <generic_mbr>true</generic_mbr>
+  </global>
   <add-on>
     <add_on_products config:type="list">
     <% @repos.keys.sort.each do |name| %>
@@ -98,6 +104,12 @@
         <initialize config:type="boolean">true</initialize>
         <partitions config:type="list"/>
         <type config:type="symbol">CT_DISK</type>
+        <disklabel>gpt</disklabel>
+          <partition>
+            <mount>/boot</mount>
+            <size>auto</size>
+            <partition_nr config:type="integer">1</partition_nr>
+          </partition>
         <use>all</use>
       </drive>
     <% else -%>
@@ -248,7 +260,7 @@ sync
        <filename>autoyast_set_hostentries.sh</filename>
        <source>
         <![CDATA[
-        echo "<%= @node_ip %> <%= @node_fqdn %> <%= @node_hostname %>" >> /etc/hosts 
+        echo "<%= @node_ip %> <%= @node_fqdn %> <%= @node_hostname %>" >> /etc/hosts
         ]]>
        </source>
       </script>
