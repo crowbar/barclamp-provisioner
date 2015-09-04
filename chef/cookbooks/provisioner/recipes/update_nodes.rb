@@ -22,6 +22,7 @@ admin_ip = Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, "admin").
 web_port = node[:provisioner][:web_port]
 provisioner_web = "http://#{admin_ip}:#{web_port}"
 dhcp_hosts_dir = node["provisioner"]["dhcp_hosts"]
+virtual_intfs = ["tap", "qbr", "qvo", "qvb", "brq", "ovs"]
 
 nodes = search(:node, "*:*")
 if not nodes.nil? and not nodes.empty?
@@ -40,6 +41,7 @@ if not nodes.nil? and not nodes.empty?
     mac_list = []
     unless mnode["network"].nil? || mnode["network"]["interfaces"].nil?
       mnode["network"]["interfaces"].each do |net, net_data|
+        next if virtual_intfs.include?(net.slice(0..2))
         net_data.each do |field, field_data|
           next if field != "addresses"
           field_data.each do |addr, addr_data|
