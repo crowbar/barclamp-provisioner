@@ -1,9 +1,0 @@
-Bluepill.application("provisioner-webserver") do |app|
-  app.process("provisioner-webserver") do |p|
-    p.name = "provisioner-webserver"
-    p.start_command = "nginx -c /etc/nginx/provisioner.conf"
-    p.stdout = p.stderr = "/var/log/provisioner-webserver.log"
-    p.pid_file = "/var/run/provisioner-webserver.pid"
-    p.daemonize = false
-  end
-end
