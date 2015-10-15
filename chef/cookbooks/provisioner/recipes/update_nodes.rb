@@ -136,7 +136,7 @@ if not nodes.nil? and not nodes.empty?
           hostname mnode.name
           macaddress mac_list[i]
           if mnode.macaddress == mac_list[i]
-            ipaddress admin_data_net.address
+            ipaddress admin_data_net.address unless admin_data_net.nil?
             options [
      '      if option arch = 00:06 {
         filename = "discovery/bootia32.efi";
