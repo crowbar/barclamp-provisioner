@@ -227,6 +227,20 @@ run_hooks() {
     done
 }
 
+renew_dhcp_after_hwinstalling () {
+    # The Admin IP address of the node is allocated in the
+    # "hardware-installing" transition. Force a renewal here get the new IP
+    # address and avoid it changing at an unexpected time during the
+    # subsequent transitions
+    if [[ $1 = 'hardware-installing' ]]; then
+        echo "Forcing DHCP renewal after Admin IP allocation"
+        ifup $BOOTDEV > /dev/null
+        echo "New local IP Addresses:"
+        ip a | awk '/127.0.0./ { next; } /inet / { print }'
+    fi
+    return 0
+}
+
 walk_node_through () {
     # $1 = hostname for chef-client run
     # $@ = states to walk through
@@ -235,6 +249,7 @@ walk_node_through () {
     while (( $# > 1)); do
         state="$1"
         post_state "$name" "$1" && \
+            renew_dhcp_after_hwinstalling $1 && \
             run_hooks "$HOSTNAME" "$1" pre && \
             chef-client -S http://$ADMIN_IP:4000/ -N "$name" && \
             run_hooks "$HOSTNAME" "$1" post || \
