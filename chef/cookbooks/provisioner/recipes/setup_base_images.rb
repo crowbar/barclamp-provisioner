@@ -130,6 +130,9 @@ if node[:platform] == "suse"
     mode 0644
     variables(:docroot => tftproot,
               :port => web_port,
+              :admin_ip => admin_ip,
+              :admin_subnet => node["network"]["networks"]["admin"]["subnet"],
+              :admin_netmask => node["network"]["networks"]["admin"]["netmask"],
               :logfile => "/var/log/apache2/provisioner-access_log",
               :errorlog => "/var/log/apache2/provisioner-error_log")
     notifies :reload, resources(:service => "apache2")

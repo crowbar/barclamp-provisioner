@@ -7,7 +7,7 @@
 # ports.conf to include whatever's already there *plus* the provisioner
 # port.  The latter is the best behaved, but frankly strikes me as messy.
 # So until I come up with something better, here we go:
-Listen <%=@port%>
+Listen <%= @admin_ip %>:<%=@port%>
 NameVirtualHost *:<%=@port%>
 
 <VirtualHost *:<%=@port%>>
@@ -15,10 +15,10 @@ NameVirtualHost *:<%=@port%>
     DocumentRoot <%= @docroot %>
     ErrorLog <%= @errorlog %>
     CustomLog <%= @logfile %> combined
-    
+
     HostnameLookups Off
     UseCanonicalName Off
-    
+
     <Directory />
         Options None
         AllowOverride None
@@ -30,7 +30,7 @@ NameVirtualHost *:<%=@port%>
         Options Indexes FollowSymLinks
         AllowOverride None
         Order allow,deny
-        allow from all
+        Allow from <%= @admin_subnet %>/<%= @admin_netmask %>
     </Directory>
 
 </VirtualHost>
