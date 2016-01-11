@@ -98,6 +98,7 @@
           "delete": "noop",
           "delete-final": "delete",
           "reinstall": "os_install",
+          "crowbar_upgrade": "execute",
           "debug": "debug"
         }
       }
@@ -107,7 +108,7 @@
     "provisioner": {
       "crowbar-revision": 0,
       "crowbar-applied": false,
-      "schema-revision": 24,
+      "schema-revision": 25,
       "element_states": {
         "provisioner-bootdisk-finder": [ "hardware-installing" ],
         "provisioner-server": [ "readying", "ready", "applying" ],
