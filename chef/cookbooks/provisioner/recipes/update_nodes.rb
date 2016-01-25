@@ -220,7 +220,8 @@ if not nodes.nil? and not nodes.empty?
 
         when os =~ /^(open)?suse/
           append << "install=#{install_url} autoyast=#{node_url}/autoyast.xml"
-          append << "ifcfg=dhcp4 netwait=60"
+          append << "ifcfg=dhcp4 netwait=60" # workaround bsc#927997
+          append << "squash=0" # workaround bsc#962397
 
           Provisioner::Repositories.inspect_repos(node)
           target_platform_version = os.gsub(/^.*-/, "")
