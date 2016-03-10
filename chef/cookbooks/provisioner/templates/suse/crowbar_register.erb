@@ -223,9 +223,12 @@ fi
 # Setup groups and users
 # ---------------
 
+# for making HA on shared NFS backend storage work
 add_group qemu 484
 add_group kvm 485
 add_user qemu 484 kvm
+add_group glance 483
+add_user glance 483 glance
 
 
 # Check that we're really on the admin network
