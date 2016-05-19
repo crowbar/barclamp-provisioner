@@ -99,7 +99,7 @@ export DHCP_STATE MYINDEX ADMIN_ADDRESS BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
 if is_suse; then
-    ntp="sntp -P no -r $ADMIN_IP"
+    ntp="sntp -S $ADMIN_IP"
 else
     ntp="/usr/sbin/ntpdate $ADMIN_IP"
 fi
