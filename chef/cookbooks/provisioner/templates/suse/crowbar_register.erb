@@ -380,7 +380,7 @@ export DOMAIN
 export HOSTNAME
 
 <% if @target_platform_version.to_f < 12.0 -%>
-ntp="sntp -r $NTP_SERVERS"
+ntp="sntp -S $NTP_SERVERS"
 <% else -%>
 ntp="sntp -s $NTP_SERVERS"
 <% end -%>
