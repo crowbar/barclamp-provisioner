@@ -98,10 +98,14 @@ ALLOCATED=false
 export DHCP_STATE MYINDEX ADMIN_ADDRESS BMC_ADDRESS BMC_NETMASK BMC_ROUTER ADMIN_IP
 export ALLOCATED HOSTNAME CROWBAR_KEY CROWBAR_STATE
 
-if is_suse; then
+# ntpd 4.2.4 (e.g. on SLES11-SP3 GA) didn't contain a working ntpdate. Use sntp
+# there. ntpdate got reintroduced with a newer ntpd versions (4.2.8x) where the
+# sntp commandline interface changed in an incompatible way. Use ntpdate on
+# such systems (i.e. SLES-11-SP3 with updates and SLES12)
+if ntpd --version | grep -q "4\.2\.4"; then
     ntp="sntp -P no -r $ADMIN_IP"
 else
-    ntp="/usr/sbin/ntpdate $ADMIN_IP"
+    ntp="/usr/sbin/ntpdate -u $ADMIN_IP"
 fi
 
 # Make sure date is up-to-date
