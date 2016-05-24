@@ -379,11 +379,16 @@ hostname "$HOSTNAME"
 export DOMAIN
 export HOSTNAME
 
-<% if @target_platform_version.to_f < 12.0 -%>
-ntp="sntp -P no -r $NTP_SERVERS"
-<% else -%>
-ntp="sntp -s $NTP_SERVERS"
-<% end -%>
+# ntpd 4.2.4 (e.g. on SLES11-SP3 GA) didn't contain a working ntpdate. Use sntp
+# there. ntpdate got reintroduced with a newer ntpd versions (4.2.8x) where the
+# sntp commandline interface changed in an incompatible way. Use ntpdate on
+# such systems (i.e. SLES-11-SP3 with updates and SLES12)
+if ntpd --version | grep -q "4\.2\.4"; then
+    ntp="sntp -P no -r $NTP_SERVERS"
+else
+    ntp="/usr/sbin/ntpdate -u $NTP_SERVERS"
+fi
+
 # Make sure date is up-to-date
 until $ntp; do
   echo "Waiting for NTP server(s)"
