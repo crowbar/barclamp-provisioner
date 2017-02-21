@@ -81,6 +81,18 @@ search(:node, "roles:provisioner-server AND provisioner_config_environment:#{nod
     node_modified = true
   end
 end
+
+# Find other cluster members and allow mutual ssh connection
+if node.roles.include? "pacemaker-cluster-member"
+  search(:node, "roles:pacemaker-cluster-member AND provisioner_config_environment:#{node[:provisioner][:config][:environment]}") do |n|
+    pkey = n["crowbar"]["ssh"]["root_pub_key"] rescue nil
+    if !pkey.nil? and pkey != node["crowbar"]["ssh"]["access_keys"][n.name]
+      node.set["crowbar"]["ssh"]["access_keys"][n.name] = pkey
+      node_modified = true
+    end
+  end
+end
+
 node.save if node_modified
 
 template "/root/.ssh/authorized_keys" do
